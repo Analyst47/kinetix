@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { CornerDownLeft, Crosshair, ListTree, Package, ScanLine, Search } from "lucide-react";
+import { CornerDownLeft, Crosshair, ListTree, Package, ScanLine, Search, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -52,6 +52,7 @@ export function CommandPalette({
           { id: "findings", label: "Findings", href: `${base}/findings`, icon: Crosshair },
           { id: "deps", label: "Dependencies", href: `${base}/dependencies`, icon: Package },
           { id: "scans", label: "Scans", href: `${base}/scans`, icon: ScanLine },
+          { id: "disclosures", label: "Disclosures", href: `${base}/disclosures`, icon: Send },
           {
             id: "validate",
             label: "Findings that need validation",

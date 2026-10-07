@@ -62,7 +62,7 @@ def _detail(db: Session, ctx: OrgContext, finding: Finding) -> FindingDetail:
     allowed = [
         s
         for s in sorted(svc.TRANSITIONS[finding.status], key=lambda s: list(FindingStatus).index(s))
-        if has_permission(ctx.role, svc.permission_for(s))
+        if has_permission(ctx.role, svc.permission_for(s)) and s not in svc.DISCLOSURE_DRIVEN
     ]
     return FindingDetail(
         **FindingOut.model_validate(finding).model_dump(),
@@ -214,6 +214,12 @@ def transition_finding(
 ) -> FindingDetail:
     if not has_permission(ctx.role, svc.permission_for(body.status)):
         raise forbidden("Your role can't move findings to that status.")
+    if body.status in svc.DISCLOSURE_DRIVEN:
+        raise ApiError(
+            409,
+            "use_disclosure",
+            "Record this on the finding's Disclosure tab, so the vendor timeline stays complete.",
+        )
     project = load_project(db, ctx, project_slug)
     finding = svc.get_finding(db, project, public_id)
     svc.transition(

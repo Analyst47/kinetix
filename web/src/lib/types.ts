@@ -175,3 +175,37 @@ export interface Scan {
 export interface ApiErrorBody {
   error: { code: string; message: string; details?: Record<string, unknown> };
 }
+
+export type DisclosureHealth = "draft" | "on_track" | "due_soon" | "overdue" | "complete";
+
+export interface DisclosureEvent {
+  id: string;
+  kind: string;
+  occurred_at: string;
+  note: string;
+  data: Record<string, unknown>;
+  created_by: User;
+  created_at: string;
+}
+
+export interface Disclosure {
+  id: string;
+  finding_public_id: string;
+  finding_title: string;
+  severity: Severity;
+  vendor_name: string;
+  contact: string;
+  contact_source: string;
+  channel: string;
+  policy_url: string | null;
+  deadline_days: number;
+  notified_at: string | null;
+  deadline_at: string | null;
+  days_remaining: number | null;
+  health: DisclosureHealth;
+  stage: "draft" | "notified" | "acknowledged" | "fix_available" | "published";
+  cve_id: string | null;
+  advisory_url: string | null;
+  events: DisclosureEvent[];
+  allowed_events: string[];
+}

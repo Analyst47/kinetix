@@ -7,6 +7,7 @@ import {
   ListTree,
   Package,
   ScanLine,
+  Send,
   ShieldCheck,
   ShieldAlert,
   Users,
@@ -28,6 +29,7 @@ interface Props {
   };
   openFindings: number;
   vulnerableDependencies: number;
+  urgentDisclosures: number;
   authorizationExpired: boolean;
 }
 
@@ -37,6 +39,7 @@ export function Sidebar({
   project,
   openFindings,
   vulnerableDependencies,
+  urgentDisclosures,
   authorizationExpired: expired,
 }: Props) {
   const pathname = usePathname();
@@ -44,6 +47,7 @@ export function Sidebar({
   const nav = [
     { href: `${base}/findings`, label: "Findings", icon: Crosshair, count: openFindings },
     { href: `${base}/dependencies`, label: "Dependencies", icon: Package, count: vulnerableDependencies },
+    { href: `${base}/disclosures`, label: "Disclosures", icon: Send, count: urgentDisclosures },
     { href: `${base}/scans`, label: "Scans", icon: ScanLine },
   ];
   const expires = project.authorization_expires_at;

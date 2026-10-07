@@ -233,3 +233,54 @@ class DependencyAdvisory(Base):
     fixed_version: Mapped[str | None] = mapped_column(String(100))
 
     advisory: Mapped[Advisory] = relationship(lazy="joined")
+
+
+class Disclosure(Timestamped, Base):
+    """Coordinated disclosure of one confirmed finding to its vendor."""
+
+    __tablename__ = "disclosures"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    org_id: Mapped[uuid.UUID] = _org_fk()
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    finding_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("findings.id", ondelete="CASCADE"), unique=True, nullable=False
+    )
+    vendor_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    contact: Mapped[str] = mapped_column(String(500), nullable=False)
+    contact_source: Mapped[str] = mapped_column(String(32), nullable=False)
+    channel: Mapped[str] = mapped_column(String(32), nullable=False)
+    policy_url: Mapped[str | None] = mapped_column(String(500))
+    deadline_days: Mapped[int] = mapped_column(Integer, nullable=False)
+    notified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    deadline_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    stage: Mapped[str] = mapped_column(String(32), nullable=False)
+    cve_id: Mapped[str | None] = mapped_column(String(32))
+    advisory_url: Mapped[str | None] = mapped_column(String(500))
+    created_by_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    events: Mapped[list["DisclosureEvent"]] = relationship(
+        lazy="selectin", order_by="DisclosureEvent.occurred_at", cascade="all, delete-orphan"
+    )
+
+
+class DisclosureEvent(Timestamped, Base):
+    __tablename__ = "disclosure_events"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    org_id: Mapped[uuid.UUID] = _org_fk()
+    disclosure_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("disclosures.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    note: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    data: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    created_by_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
+
+    created_by: Mapped[User] = relationship(lazy="joined")

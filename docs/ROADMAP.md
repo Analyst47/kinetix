@@ -17,15 +17,15 @@ The order favors a narrow product that works end to end over broad features that
 - TOTP two-step verification, recovery codes, session management
 - Members and invitations with owner safeguards
 - Printable and Markdown reports with audited exports
+- Coordinated disclosure: security.txt lookup, notification draft, deadline tracking,
+  vendor timeline driving the finding lifecycle
 
 ## Next
 
 1. **Passkeys** (WebAuthn) alongside TOTP.
-2. **Email delivery** for invitations and security notifications.
-3. **Disclosure workflow**: vendor contact lookup via `security.txt`, timeline, 90-day
-   deadline tracking.
-4. **Advisory export**: CVE JSON 5 and OSV formats for a confirmed finding.
-5. **Git targets**: clone a repository at a commit, in the worker, without running hooks.
+2. **Email delivery** for invitations, security notifications and disclosure deadline reminders.
+3. **Advisory export**: CVE JSON 5 and OSV formats for a confirmed finding.
+4. **Git targets**: clone a repository at a commit, in the worker, without running hooks.
 
 ## Later
 

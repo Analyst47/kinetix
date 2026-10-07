@@ -12,6 +12,8 @@ from app.models.research import (
     Advisory,
     Dependency,
     DependencyAdvisory,
+    Disclosure,
+    DisclosureEvent,
     Evidence,
     Finding,
     Project,
@@ -29,6 +31,8 @@ TENANT_TABLES = (
     "dependencies",
     "dependency_advisories",
     "audit_events",
+    "disclosures",
+    "disclosure_events",
 )
 
 __all__ = [
@@ -38,6 +42,8 @@ __all__ = [
     "AuthSession",
     "Dependency",
     "DependencyAdvisory",
+    "Disclosure",
+    "DisclosureEvent",
     "Evidence",
     "Finding",
     "Invitation",

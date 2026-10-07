@@ -59,7 +59,7 @@ def test_illegal_transition_is_rejected_with_allowed_list(client):
     org = register(client)
     create_project(client, org)
     f = create_finding(client, org)
-    r = client.post(f"{_base(org)}/{f['public_id']}/transitions", json={"status": "reported"})
+    r = client.post(f"{_base(org)}/{f['public_id']}/transitions", json={"status": "confirmed"})
     assert r.status_code == 409
     assert r.json()["error"]["code"] == "invalid_transition"
     assert "needs_validation" in r.json()["error"]["details"]["allowed"]

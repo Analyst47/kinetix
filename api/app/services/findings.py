@@ -18,14 +18,19 @@ S = FindingStatus
 
 CLOSED = frozenset({S.FALSE_POSITIVE, S.DUPLICATE, S.NOT_A_SECURITY_ISSUE, S.OUT_OF_SCOPE})
 OPEN = frozenset({S.DISCOVERED, S.TRIAGE, S.NEEDS_VALIDATION})
+# Statuses reached only by recording disclosure timeline events.
+DISCLOSURE_DRIVEN = frozenset(
+    {S.REPORTED, S.VENDOR_ACKNOWLEDGED, S.FIX_AVAILABLE, S.PUBLIC_DISCLOSURE}
+)
 
 TRANSITIONS: dict[FindingStatus, frozenset[FindingStatus]] = {
     S.DISCOVERED: frozenset({S.TRIAGE, S.NEEDS_VALIDATION}) | CLOSED,
     S.TRIAGE: frozenset({S.NEEDS_VALIDATION}) | CLOSED,
     S.NEEDS_VALIDATION: frozenset({S.CONFIRMED, S.TRIAGE}) | CLOSED,
     S.CONFIRMED: frozenset({S.REPORTED, S.NEEDS_VALIDATION}),
-    S.REPORTED: frozenset({S.VENDOR_ACKNOWLEDGED, S.FIX_AVAILABLE}),
-    S.VENDOR_ACKNOWLEDGED: frozenset({S.FIX_AVAILABLE}),
+    # Public disclosure can follow a fix, or an expired deadline with no fix.
+    S.REPORTED: frozenset({S.VENDOR_ACKNOWLEDGED, S.FIX_AVAILABLE, S.PUBLIC_DISCLOSURE}),
+    S.VENDOR_ACKNOWLEDGED: frozenset({S.FIX_AVAILABLE, S.PUBLIC_DISCLOSURE}),
     S.FIX_AVAILABLE: frozenset({S.PUBLIC_DISCLOSURE}),
     S.PUBLIC_DISCLOSURE: frozenset(),
     **{closed: frozenset({S.TRIAGE}) for closed in CLOSED},

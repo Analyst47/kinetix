@@ -30,6 +30,7 @@ boundary. It is designed on the assumption that both its users and its inputs ca
 | Repository-controlled analyzer config | Semgrep runs on a copy without the repo's ignore files, with Kinetix rules only, no shell | `scanners/semgrep.py` |
 | Secret leakage through findings | Secret values are never stored; redacted previews only | `scanners/secrets.py` |
 | Analyzer escape | Worker container: read-only root, no capabilities, no new privileges, memory and PID limits | `docker-compose.yml` |
+| SSRF through vendor lookup | Domain-only input, every resolved address must be public, connection pinned to the checked address (no DNS rebinding) with TLS verified for the domain, no redirects, 32 KB cap, timeouts | `services/securitytxt.py` |
 | Out-of-scope research | Attestation required; expired authorization blocks targets and scans | `routers/projects.py` |
 
 ## Known gaps

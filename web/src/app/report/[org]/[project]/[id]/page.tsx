@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { LogoMark } from "@/components/logo";
 import { SeverityMark } from "@/components/ui";
-import { AUTHORIZATION_LABEL, STATUS_LABEL, bytes, fullDate } from "@/lib/format";
+import { AUTHORIZATION_LABEL, EVENT_LABEL, STATUS_LABEL, bytes, fullDate, shortDate } from "@/lib/format";
 import { api } from "@/lib/server";
 import type { FindingStatus, Severity } from "@/lib/types";
 
@@ -39,6 +39,16 @@ interface Report {
   };
   custody: { seq: number; at: string; actor: string; action: string; hash: string }[];
   chain: { verified: boolean; entries: number };
+  disclosure: {
+    vendor: string;
+    contact: string;
+    deadline_days: number;
+    notified_at: string | null;
+    deadline_at: string | null;
+    cve_id: string | null;
+    advisory_url: string | null;
+    events: { kind: string; at: string; note: string }[];
+  } | null;
   generated_at: string;
 }
 
@@ -247,6 +257,50 @@ export default async function ReportPage({ params }: { params: Params }) {
             </dd>
           </dl>
         </Section>
+
+        {r.disclosure ? (
+          <Section title="Disclosure timeline">
+            <dl className="grid grid-cols-[150px_minmax(0,1fr)] gap-x-4 gap-y-2 text-[13px]">
+              <dt className="text-muted text-xs leading-5">Vendor</dt>
+              <dd>
+                {r.disclosure.vendor} <span className="mono text-muted">{r.disclosure.contact}</span>
+              </dd>
+              <dt className="text-muted text-xs leading-5">Deadline</dt>
+              <dd>
+                {r.disclosure.deadline_at
+                  ? `${shortDate(r.disclosure.deadline_at)} (${r.disclosure.deadline_days} days from notification)`
+                  : `${r.disclosure.deadline_days} days from notification`}
+              </dd>
+              {r.disclosure.cve_id ? (
+                <>
+                  <dt className="text-muted text-xs leading-5">CVE</dt>
+                  <dd className="mono">{r.disclosure.cve_id}</dd>
+                </>
+              ) : null}
+              {r.disclosure.advisory_url ? (
+                <>
+                  <dt className="text-muted text-xs leading-5">Advisory</dt>
+                  <dd className="break-all">{r.disclosure.advisory_url}</dd>
+                </>
+              ) : null}
+            </dl>
+            {r.disclosure.events.length ? (
+              <ol className="flex flex-col gap-1.5 text-[13px]">
+                {r.disclosure.events.map((e, i) => (
+                  <li key={i} className="grid grid-cols-[150px_minmax(0,1fr)] gap-x-4">
+                    <span className="text-muted">{shortDate(e.at)}</span>
+                    <span>
+                      <span className="font-medium">{EVENT_LABEL[e.kind] ?? e.kind}</span>
+                      {e.note ? <span className="text-muted">: {e.note}</span> : null}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="text-muted text-[13px]">The vendor has not been notified yet.</p>
+            )}
+          </Section>
+        ) : null}
 
         <Section title="Chain of custody">
           <table className="w-full border-collapse text-[12.5px]">

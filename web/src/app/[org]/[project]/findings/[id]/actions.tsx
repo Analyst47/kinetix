@@ -1,12 +1,12 @@
 "use client";
 
-import { Check, ChevronDown, Paperclip, ShieldCheck, Upload } from "lucide-react";
+import { Check, ChevronDown, Paperclip, Send, ShieldCheck, Upload } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 
 import { Dialog } from "@/components/dialog";
-import { Button, Field, inputClass, textareaClass } from "@/components/ui";
+import { Button, Field, buttonClass, inputClass, textareaClass } from "@/components/ui";
 import { ApiError, call } from "@/lib/client";
 import { CLOSED, STATUS_LABEL } from "@/lib/format";
 import type { FindingDetail, FindingStatus } from "@/lib/types";
@@ -57,7 +57,21 @@ export function FindingActions({
   const closures = allowed.filter((s) => CLOSED.includes(s));
   const forward = allowed.filter((s) => !CLOSED.includes(s));
   const ready = finding.readiness.every((r) => r.done);
-  const primary: FindingStatus | undefined = forward.includes("confirmed") ? "confirmed" : forward.at(-1);
+  // Past confirmation, the vendor timeline drives the status: the primary action is the
+  // Disclosure tab, and reopening validation is the only manual move left.
+  const disclosing = finding.status === "confirmed";
+  const pastConfirmation = [
+    "confirmed",
+    "reported",
+    "vendor_acknowledged",
+    "fix_available",
+    "public_disclosure",
+  ].includes(finding.status);
+  const primary: FindingStatus | undefined = pastConfirmation
+    ? undefined
+    : forward.includes("confirmed")
+      ? "confirmed"
+      : forward.at(-1);
   const secondary = forward.filter((s) => s !== primary);
 
   const move = (status: FindingStatus, extra: Record<string, unknown> = {}) =>
@@ -84,6 +98,15 @@ export function FindingActions({
               : (FORWARD_LABEL[s] ?? STATUS_LABEL[s])}
           </Button>
         ))}
+        {pastConfirmation && finding.status !== "public_disclosure" ? (
+          <Link
+            href={`/${org}/${project}/findings/${finding.public_id}?tab=disclosure`}
+            className={buttonClass("primary")}
+          >
+            <Send aria-hidden />
+            {disclosing ? "Disclose to vendor" : "Disclosure timeline"}
+          </Link>
+        ) : null}
         {primary ? (
           <Button
             variant="primary"

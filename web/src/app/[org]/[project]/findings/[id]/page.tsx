@@ -7,6 +7,8 @@ import { PageBar } from "@/components/shell-context";
 import { ButtonLink, EmptyState, Panel, SeverityMark, StatusLabel } from "@/components/ui";
 import {
   CLOSED,
+  EVENT_LABEL,
+  HEALTH_TEXT,
   LIFECYCLE,
   SOURCE_LABEL,
   STATUS_LABEL,
@@ -17,7 +19,9 @@ import {
   shortHash,
 } from "@/lib/format";
 import { api, apiOptional } from "@/lib/server";
-import type { AuditEvent, Chain, Evidence, FindingDetail, Me, SourceExcerpt } from "@/lib/types";
+import type { AuditEvent, Chain, Disclosure, Evidence, FindingDetail, Me, SourceExcerpt } from "@/lib/types";
+
+import { DisclosureView, StartDisclosure } from "./disclosure";
 
 import {
   CvssEditor,
@@ -35,7 +39,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return { title: id };
 }
 
-const TABS = ["overview", "evidence", "reproduction", "activity"] as const;
+const TABS = ["overview", "evidence", "reproduction", "disclosure", "activity"] as const;
 type Tab = (typeof TABS)[number];
 
 const WRITE_ROLES = ["owner", "admin", "researcher"];
@@ -52,17 +56,19 @@ export default async function FindingPage({
   const tab: Tab = TABS.includes(rawTab as Tab) ? (rawTab as Tab) : "overview";
   const base = `/orgs/${org}/projects/${project}/findings/${id}`;
 
-  const [finding, custody, evidence, source, me] = await Promise.all([
+  const [finding, custody, evidence, source, disclosure, me] = await Promise.all([
     api<FindingDetail>(base),
     api<{ events: AuditEvent[]; chain: Chain }>(`${base}/custody`),
     api<Evidence[]>(`${base}/evidence`),
     apiOptional<SourceExcerpt>(`${base}/source?context=6`),
+    apiOptional<Disclosure>(`${base}/disclosure`),
     api<Me>("/auth/me"),
   ]);
   const role = me.organizations.find((o) => o.slug === org)?.role ?? "viewer";
   const editable = WRITE_ROLES.includes(role) && !CLOSED.includes(finding.status);
   const closed = CLOSED.includes(finding.status);
   const stage = LIFECYCLE.indexOf(finding.status);
+  const canDisclose = stage >= LIFECYCLE.indexOf("confirmed");
   const href = (t: Tab) => `/${org}/${project}/findings/${id}${t === "overview" ? "" : `?tab=${t}`}`;
   const scanLabel = custody.events.at(-1)?.actor_label;
 
@@ -152,6 +158,16 @@ export default async function FindingPage({
               <TabLink href={href("reproduction")} active={tab === "reproduction"}>
                 Reproduction
               </TabLink>
+              <TabLink href={href("disclosure")} active={tab === "disclosure"}>
+                Disclosure
+                {disclosure ? (
+                  <span className={HEALTH_TEXT[disclosure.health]}>
+                    {disclosure.health === "overdue" || disclosure.health === "due_soon"
+                      ? `${disclosure.days_remaining}d`
+                      : null}
+                  </span>
+                ) : null}
+              </TabLink>
               <TabLink href={href("activity")} active={tab === "activity"}>
                 Activity <span className="text-muted">{custody.events.length}</span>
               </TabLink>
@@ -226,6 +242,28 @@ export default async function FindingPage({
               <Panel title="Reproduction steps">
                 <ReproductionEditor org={org} project={project} finding={finding} editable={editable} />
               </Panel>
+            ) : null}
+
+            {tab === "disclosure" ? (
+              disclosure ? (
+                <DisclosureView
+                  org={org}
+                  project={project}
+                  findingId={id}
+                  disclosure={disclosure}
+                  editable={WRITE_ROLES.includes(role)}
+                />
+              ) : canDisclose && WRITE_ROLES.includes(role) ? (
+                <StartDisclosure org={org} project={project} findingId={id} />
+              ) : (
+                <Panel title="Disclosure">
+                  <EmptyState title="Not ready for disclosure">
+                    {canDisclose
+                      ? "No disclosure has been started for this finding."
+                      : "Confirm this finding first. Only confirmed findings are disclosed to vendors."}
+                  </EmptyState>
+                </Panel>
+              )
             ) : null}
 
             {tab === "activity" ? (
@@ -399,11 +437,20 @@ function describe(e: AuditEvent): string {
       return `Status: ${STATUS_LABEL[d.from as keyof typeof STATUS_LABEL] ?? d.from} to ${STATUS_LABEL[d.to as keyof typeof STATUS_LABEL] ?? d.to}`;
     case "evidence.attached":
       return `Evidence attached: ${d.filename}`;
+    case "report.exported":
+      return `Report exported (${d.format === "print" ? "print" : d.format})`;
+    case "disclosure.started":
+      return `Disclosure started with ${d.vendor}`;
+    case "disclosure.updated":
+      return "Disclosure details updated";
     case "finding.updated":
       return `Updated ${Object.keys(e.data)
         .map((k) => FIELD_LABEL[k] ?? k.replaceAll("_", " "))
         .join(", ")}`;
     default:
+      if (e.action.startsWith("disclosure.")) {
+        return `Disclosure: ${EVENT_LABEL[e.action.slice(11)] ?? e.action.slice(11)}`;
+      }
       return e.action;
   }
 }

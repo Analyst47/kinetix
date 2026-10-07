@@ -241,8 +241,71 @@ def seed() -> None:
         sqli = by_title["Potential SQL injection in login handler"]
         for name, body in (("request.txt", REQUEST), ("response.txt", RESPONSE)):
             _attach(db, sqli, user, name, body)
+
+        # Demo findings were discovered weeks ago, so the disclosure timeline has history.
+        for f in by_title.values():
+            f.created_at = datetime.now(UTC) - timedelta(days=40)
+        db.flush()
+        _seed_disclosures(db, project, user, by_title)
         db.commit()
         print(f"Seeded demo workspace. Sign in as {DEMO_EMAIL} / {DEMO_PASSWORD}")
+
+
+def _seed_disclosures(db, project, user, by_title) -> None:
+    from app.models import Disclosure
+    from app.schemas import DisclosureEventIn
+    from app.services import disclosure as dsvc
+
+    def start(title: str, **kw) -> tuple[Disclosure, object]:
+        f = by_title[title]
+        d = Disclosure(
+            org_id=project.org_id,
+            project_id=project.id,
+            finding_id=f.id,
+            stage="draft",
+            created_by_id=user.id,
+            contact_source="vendor_site",
+            channel="web_form",
+            deadline_days=90,
+            **kw,
+        )
+        db.add(d)
+        db.flush()
+        audit.record(
+            db,
+            org_id=project.org_id,
+            actor=user,
+            action="disclosure.started",
+            subject_type="finding",
+            subject_id=f.public_id,
+            data={"vendor": kw["vendor_name"]},
+        )
+        return d, f
+
+    def event(d, f, kind: str, days_ago: int, note: str = "") -> None:
+        when = datetime.now(UTC) - timedelta(days=days_ago)
+        dsvc.record_event(
+            db,
+            disclosure=d,
+            finding=f,
+            actor=user,
+            body=DisclosureEventIn(kind=kind, occurred_at=when, note=note),
+        )
+        db.flush()
+        db.refresh(d)
+
+    d, f = start(
+        "express-jwt 0.1.3 authorization bypass",
+        vendor_name="OWASP Juice Shop maintainers",
+        contact="https://github.com/juice-shop/juice-shop/security",
+    )
+    event(d, f, "notified", 33, "Reported through the repository's private advisory form.")
+    event(d, f, "acknowledged", 30, "Maintainers confirmed receipt and are evaluating an upgrade.")
+    start(
+        "jsonwebtoken 0.4.0 allows signature algorithm confusion",
+        vendor_name="OWASP Juice Shop maintainers",
+        contact="https://github.com/juice-shop/juice-shop/security",
+    )
 
 
 def _copy_demo_sources(target_id) -> None:

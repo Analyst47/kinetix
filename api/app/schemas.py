@@ -409,3 +409,121 @@ class InvitationPreview(BaseModel):
     invited_by: str
     email: str
     expires_at: datetime
+
+
+# ── Disclosure ────────────────────────────────────────────────────────────────
+
+ContactSource = Literal["security_txt", "bug_bounty", "vendor_site", "manual"]
+Channel = Literal["email", "bug_bounty", "web_form", "cna"]
+EventKind = Literal[
+    "notified",
+    "vendor_response",
+    "acknowledged",
+    "fix_released",
+    "cve_assigned",
+    "extension",
+    "public_disclosure",
+    "note",
+]
+CveId = Annotated[str, StringConstraints(pattern=r"^CVE-\d{4}-\d{4,7}$")]
+
+
+def _https(v: str | None) -> str | None:
+    if v and not v.startswith("https://"):
+        raise ValueError("Use an https:// link.")
+    return v
+
+
+class DisclosureIn(BaseModel):
+    vendor_name: str = Field(min_length=1, max_length=200)
+    contact: str = Field(min_length=3, max_length=500)
+    contact_source: ContactSource = "manual"
+    channel: Channel = "email"
+    policy_url: str | None = Field(default=None, max_length=500)
+    deadline_days: int = Field(default=90, ge=7, le=365)
+
+    @field_validator("policy_url")
+    @classmethod
+    def _policy_https(cls, v: str | None) -> str | None:
+        return _https(v)
+
+
+class DisclosurePatch(BaseModel):
+    vendor_name: str | None = Field(default=None, min_length=1, max_length=200)
+    contact: str | None = Field(default=None, min_length=3, max_length=500)
+    policy_url: str | None = Field(default=None, max_length=500)
+    advisory_url: str | None = Field(default=None, max_length=500)
+
+    @field_validator("policy_url", "advisory_url")
+    @classmethod
+    def _urls_https(cls, v: str | None) -> str | None:
+        return _https(v)
+
+
+class DisclosureEventIn(BaseModel):
+    kind: EventKind
+    occurred_at: datetime
+    note: str = Field(default="", max_length=4000)
+    days: int | None = Field(default=None, ge=1, le=180)
+    cve_id: CveId | None = None
+    advisory_url: str | None = Field(default=None, max_length=500)
+
+    @field_validator("advisory_url")
+    @classmethod
+    def _advisory_https(cls, v: str | None) -> str | None:
+        return _https(v)
+
+
+class DisclosureEventOut(Model):
+    id: uuid.UUID
+    kind: str
+    occurred_at: datetime
+    note: str
+    data: dict
+    created_by: UserOut
+    created_at: datetime
+
+
+class DisclosureOut(BaseModel):
+    id: uuid.UUID
+    finding_public_id: str
+    finding_title: str
+    severity: Severity
+    vendor_name: str
+    contact: str
+    contact_source: str
+    channel: str
+    policy_url: str | None
+    deadline_days: int
+    notified_at: datetime | None
+    deadline_at: datetime | None
+    days_remaining: int | None
+    health: Literal["draft", "on_track", "due_soon", "overdue", "complete"]
+    stage: str
+    cve_id: str | None
+    advisory_url: str | None
+    events: list[DisclosureEventOut]
+    allowed_events: list[str]
+
+
+class DraftOut(BaseModel):
+    to: str
+    subject: str
+    body: str
+
+
+class SecurityTxtIn(BaseModel):
+    domain: str = Field(min_length=3, max_length=253)
+
+
+class SecurityTxtOut(BaseModel):
+    domain: str
+    url: str
+    contacts: list[str]
+    policy: list[str]
+    encryption: list[str]
+    acknowledgments: list[str]
+    preferred_languages: str | None
+    expires: str | None
+    signed: bool
+    warnings: list[str]

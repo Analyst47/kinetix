@@ -117,3 +117,38 @@ export function initials(name: string): string {
     .map((p) => p[0]!.toUpperCase())
     .join("");
 }
+
+export const EVENT_LABEL: Record<string, string> = {
+  notified: "Vendor notified",
+  vendor_response: "Vendor responded",
+  acknowledged: "Vendor acknowledged",
+  fix_released: "Fix released",
+  cve_assigned: "CVE assigned",
+  extension: "Deadline extended",
+  public_disclosure: "Publicly disclosed",
+  note: "Note",
+};
+
+export const DISCLOSURE_STAGES = [
+  { key: "draft", label: "Draft" },
+  { key: "notified", label: "Vendor notified" },
+  { key: "acknowledged", label: "Acknowledged" },
+  { key: "fix_available", label: "Fix available" },
+  { key: "published", label: "Published" },
+] as const;
+
+export const HEALTH_TEXT: Record<string, string> = {
+  draft: "text-muted",
+  on_track: "text-ink",
+  due_soon: "text-med",
+  overdue: "text-crit",
+  complete: "text-ok",
+};
+
+export function deadlineLabel(days: number | null, health: string): string {
+  if (health === "complete") return "Disclosed";
+  if (health === "draft" || days === null) return "Not started";
+  if (days < 0) return `${-days} day${days === -1 ? "" : "s"} overdue`;
+  if (days === 0) return "Due today";
+  return `${days} day${days === 1 ? "" : "s"} left`;
+}

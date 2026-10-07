@@ -37,6 +37,10 @@ tamper-evident chain of custody.
   recovery codes. Session list with remote sign-out.
 - **Members.** Single-use invitation links bound to the invitee's email, role management with
   owner safeguards.
+- **Coordinated disclosure.** Vendor contact lookup through `security.txt` (RFC 9116), a
+  drafted notification, a deadline clock (90 days by default) with extensions, CVE and
+  advisory tracking. Recording vendor milestones moves the finding through Reported,
+  Vendor acknowledged, Fix available and Public disclosure, so the two never disagree.
 - **Reports.** A printable vulnerability report (save as PDF from the browser) and Markdown
   export, each export recorded in the chain of custody with its SHA-256.
 
@@ -73,7 +77,7 @@ Scans run in-process by default (`KINETIX_SCAN_MODE=inline`). Install Semgrep
 ## Tests
 
 ```bash
-cd api && uv run pytest        # 70 tests against a real Postgres (kinetix_test database)
+cd api && uv run pytest        # 100+ tests against a real Postgres (kinetix_test database)
 cd web && npm run lint && npm run typecheck && npm run build
 ```
 

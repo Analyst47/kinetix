@@ -9,7 +9,17 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
-from app.models import AuditEvent, Evidence, Finding, Organization, Project, Scan, Target, User
+from app.models import (
+    AuditEvent,
+    Disclosure,
+    Evidence,
+    Finding,
+    Organization,
+    Project,
+    Scan,
+    Target,
+    User,
+)
 from app.models.enums import FindingStatus
 from app.services import audit
 
@@ -93,6 +103,7 @@ def build(db: Session, org: Organization, project: Project, finding: Finding) ->
     researcher = db.get(
         User, finding.confirmed_by_id or finding.assignee_id or project.attested_by_id
     )
+    disclosure = db.scalar(select(Disclosure).where(Disclosure.finding_id == finding.id))
     return {
         "id": finding.public_id,
         "title": finding.title,
@@ -149,9 +160,35 @@ def build(db: Session, org: Organization, project: Project, finding: Finding) ->
             for e in events
         ],
         "chain": {"verified": chain.verified, "entries": chain.entries},
+        "disclosure": {
+            "vendor": disclosure.vendor_name,
+            "contact": disclosure.contact,
+            "deadline_days": disclosure.deadline_days,
+            "notified_at": disclosure.notified_at.isoformat() if disclosure.notified_at else None,
+            "deadline_at": disclosure.deadline_at.isoformat() if disclosure.deadline_at else None,
+            "cve_id": disclosure.cve_id,
+            "advisory_url": disclosure.advisory_url,
+            "events": [
+                {"kind": e.kind, "at": e.occurred_at.isoformat(), "note": e.note}
+                for e in disclosure.events
+            ],
+        }
+        if disclosure
+        else None,
         "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
     }
 
+
+EVENT_LABEL = {
+    "notified": "Vendor notified",
+    "vendor_response": "Vendor responded",
+    "acknowledged": "Vendor acknowledged",
+    "fix_released": "Fix released",
+    "cve_assigned": "CVE assigned",
+    "extension": "Deadline extended",
+    "public_disclosure": "Publicly disclosed",
+    "note": "Note",
+}
 
 AUTH_LABEL = {
     "open_source": "Open-source project",
@@ -233,6 +270,23 @@ def to_markdown(r: dict[str, Any]) -> str:
     if a["out_of_scope"]:
         w(f"- **Out of scope:** {a['out_of_scope']}")
     w(f"- **Attested by** {a['attested_by']} on {a['attested_at'][:10]}: “{a['attestation']}”\n")
+    if r.get("disclosure"):
+        d = r["disclosure"]
+        w("## Disclosure timeline\n")
+        w(f"- **Vendor:** {d['vendor']} ({d['contact']})")
+        if d["notified_at"]:
+            w(
+                f"- **Deadline:** {d['deadline_at'][:10]} ({d['deadline_days']} days from notification)"
+            )
+        if d["cve_id"]:
+            w(f"- **CVE:** {d['cve_id']}")
+        if d["advisory_url"]:
+            w(f"- **Advisory:** {d['advisory_url']}")
+        w("")
+        for e in d["events"]:
+            note = f": {e['note']}" if e["note"] else ""
+            w(f"- {e['at'][:10]} {EVENT_LABEL.get(e['kind'], e['kind'])}{note}")
+        w("")
     w("## Chain of custody\n")
     w("| # | Time (UTC) | Actor | Action | Hash |\n|---|---|---|---|---|")
     for e in r["custody"]:
