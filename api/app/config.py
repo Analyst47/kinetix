@@ -37,13 +37,17 @@ class Settings(BaseSettings):
 
     osv_api_url: str = "https://api.osv.dev/v1"
 
-    # AI assistance. "none" turns it off; "anthropic" uses the Claude API; "openai_compatible"
-    # works with any OpenAI-style endpoint, including a local Ollama server (free);
-    # "mock" returns canned output for local development and tests.
+    # AI assistance. "none" turns it off; "anthropic" uses the Claude API; "gemini" uses the
+    # Gemini API; "openai_compatible" works with any OpenAI-style endpoint, including a local
+    # Ollama server (free); "mock" returns canned output for local development and tests.
     ai_provider: str = "none"
     ai_api_key: str | None = None
-    ai_model: str = "claude-sonnet-5-5"
+    # Empty means the provider's default model.
+    ai_model: str | None = None
     ai_base_url: str | None = None
+    # Gemini's free tier lets Google use prompts to improve its products, with human review.
+    # Set to "paid" only when the key's project has billing enabled.
+    ai_gemini_tier: str = "free"
     ai_timeout_seconds: float = 60.0
     ai_max_context_lines: int = 60
 

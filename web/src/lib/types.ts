@@ -217,6 +217,7 @@ export interface AiStatus {
   enabled: boolean;
   provider: string | null;
   model: string | null;
+  data_notice: string | null;
 }
 
 export interface AiCitation {

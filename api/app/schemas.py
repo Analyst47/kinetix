@@ -540,10 +540,13 @@ class AiStatusOut(BaseModel):
     enabled: bool
     provider: str | None
     model: str | None
+    data_notice: str | None = None
 
 
 class AiSettingsIn(BaseModel):
     enabled: bool
+    # Required to turn AI on when the provider may reuse what it's sent (data_notice is set).
+    acknowledge_data_notice: bool = False
 
 
 class AiAskIn(BaseModel):

@@ -13,6 +13,7 @@ import type { AiCitation, AiRun, AiStatus, FindingDetail, Severity } from "@/lib
 
 const PROVIDER_LABEL: Record<string, string> = {
   anthropic: "Anthropic (Claude)",
+  gemini: "Google (Gemini API)",
   openai_compatible: "your configured model server",
   mock: "the development stub (no model is called)",
 };
@@ -242,6 +243,11 @@ export function AssistantPanel({
               before confirming, and a suggested CWE. Sends this finding&apos;s details and nearby source to{" "}
               {PROVIDER_LABEL[status.provider ?? ""] ?? status.provider}.
             </p>
+            {status.data_notice ? (
+              <p className="border-high/40 bg-high/5 max-w-[68ch] rounded-md border px-3 py-2 text-[13px]">
+                {status.data_notice}
+              </p>
+            ) : null}
             <Button
               variant="primary"
               disabled={!!busy}

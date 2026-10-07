@@ -84,6 +84,12 @@ Scans run in-process by default (`KINETIX_SCAN_MODE=inline`). Install Semgrep
 Set one provider on the API (environment variables, or `.env`):
 
 ```bash
+# Gemini API (has a free tier; key from https://aistudio.google.com/apikey)
+KINETIX_AI_PROVIDER=gemini
+KINETIX_AI_API_KEY=AIza...
+KINETIX_AI_MODEL=gemini-3.5-flash   # optional; this is the default
+KINETIX_AI_GEMINI_TIER=free         # set to "paid" once billing is on for the key's project
+
 # Claude API (paid per use)
 KINETIX_AI_PROVIDER=anthropic
 KINETIX_AI_API_KEY=sk-ant-...
@@ -100,10 +106,18 @@ KINETIX_AI_PROVIDER=mock
 
 Then turn it on for a workspace under **AI assistance** in the sidebar.
 
+On Gemini's free tier, Google may use prompts and responses to improve its products, and
+human reviewers may read them ([Gemini API terms](https://ai.google.dev/gemini-api/terms)).
+Kinetix shows that notice to admins and researchers and requires an admin to accept it
+before AI can be turned on for a workspace. Don't use the free tier on confidential
+engagements or vulnerabilities you aren't free to share; use the paid tier or a local model.
+Free-tier quotas vary by model and project; check them in AI Studio. When a key runs out,
+Kinetix returns a clear "quota used up" error instead of failing silently.
+
 ## Tests
 
 ```bash
-cd api && uv run pytest        # 100+ tests against a real Postgres (kinetix_test database)
+cd api && uv run pytest        # 120+ tests against a real Postgres (kinetix_test database)
 cd web && npm run lint && npm run typecheck && npm run build
 ```
 

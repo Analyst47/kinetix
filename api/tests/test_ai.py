@@ -6,7 +6,15 @@ import zipfile
 import httpx
 import pytest
 
-from app.ai.providers import AnthropicProvider, OpenAICompatibleProvider
+from app.ai import providers as providers_mod
+from app.ai.prompts import ANALYSIS_SCHEMA
+from app.ai.providers import (
+    GEMINI_FREE_NOTICE,
+    AnthropicProvider,
+    GeminiProvider,
+    OpenAICompatibleProvider,
+)
+from app.config import get_settings
 from app.errors import ApiError
 from app.routers import ai as ai_router
 from tests.conftest import create_project, make_client, register
@@ -27,6 +35,7 @@ CODE = "\n".join(
 class FakeProvider:
     name = "fake"
     model = "fake-model"
+    data_notice = None
 
     def __init__(self, output: dict):
         self.output = output
@@ -106,7 +115,29 @@ def test_status_reflects_server_config_and_workspace_switch(client, monkeypatch)
         "enabled": False,
         "provider": None,
         "model": None,
+        "data_notice": None,
     }
+
+
+def test_provider_that_may_keep_data_needs_an_acknowledgment_to_enable(client, monkeypatch):
+    org, url, provider = _setup(client, monkeypatch, GOOD, enable=False)
+    provider.data_notice = GEMINI_FREE_NOTICE
+    assert client.get(f"/api/v1/orgs/{org}/ai").json()["data_notice"] == GEMINI_FREE_NOTICE
+    r = client.patch(f"/api/v1/orgs/{org}/ai", json={"enabled": True})
+    assert r.status_code == 409 and r.json()["error"]["code"] == "acknowledge_data_notice"
+    assert client.post(f"{url}/ai/analyze").status_code == 403
+    r = client.patch(
+        f"/api/v1/orgs/{org}/ai", json={"enabled": True, "acknowledge_data_notice": True}
+    )
+    assert r.status_code == 200 and r.json()["enabled"] is True
+    event = next(
+        e
+        for e in client.get(f"/api/v1/orgs/{org}/audit").json()
+        if e["action"] == "ai.settings_changed"
+    )
+    assert event["data"]["data_notice_acknowledged"] is True
+    # Turning it off never needs the acknowledgment.
+    assert client.patch(f"/api/v1/orgs/{org}/ai", json={"enabled": False}).status_code == 200
 
 
 def test_ai_is_off_until_a_workspace_admin_turns_it_on(client, monkeypatch):
@@ -315,3 +346,74 @@ def test_openai_compatible_adapter_parses_json_and_rejects_garbage():
     )
     with pytest.raises(ApiError):
         bad.complete(system="s", user="u", schema={}, tool="t")
+
+
+def _gemini(handler) -> GeminiProvider:
+    return GeminiProvider(
+        api_key="AIza-test",
+        model="gemini-3.5-flash",
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+
+def _candidate(text: str, finish: str = "STOP") -> dict:
+    return {"candidates": [{"content": {"parts": [{"text": text}]}, "finishReason": finish}]}
+
+
+def test_gemini_adapter_requests_schema_constrained_json():
+    seen = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["url"] = str(request.url)
+        seen["headers"] = dict(request.headers)
+        seen["body"] = json.loads(request.content)
+        return httpx.Response(200, json=_candidate('{"answer": "ok"}'))
+
+    out = _gemini(handler).complete(
+        system="sys", user="u", schema=ANALYSIS_SCHEMA, tool="record_analysis"
+    )
+    assert out == {"answer": "ok"}
+    assert seen["url"] == (
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent"
+    )
+    # The key goes in a header, never in the URL where logs would capture it.
+    assert seen["headers"]["x-goog-api-key"] == "AIza-test" and "key=" not in seen["url"]
+    body = seen["body"]
+    assert body["systemInstruction"] == {"parts": [{"text": "sys"}]}
+    assert body["contents"] == [{"role": "user", "parts": [{"text": "u"}]}]
+    config = body["generationConfig"]
+    assert config["responseMimeType"] == "application/json"
+    severity = config["responseJsonSchema"]["properties"]["suggested_severity"]
+    assert None not in severity["enum"] and "null" in severity["type"]
+    # The shared schema itself is untouched.
+    assert None in ANALYSIS_SCHEMA["properties"]["suggested_severity"]["enum"]
+
+
+@pytest.mark.parametrize(
+    ("response", "code"),
+    [
+        (httpx.Response(429, json={"error": {"status": "RESOURCE_EXHAUSTED"}}), "ai_quota"),
+        (httpx.Response(400, json={"error": {}}), "ai_unavailable"),
+        (httpx.Response(200, json=_candidate('{"text": "cut', "MAX_TOKENS")), "ai_unavailable"),
+        (httpx.Response(200, json=_candidate("not json")), "ai_unavailable"),
+        (httpx.Response(200, json={"promptFeedback": {"blockReason": "OTHER"}}), "ai_unavailable"),
+    ],
+)
+def test_gemini_adapter_errors_cleanly(response, code):
+    with pytest.raises(ApiError) as exc:
+        _gemini(lambda r: response).complete(system="s", user="u", schema={}, tool="t")
+    assert exc.value.code == code
+
+
+def test_gemini_is_selected_from_settings_with_free_tier_notice(monkeypatch):
+    s = get_settings()
+    monkeypatch.setattr(s, "ai_provider", "gemini")
+    monkeypatch.setattr(s, "ai_api_key", "AIza-test")
+    monkeypatch.setattr(s, "ai_model", None)
+    p = providers_mod.get_provider()
+    assert isinstance(p, GeminiProvider)
+    assert p.model == "gemini-3.5-flash" and p.data_notice == GEMINI_FREE_NOTICE
+    monkeypatch.setattr(s, "ai_gemini_tier", "paid")
+    assert providers_mod.get_provider().data_notice is None
+    monkeypatch.setattr(s, "ai_api_key", None)
+    assert providers_mod.get_provider() is None

@@ -27,6 +27,7 @@ def _status(ctx: OrgContext) -> AiStatusOut:
         enabled=ctx.org.ai_enabled,
         provider=provider.name if provider else None,
         model=provider.model if provider else None,
+        data_notice=provider.data_notice if provider else None,
     )
 
 
@@ -56,6 +57,14 @@ def update_ai_settings(
     ctx: OrgContext = Depends(require(Permission.MEMBERS_MANAGE)),
     db: Session = Depends(get_db),
 ) -> AiStatusOut:
+    provider = get_provider()
+    notice = provider.data_notice if provider else None
+    if body.enabled and not ctx.org.ai_enabled and notice and not body.acknowledge_data_notice:
+        raise ApiError(
+            409,
+            "acknowledge_data_notice",
+            "This provider may keep what it's sent. Confirm the notice before turning AI on.",
+        )
     if ctx.org.ai_enabled != body.enabled:
         ctx.org.ai_enabled = body.enabled
         audit.record(
@@ -65,7 +74,11 @@ def update_ai_settings(
             action="ai.settings_changed",
             subject_type="organization",
             subject_id=ctx.org.slug,
-            data={"enabled": body.enabled},
+            data={
+                "enabled": body.enabled,
+                "provider": provider.name if provider else None,
+                "data_notice_acknowledged": bool(body.enabled and notice),
+            },
         )
         db.commit()
     return _status(ctx)

@@ -11,6 +11,7 @@ export const metadata: Metadata = { title: "AI assistance" };
 
 const PROVIDER: Record<string, string> = {
   anthropic: "Anthropic Claude API",
+  gemini: "Google Gemini API",
   openai_compatible: "OpenAI-compatible server (for example, a local Ollama instance)",
   mock: "Development stub. No model is called.",
 };
@@ -48,7 +49,17 @@ export default async function AiSettingsPage({ params }: { params: Promise<{ org
               <dt className="text-muted text-xs leading-5">Model</dt>
               <dd className="mono">{status.model ?? "—"}</dd>
             </dl>
-            {canManage && status.available ? <AiToggle org={org} enabled={status.enabled} /> : null}
+            {status.data_notice ? (
+              <div className="border-high/40 bg-high/5 rounded-md border px-3 py-2.5 text-[13px]">
+                <p className="text-high mb-1 text-xs font-semibold tracking-wide uppercase">
+                  Data use by the provider
+                </p>
+                <p>{status.data_notice}</p>
+              </div>
+            ) : null}
+            {canManage && status.available ? (
+              <AiToggle org={org} enabled={status.enabled} notice={status.data_notice} />
+            ) : null}
             {!status.available ? (
               <p className="text-muted text-[13px]">
                 The server administrator sets <span className="mono">KINETIX_AI_PROVIDER</span> and related

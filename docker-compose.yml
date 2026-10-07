@@ -10,8 +10,9 @@ x-api-env: &api-env
   # AI assistance: none | anthropic | openai_compatible | mock. See README.
   KINETIX_AI_PROVIDER: ${KINETIX_AI_PROVIDER:-none}
   KINETIX_AI_API_KEY: ${KINETIX_AI_API_KEY:-}
-  KINETIX_AI_MODEL: ${KINETIX_AI_MODEL:-claude-sonnet-5-5}
+  KINETIX_AI_MODEL: ${KINETIX_AI_MODEL:-}
   KINETIX_AI_BASE_URL: ${KINETIX_AI_BASE_URL:-}
+  KINETIX_AI_GEMINI_TIER: ${KINETIX_AI_GEMINI_TIER:-free}
 
 services:
   postgres:
