@@ -8,6 +8,7 @@ from app.config import get_settings
 from app.db import engine
 from app.errors import ApiError, api_error_handler
 from app.routers import (
+    ai,
     audit,
     auth,
     dependencies,
@@ -101,7 +102,17 @@ def create_app() -> FastAPI:
         )
 
     prefix = "/api/v1"
-    for module in (auth, projects, findings, disclosures, dependencies, scans, audit, members):
+    for module in (
+        auth,
+        projects,
+        findings,
+        disclosures,
+        dependencies,
+        scans,
+        audit,
+        members,
+        ai,
+    ):
         app.include_router(module.router, prefix=prefix)
 
     @app.get("/api/health", tags=["meta"])

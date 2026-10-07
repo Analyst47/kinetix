@@ -61,6 +61,7 @@ export interface Finding {
   rule_id: string | null;
   reference: string | null;
   reproduction: string;
+  remediation: string;
   assignee: User | null;
   created_at: string;
   updated_at: string;
@@ -69,6 +70,7 @@ export interface Finding {
 
 export interface FindingDetail extends Finding {
   allowed_transitions: FindingStatus[];
+  remediation_guidance: string | null;
   readiness: { key: string; label: string; done: boolean; detail: string | null }[];
   evidence_count: number;
 }
@@ -208,4 +210,43 @@ export interface Disclosure {
   advisory_url: string | null;
   events: DisclosureEvent[];
   allowed_events: string[];
+}
+
+export interface AiStatus {
+  available: boolean;
+  enabled: boolean;
+  provider: string | null;
+  model: string | null;
+}
+
+export interface AiCitation {
+  path: string;
+  line: number;
+  quote: string;
+}
+
+export interface AiRun {
+  id: string;
+  kind: "analysis" | "question" | "draft_description" | "draft_remediation";
+  question: string | null;
+  output: {
+    verdict?: "likely_vulnerable" | "likely_false_positive" | "needs_more_context";
+    confidence?: "low" | "medium" | "high";
+    summary?: string;
+    reasoning?: { point: string; citations: AiCitation[]; supported: boolean }[];
+    checks_before_confirming?: string[];
+    suggested_cwe?: string | null;
+    suggested_severity?: Severity | null;
+    validation_notes?: string[];
+    answer?: string;
+    citations?: AiCitation[];
+    text?: string;
+    source_lines_sent?: number;
+  };
+  provider: string;
+  model: string;
+  input_sha256: string;
+  injection_signals: string[];
+  created_by: User;
+  created_at: string;
 }

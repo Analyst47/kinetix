@@ -132,7 +132,7 @@ def seed() -> None:
         user = User(
             email=DEMO_EMAIL, name="Fahim Abrar", password_hash=hash_password(DEMO_PASSWORD)
         )
-        org = Organization(slug="demo", name="Fahim's lab")
+        org = Organization(slug="demo", name="Fahim's lab", ai_enabled=True)
         db.add_all([user, org])
         db.flush()
         db.add(Membership(org_id=org.id, user_id=user.id, role=Role.OWNER))

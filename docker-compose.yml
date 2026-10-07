@@ -7,6 +7,11 @@ x-api-env: &api-env
   KINETIX_STORAGE_DIR: /data
   KINETIX_SCAN_MODE: celery
   KINETIX_CORS_ORIGINS: '["http://localhost:3000"]'
+  # AI assistance: none | anthropic | openai_compatible | mock. See README.
+  KINETIX_AI_PROVIDER: ${KINETIX_AI_PROVIDER:-none}
+  KINETIX_AI_API_KEY: ${KINETIX_AI_API_KEY:-}
+  KINETIX_AI_MODEL: ${KINETIX_AI_MODEL:-claude-sonnet-5-5}
+  KINETIX_AI_BASE_URL: ${KINETIX_AI_BASE_URL:-}
 
 services:
   postgres:

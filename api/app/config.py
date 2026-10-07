@@ -37,6 +37,16 @@ class Settings(BaseSettings):
 
     osv_api_url: str = "https://api.osv.dev/v1"
 
+    # AI assistance. "none" turns it off; "anthropic" uses the Claude API; "openai_compatible"
+    # works with any OpenAI-style endpoint, including a local Ollama server (free);
+    # "mock" returns canned output for local development and tests.
+    ai_provider: str = "none"
+    ai_api_key: str | None = None
+    ai_model: str = "claude-sonnet-5-5"
+    ai_base_url: str | None = None
+    ai_timeout_seconds: float = 60.0
+    ai_max_context_lines: int = 60
+
     # "celery" hands scans to the worker; "inline" runs them in-process (local dev, tests).
     scan_mode: str = "inline"
 

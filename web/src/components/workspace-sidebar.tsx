@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { FolderKanban, KeyRound, ListTree, Users } from "lucide-react";
+import { FolderKanban, KeyRound, ListTree, Sparkles, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -29,10 +29,16 @@ export function WorkspaceSidebar({ org, orgName }: { org: string; orgName: strin
       active: pathname.startsWith(`/${org}/audit`),
     },
     {
+      href: `/${org}/settings/ai`,
+      label: "AI assistance",
+      icon: Sparkles,
+      active: pathname.startsWith(`/${org}/settings/ai`),
+    },
+    {
       href: `/${org}/settings/security`,
       label: "Security",
       icon: KeyRound,
-      active: pathname.startsWith(`/${org}/settings`),
+      active: pathname.startsWith(`/${org}/settings/security`),
     },
   ];
   return (

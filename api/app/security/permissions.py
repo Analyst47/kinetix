@@ -16,6 +16,7 @@ class Permission(StrEnum):
     EVIDENCE_WRITE = "evidence:write"
     AUDIT_READ = "audit:read"
     MEMBERS_MANAGE = "members:manage"
+    AI_USE = "ai:use"
 
 
 _READ = {Permission.PROJECT_READ}
@@ -26,13 +27,16 @@ _RESEARCH = _READ | {
     Permission.FINDING_CONFIRM,
     Permission.FINDING_CLOSE,
     Permission.EVIDENCE_WRITE,
+    Permission.AI_USE,
 }
 
 ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
     Role.VIEWER: frozenset(_READ),
     # Reviewers check other people's work: they can close findings as false positives
     # or duplicates and read the audit log, but cannot create or confirm findings.
-    Role.REVIEWER: frozenset(_READ | {Permission.FINDING_CLOSE, Permission.AUDIT_READ}),
+    Role.REVIEWER: frozenset(
+        _READ | {Permission.FINDING_CLOSE, Permission.AUDIT_READ, Permission.AI_USE}
+    ),
     Role.RESEARCHER: frozenset(_RESEARCH),
     Role.ADMIN: frozenset(
         _RESEARCH | {Permission.PROJECT_CREATE, Permission.AUDIT_READ, Permission.MEMBERS_MANAGE}

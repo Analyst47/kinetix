@@ -31,6 +31,9 @@ boundary. It is designed on the assumption that both its users and its inputs ca
 | Secret leakage through findings | Secret values are never stored; redacted previews only | `scanners/secrets.py` |
 | Analyzer escape | Worker container: read-only root, no capabilities, no new privileges, memory and PID limits | `docker-compose.yml` |
 | SSRF through vendor lookup | Domain-only input, every resolved address must be public, connection pinned to the checked address (no DNS rebinding) with TLS verified for the domain, no redirects, 32 KB cap, timeouts | `services/securitytxt.py` |
+| Prompt injection from analyzed code | Untrusted content fenced in nonce-delimited blocks; system rules forbid following it; injection-like lines flagged to the researcher; structured output only; model output can't change state | `ai/context.py`, `ai/prompts.py`, `ai/service.py` |
+| Hallucinated evidence | Every citation is matched against the exact lines sent; unmatched citations removed, unsupported claims marked, unsupported confident verdicts downgraded | `ai/service.py` |
+| Unreleased details sent to a third party | AI is off per workspace until an owner or admin enables it; nothing is sent without a click; each request's input hash is recorded in custody | `routers/ai.py` |
 | Out-of-scope research | Attestation required; expired authorization blocks targets and scans | `routers/projects.py` |
 
 ## Known gaps

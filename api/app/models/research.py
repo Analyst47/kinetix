@@ -124,6 +124,7 @@ class Finding(Timestamped, Base):
     reference: Mapped[str | None] = mapped_column(String(200))
     fingerprint: Mapped[str | None] = mapped_column(String(64), index=True)
     reproduction: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    remediation: Mapped[str] = mapped_column(Text, default="", server_default="", nullable=False)
     duplicate_of_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("findings.id"))
     assignee_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
     created_by_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
@@ -282,5 +283,30 @@ class DisclosureEvent(Timestamped, Base):
     note: Mapped[str] = mapped_column(Text, default="", nullable=False)
     data: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
     created_by_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
+
+    created_by: Mapped[User] = relationship(lazy="joined")
+
+
+class AiRun(Base):
+    """One request to the AI assistant and its validated output. Advisory only."""
+
+    __tablename__ = "ai_runs"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    org_id: Mapped[uuid.UUID] = _org_fk()
+    finding_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("findings.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    question: Mapped[str | None] = mapped_column(Text)
+    output: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    provider: Mapped[str] = mapped_column(String(32), nullable=False)
+    model: Mapped[str] = mapped_column(String(100), nullable=False)
+    input_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    injection_signals: Mapped[list[str]] = mapped_column(JSONB, default=list, nullable=False)
+    created_by_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
     created_by: Mapped[User] = relationship(lazy="joined")

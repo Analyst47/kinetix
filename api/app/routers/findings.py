@@ -69,6 +69,7 @@ def _detail(db: Session, ctx: OrgContext, finding: Finding) -> FindingDetail:
         allowed_transitions=allowed,
         readiness=svc.readiness(db, finding),
         evidence_count=svc.evidence_count(db, finding),
+        remediation_guidance=report.REMEDIATION.get(finding.cwe or ""),
     )
 
 

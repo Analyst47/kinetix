@@ -72,6 +72,9 @@ class Organization(Timestamped, Base):
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     # Per-organization counter for human-readable finding numbers (FND-000127).
     finding_seq: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    # Sending unreleased vulnerability details to a model provider is a policy decision,
+    # so AI assistance is off until an owner or admin turns it on.
+    ai_enabled: Mapped[bool] = mapped_column(default=False, server_default="false", nullable=False)
 
 
 class Membership(Timestamped, Base):

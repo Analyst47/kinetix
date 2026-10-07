@@ -19,7 +19,19 @@ import {
   shortHash,
 } from "@/lib/format";
 import { api, apiOptional } from "@/lib/server";
-import type { AuditEvent, Chain, Disclosure, Evidence, FindingDetail, Me, SourceExcerpt } from "@/lib/types";
+import type {
+  AiRun,
+  AiStatus,
+  AuditEvent,
+  Chain,
+  Disclosure,
+  Evidence,
+  FindingDetail,
+  Me,
+  SourceExcerpt,
+} from "@/lib/types";
+
+import { AssistantPanel, EditableText } from "./assistant";
 
 import { DisclosureView, StartDisclosure } from "./disclosure";
 
@@ -43,6 +55,7 @@ const TABS = ["overview", "evidence", "reproduction", "disclosure", "activity"] 
 type Tab = (typeof TABS)[number];
 
 const WRITE_ROLES = ["owner", "admin", "researcher"];
+const AI_ROLES = ["owner", "admin", "researcher", "reviewer"];
 
 export default async function FindingPage({
   params,
@@ -56,14 +69,17 @@ export default async function FindingPage({
   const tab: Tab = TABS.includes(rawTab as Tab) ? (rawTab as Tab) : "overview";
   const base = `/orgs/${org}/projects/${project}/findings/${id}`;
 
-  const [finding, custody, evidence, source, disclosure, me] = await Promise.all([
+  const [finding, custody, evidence, source, disclosure, me, aiStatus, aiRuns] = await Promise.all([
     api<FindingDetail>(base),
     api<{ events: AuditEvent[]; chain: Chain }>(`${base}/custody`),
     api<Evidence[]>(`${base}/evidence`),
     apiOptional<SourceExcerpt>(`${base}/source?context=6`),
     apiOptional<Disclosure>(`${base}/disclosure`),
     api<Me>("/auth/me"),
+    api<AiStatus>(`/orgs/${org}/ai`),
+    api<AiRun[]>(`${base}/ai`),
   ]);
+  const aiReady = aiStatus.available && aiStatus.enabled;
   const role = me.organizations.find((o) => o.slug === org)?.role ?? "viewer";
   const editable = WRITE_ROLES.includes(role) && !CLOSED.includes(finding.status);
   const closed = CLOSED.includes(finding.status);
@@ -176,24 +192,44 @@ export default async function FindingPage({
             {tab === "overview" ? (
               <>
                 <SourcePanel source={source} finding={finding} />
-                <Panel title="Description">
-                  <div className="flex max-w-[76ch] flex-col gap-2.5 px-4 py-3.5">
-                    {finding.description ? (
-                      finding.description.split(/\n{2,}/).map((p, i) => (
-                        <p key={i} className="whitespace-pre-wrap">
-                          {p}
-                        </p>
-                      ))
-                    ) : (
-                      <p className="text-muted">No description yet.</p>
-                    )}
-                    {finding.reference ? (
-                      <p className="text-muted text-[13px]">
-                        Reference: <span className="mono text-ink">{finding.reference}</span>
-                      </p>
-                    ) : null}
-                  </div>
-                </Panel>
+                <AssistantPanel
+                  org={org}
+                  project={project}
+                  finding={finding}
+                  status={aiStatus}
+                  runs={aiRuns}
+                  canUse={AI_ROLES.includes(role)}
+                  canEdit={editable}
+                  canManage={role === "owner" || role === "admin"}
+                />
+                <EditableText
+                  org={org}
+                  project={project}
+                  findingId={id}
+                  field="description"
+                  title="Description"
+                  value={finding.description}
+                  placeholder="What the weakness is, where it is, how attacker-controlled data reaches it, and the impact."
+                  canEdit={editable}
+                  canDraft={editable && aiReady}
+                />
+                <EditableText
+                  org={org}
+                  project={project}
+                  findingId={id}
+                  field="remediation"
+                  title="Remediation"
+                  value={finding.remediation}
+                  fallback={finding.remediation_guidance}
+                  placeholder="The concrete fix for this code, and any defense in depth."
+                  canEdit={editable}
+                  canDraft={editable && aiReady}
+                />
+                {finding.reference ? (
+                  <p className="text-muted text-[13px]">
+                    Reference: <span className="mono text-ink">{finding.reference}</span>
+                  </p>
+                ) : null}
               </>
             ) : null}
 
@@ -423,6 +459,7 @@ function ChainBadge({ chain }: { chain: Chain }) {
 
 const FIELD_LABEL: Record<string, string> = {
   cvss_vector: "CVSS score",
+  remediation: "remediation",
   reproduction: "reproduction steps",
   assignee_id: "assignee",
   cwe: "CWE",
@@ -443,6 +480,13 @@ function describe(e: AuditEvent): string {
       return `Disclosure started with ${d.vendor}`;
     case "disclosure.updated":
       return "Disclosure details updated";
+    case "ai.analysis":
+      return `AI analysis (${d.model})`;
+    case "ai.question":
+      return `AI question (${d.model})`;
+    case "ai.draft_description":
+    case "ai.draft_remediation":
+      return `AI draft requested (${d.model})`;
     case "finding.updated":
       return `Updated ${Object.keys(e.data)
         .map((k) => FIELD_LABEL[k] ?? k.replaceAll("_", " "))

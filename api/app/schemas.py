@@ -221,6 +221,7 @@ class FindingPatch(BaseModel):
     severity: Severity | None = None
     cwe: Cwe | None = None
     reproduction: str | None = Field(default=None, max_length=50000)
+    remediation: str | None = Field(default=None, max_length=20000)
     cvss_vector: str | None = Field(default=None, max_length=200)
     assignee_id: uuid.UUID | None = None
 
@@ -255,6 +256,7 @@ class FindingOut(Model):
     rule_id: str | None
     reference: str | None
     reproduction: str
+    remediation: str
     assignee: UserOut | None
     created_at: datetime
     updated_at: datetime
@@ -263,6 +265,7 @@ class FindingOut(Model):
 
 class FindingDetail(FindingOut):
     allowed_transitions: list[FindingStatus]
+    remediation_guidance: str | None = None
     readiness: list[ReadinessItem]
     evidence_count: int
 
@@ -527,3 +530,38 @@ class SecurityTxtOut(BaseModel):
     expires: str | None
     signed: bool
     warnings: list[str]
+
+
+# ── AI ────────────────────────────────────────────────────────────────────────
+
+
+class AiStatusOut(BaseModel):
+    available: bool
+    enabled: bool
+    provider: str | None
+    model: str | None
+
+
+class AiSettingsIn(BaseModel):
+    enabled: bool
+
+
+class AiAskIn(BaseModel):
+    question: str = Field(min_length=3, max_length=1000)
+
+
+class AiDraftIn(BaseModel):
+    field: Literal["description", "remediation"]
+
+
+class AiRunOut(Model):
+    id: uuid.UUID
+    kind: str
+    question: str | None
+    output: dict
+    provider: str
+    model: str
+    input_sha256: str
+    injection_signals: list[str]
+    created_by: UserOut
+    created_at: datetime

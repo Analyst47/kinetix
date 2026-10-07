@@ -41,6 +41,11 @@ tamper-evident chain of custody.
   drafted notification, a deadline clock (90 days by default) with extensions, CVE and
   advisory tracking. Recording vendor milestones moves the finding through Reported,
   Vendor acknowledged, Fix available and Public disclosure, so the two never disagree.
+- **AI assistance (optional).** Evidence-cited triage, questions and drafting on a finding,
+  using the Claude API or a free local model through Ollama. The assistant only advises:
+  analyzed code is fenced off as untrusted data, injection attempts are flagged, every
+  citation is checked against the lines it was shown, and each request is recorded in the
+  chain of custody. Off until a workspace owner or admin turns it on.
 - **Reports.** A printable vulnerability report (save as PDF from the browser) and Markdown
   export, each export recorded in the chain of custody with its SHA-256.
 
@@ -73,6 +78,27 @@ KINETIX_DEMO=1 npm run dev
 
 Scans run in-process by default (`KINETIX_SCAN_MODE=inline`). Install Semgrep
 (`uv tool install semgrep`) to enable the SAST analyzer.
+
+## AI assistance
+
+Set one provider on the API (environment variables, or `.env`):
+
+```bash
+# Claude API (paid per use)
+KINETIX_AI_PROVIDER=anthropic
+KINETIX_AI_API_KEY=sk-ant-...
+KINETIX_AI_MODEL=claude-sonnet-5-5
+
+# Or a local model with Ollama (free; slower and less accurate)
+KINETIX_AI_PROVIDER=openai_compatible
+KINETIX_AI_BASE_URL=http://localhost:11434/v1
+KINETIX_AI_MODEL=qwen2.5-coder:7b
+
+# Or the development stub (no model is called)
+KINETIX_AI_PROVIDER=mock
+```
+
+Then turn it on for a workspace under **AI assistance** in the sidebar.
 
 ## Tests
 

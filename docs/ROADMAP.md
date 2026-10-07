@@ -19,6 +19,8 @@ The order favors a narrow product that works end to end over broad features that
 - Printable and Markdown reports with audited exports
 - Coordinated disclosure: security.txt lookup, notification draft, deadline tracking,
   vendor timeline driving the finding lifecycle
+- AI assistance: grounded triage, questions and drafting with injection defenses and
+  citation verification (Claude API, OpenAI-compatible/Ollama)
 
 ## Next
 
@@ -29,8 +31,7 @@ The order favors a narrow product that works end to end over broad features that
 
 ## Later
 
-- AI-assisted triage with prompt-injection defenses (repository content treated as data,
-  structured output, no state changes from model output)
+- AI: multi-file context (callers and middleware), batch triage across a scan
 - Reproduction environments, only on per-job sandboxes (gVisor or Firecracker)
 - Public researcher profiles (explicit per-finding publication)
 - GitHub App and CI integration

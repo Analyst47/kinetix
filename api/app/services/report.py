@@ -118,7 +118,8 @@ def build(db: Session, org: Organization, project: Project, finding: Finding) ->
         "location": f"{finding.file_path}:{finding.line}" if finding.line else finding.file_path,
         "description": finding.description,
         "reproduction": finding.reproduction,
-        "remediation": REMEDIATION.get(finding.cwe or ""),
+        "remediation": finding.remediation.strip() or REMEDIATION.get(finding.cwe or ""),
+        "remediation_is_generic": not finding.remediation.strip(),
         "researcher": researcher.name if researcher else None,
         "organization": org.name,
         "product": {

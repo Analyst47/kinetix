@@ -10,6 +10,7 @@ from app.models.identity import (
 )
 from app.models.research import (
     Advisory,
+    AiRun,
     Dependency,
     DependencyAdvisory,
     Disclosure,
@@ -33,11 +34,13 @@ TENANT_TABLES = (
     "audit_events",
     "disclosures",
     "disclosure_events",
+    "ai_runs",
 )
 
 __all__ = [
     "TENANT_TABLES",
     "Advisory",
+    "AiRun",
     "AuditEvent",
     "AuthSession",
     "Dependency",
