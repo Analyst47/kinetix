@@ -76,6 +76,9 @@ ATTESTATION_TEXT = (
 )
 
 
+RESERVED_SLUGS = frozenset({"new", "audit", "settings", "members", "api"})
+
+
 class ProjectIn(BaseModel):
     slug: Slug
     name: Name
@@ -86,6 +89,13 @@ class ProjectIn(BaseModel):
     authorization_reference: str | None = Field(default=None, max_length=500)
     authorization_expires_at: datetime | None = None
     attest: bool
+
+    @field_validator("slug")
+    @classmethod
+    def not_reserved(cls, v: str) -> str:
+        if v in RESERVED_SLUGS:
+            raise ValueError(f"'{v}' is reserved. Choose another URL name.")
+        return v
 
     @field_validator("attest")
     @classmethod
@@ -222,6 +232,18 @@ class FindingPage(BaseModel):
     total: int
     status_counts: dict[str, int]
     severity_counts: dict[str, int]
+
+
+class SourceLine(BaseModel):
+    n: int
+    text: str
+
+
+class SourceExcerpt(BaseModel):
+    path: str
+    commit: str | None
+    highlight: int
+    lines: list[SourceLine]
 
 
 class CvssOut(BaseModel):

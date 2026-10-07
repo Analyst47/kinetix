@@ -1,0 +1,75 @@
+# Local development stack. `docker compose up --build`, then open http://localhost:3000
+name: kinetix
+
+x-api-env: &api-env
+  KINETIX_DATABASE_URL: postgresql+psycopg://kinetix:kinetix@postgres:5432/kinetix
+  KINETIX_REDIS_URL: redis://redis:6379/0
+  KINETIX_STORAGE_DIR: /data
+  KINETIX_SCAN_MODE: celery
+  KINETIX_CORS_ORIGINS: '["http://localhost:3000"]'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: kinetix
+      POSTGRES_PASSWORD: kinetix
+      POSTGRES_DB: kinetix
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kinetix"]
+      interval: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      retries: 20
+
+  migrate:
+    build: { context: ./api, target: api }
+    environment: *api-env
+    command: ["sh", "-c", "alembic upgrade head && python -m app.seed"]
+    volumes: [storage:/data]
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  api:
+    build: { context: ./api, target: api }
+    environment: *api-env
+    volumes: [storage:/data]
+    ports: ["8000:8000"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
+  worker:
+    build: { context: ./api, target: worker }
+    environment:
+      <<: *api-env
+      HOME: /tmp
+    volumes: [storage:/data]
+    # Analyzers read untrusted code: no inbound ports, a read-only root filesystem and capped resources.
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    mem_limit: 2g
+    pids_limit: 512
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
+  web:
+    build: { context: ./web }
+    environment:
+      KINETIX_API_URL: http://api:8000
+      KINETIX_DEMO: "1"
+    ports: ["3000:3000"]
+    depends_on: [api]
+
+volumes:
+  pgdata:
+  storage:

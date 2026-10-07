@@ -1,0 +1,128 @@
+@import "tailwindcss";
+@import "@fontsource-variable/instrument-sans";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+
+/* Kinetix design tokens. Source of truth: the Kinetix design system. */
+:root {
+  --paper: #f3f4f1;
+  --raised: #ffffff;
+  --sunken: #e8eae5;
+  --rule: #d3d7d0;
+  --rule-strong: #7a828c;
+  --ink: #161c24;
+  --muted: #566070;
+  --vg: #0d6b5d;
+  --vg-soft: #dcefea;
+  --on-vg: #ffffff;
+  --crit: #a51d2d;
+  --crit-soft: #f7e4e5;
+  --high: #a3410c;
+  --med: #866100;
+  --low: #3e64a0;
+  --ok: #2a6b3a;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #14181d;
+    --raised: #1b2027;
+    --sunken: #0f1216;
+    --rule: #2c333c;
+    --rule-strong: #6c7685;
+    --ink: #e7eaee;
+    --muted: #9ba4b0;
+    --vg: #4cc3ac;
+    --vg-soft: #123430;
+    --on-vg: #0f1216;
+    --crit: #ff7581;
+    --crit-soft: #3a1a1f;
+    --high: #ff9a5c;
+    --med: #e8bc4f;
+    --low: #93b4e6;
+    --ok: #7fd193;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --paper: #14181d;
+  --raised: #1b2027;
+  --sunken: #0f1216;
+  --rule: #2c333c;
+  --rule-strong: #6c7685;
+  --ink: #e7eaee;
+  --muted: #9ba4b0;
+  --vg: #4cc3ac;
+  --vg-soft: #123430;
+  --on-vg: #0f1216;
+  --crit: #ff7581;
+  --crit-soft: #3a1a1f;
+  --high: #ff9a5c;
+  --med: #e8bc4f;
+  --low: #93b4e6;
+  --ok: #7fd193;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-raised: var(--raised);
+  --color-sunken: var(--sunken);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-vg: var(--vg);
+  --color-vg-soft: var(--vg-soft);
+  --color-on-vg: var(--on-vg);
+  --color-crit: var(--crit);
+  --color-crit-soft: var(--crit-soft);
+  --color-high: var(--high);
+  --color-med: var(--med);
+  --color-low: var(--low);
+  --color-ok: var(--ok);
+  --font-sans: "Instrument Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+}
+
+html {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 21px;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--vg);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--vg-soft);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 20px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

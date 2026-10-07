@@ -2,10 +2,94 @@
 
 A vulnerability research and responsible-disclosure platform.
 
-Kinetix takes an authorized software target, analyzes its source and dependencies, correlates findings with public vulnerability intelligence, helps a human researcher validate and document them, and produces coordinated-disclosure packages.
+Kinetix takes a software target you are authorized to analyze, finds candidate
+vulnerabilities in its code and dependencies, and walks a human researcher from
+"potential" to a defensible, evidence-backed finding. Every step is recorded in a
+tamper-evident chain of custody.
 
-> Kinetix assists human researchers on **authorized** targets only. It does not attack third-party systems, and it never marks a finding as confirmed without human validation.
+> **Scope.** Kinetix assists research on authorized targets. It never attacks third-party
+> systems, and it never marks a finding as confirmed on its own: a person confirms, and only
+> after evidence, reproduction steps and a CVSS assessment exist.
 
-## Status
+## What works today
 
-Early development — design system and architecture in progress.
+- **Authorization boundary.** A project can't exist without a recorded attestation, scope
+  and optional expiry. Expired authorizations block new targets and scans.
+- **Hostile-input ingestion.** Source archives are validated before a byte is written:
+  path traversal, absolute paths, symlinks, hardlinks, device files, zip bombs and
+  `.git/hooks` are all rejected or skipped.
+- **Analysis pipeline.** npm and PyPI lockfiles are matched against [OSV](https://osv.dev);
+  a built-in secret detector redacts what it finds; a Kinetix Semgrep rule pack covers SQL
+  injection, path traversal, command injection, unsafe deserialization and more. Findings
+  are de-duplicated by fingerprint across scans.
+- **Finding lifecycle.** Discovered → Triage → Needs validation → Confirmed → Reported →
+  Vendor acknowledged → Fix available → Public disclosure, plus four closed states. The
+  state machine is enforced server-side, per role.
+- **Evidence vault.** Content-addressed storage, SHA-256 at upload, on-demand
+  re-verification, always served as a download with `nosniff` and a sandbox CSP.
+- **Chain of custody.** An append-only audit log where each entry's hash covers the
+  previous one. The database rejects updates and deletes; tampering by someone who can
+  bypass that is detected and pinpointed.
+- **Multi-tenancy.** Every tenant table carries `org_id` and is protected by Postgres
+  row-level security, so a missing filter in application code still can't leak data.
+- **CVSS 4.0 and 3.1** scoring, validated server-side.
+
+## Run it
+
+**With Docker** (Postgres, Redis, API, worker and web):
+
+```bash
+docker compose up --build
+```
+
+Open http://localhost:3000 and sign in with the demo account
+(`demo@kinetix.dev` / `kinetix-demo-2026`), pre-filled on the sign-in page.
+
+**Without Docker**, you need Postgres 16 and Python 3.12+ with [uv](https://docs.astral.sh/uv/):
+
+```bash
+# API
+cd api
+uv sync
+uv run alembic upgrade head
+uv run python -m app.seed          # demo workspace: OWASP Juice Shop
+uv run uvicorn app.main:app --reload
+
+# Web (another terminal)
+cd web
+npm install
+KINETIX_DEMO=1 npm run dev
+```
+
+Scans run in-process by default (`KINETIX_SCAN_MODE=inline`). Install Semgrep
+(`uv tool install semgrep`) to enable the SAST analyzer.
+
+## Tests
+
+```bash
+cd api && uv run pytest        # 50+ tests against a real Postgres (kinetix_test database)
+cd web && npm run lint && npm run typecheck && npm run build
+```
+
+## Layout
+
+```
+api/            FastAPI service, SQLAlchemy models, Alembic migrations
+  app/routers   HTTP endpoints
+  app/services  audit chain, findings lifecycle, storage, archive extraction, CVSS
+  app/scanners  lockfiles, OSV client, secrets, Semgrep adapter, scan pipeline
+  rules/        Kinetix Semgrep rule pack
+  tests/
+web/            Next.js app (App Router, TypeScript, Tailwind)
+docs/           Architecture, security model, roadmap
+```
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/SECURITY.md](docs/SECURITY.md) and
+[docs/ROADMAP.md](docs/ROADMAP.md).
+
+## Demo data
+
+The demo workspace analyzes [OWASP Juice Shop](https://github.com/juice-shop/juice-shop), an
+intentionally insecure application published for security training. Its source excerpts are
+used under the MIT License. Demo advisories are a hand-picked sample; real scans pull
+advisories from OSV.

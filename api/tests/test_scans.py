@@ -211,3 +211,36 @@ def test_osv_normalization_maps_moderate_and_fixed_range():
     adv = normalize(raw)
     assert adv.severity.value == "medium"
     assert adv.ranges[("npm", "jsonwebtoken")] == ("< 4.2.2", "4.2.2")
+
+
+def test_source_excerpt_reads_snapshot_and_refuses_traversal(client):
+    org = register(client)
+    create_project(client, org)
+    code = "\n".join(f"line {i}" for i in range(1, 41))
+    _upload(client, org, {"routes/login.ts": code})
+    base = f"/api/v1/orgs/{org}/projects/juice-shop/findings"
+    ok = client.post(
+        base,
+        json={"title": "SQLi here", "severity": "high", "file_path": "routes/login.ts", "line": 20},
+    ).json()
+    excerpt = client.get(f"{base}/{ok['public_id']}/source", params={"context": 2}).json()
+    assert excerpt["highlight"] == 20
+    assert [ln["n"] for ln in excerpt["lines"]] == [18, 19, 20, 21, 22]
+    assert excerpt["lines"][2]["text"] == "line 20"
+
+    evil = client.post(
+        base,
+        json={
+            "title": "Escape attempt",
+            "severity": "low",
+            "file_path": "../../../../etc/passwd",
+            "line": 1,
+        },
+    ).json()
+    assert client.get(f"{base}/{evil['public_id']}/source").status_code == 404
+
+
+def test_reserved_project_slugs_are_rejected(client):
+    org = register(client)
+    r = client.post(f"/api/v1/orgs/{org}/projects", json={**PROJECT, "slug": "audit"})
+    assert r.status_code == 422

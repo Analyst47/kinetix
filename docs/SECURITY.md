@@ -1,0 +1,45 @@
+# Security model
+
+Kinetix stores unreleased vulnerability details and processes code from outside its trust
+boundary. It is designed on the assumption that both its users and its inputs can be hostile.
+
+## Assets
+
+1. Unpublished findings, evidence and reproduction steps.
+2. The integrity of the research record (who found what, when, and what proves it).
+3. The hosts that run analyzers.
+
+## Threats and controls
+
+| Threat | Control | Where |
+| --- | --- | --- |
+| Cross-tenant data access (IDOR/BOLA) | Membership-checked org context; Postgres RLS on every tenant table; uniform 404s | `deps.py`, initial migration, `tests/test_tenancy.py` |
+| Session theft | Opaque 256-bit tokens, only SHA-256 stored, `HttpOnly`, `SameSite=Lax`, server-side revocation, 12 h expiry | `routers/auth.py` |
+| CSRF | Double-submit token on every unsafe request, Origin check | `main.py` |
+| Credential stuffing | Argon2id, rate limiting per IP and email, timing-equal failures | `security/` |
+| Privilege escalation | Explicit permission sets per role, checked per status transition | `security/permissions.py` |
+| Record tampering | Hash-chained, append-only audit log; DB trigger blocks UPDATE/DELETE | `services/audit.py` |
+| Evidence tampering | Content addressing by SHA-256, re-verification on demand | `services/storage.py` |
+| Stored XSS via evidence | Downloads only, `application/octet-stream`, `nosniff`, `CSP: sandbox`, sanitized filenames | `routers/findings.py` |
+| Zip slip, link and device files | Names validated and links rejected before anything is written; writes use `O_EXCL` | `services/archives.py` |
+| Zip bombs | Member count, total size and compression-ratio limits; real bytes counted, not headers | `services/archives.py` |
+| Repository-controlled analyzer config | Semgrep runs on a copy without the repo's ignore files, with Kinetix rules only, no shell | `scanners/semgrep.py` |
+| Secret leakage through findings | Secret values are never stored; redacted previews only | `scanners/secrets.py` |
+| Analyzer escape | Worker container: read-only root, no capabilities, no new privileges, memory and PID limits | `docker-compose.yml` |
+| Out-of-scope research | Attestation required; expired authorization blocks targets and scans | `routers/projects.py` |
+
+## Known gaps
+
+These are tracked on the roadmap and are not yet in place:
+
+- MFA (TOTP and passkeys).
+- Login rate limiting is per process; it moves to Redis for multi-instance deployments.
+- Analyzer jobs share a worker container rather than a per-job sandbox (gVisor or
+  Firecracker is the plan before any reproduction environments ship).
+- Evidence is not encrypted at rest beyond what the storage volume provides.
+- No API keys yet; all access is through browser sessions.
+
+## Reporting a vulnerability in Kinetix
+
+Email the maintainer rather than opening a public issue. Include the affected version,
+steps to reproduce and impact. Expect an acknowledgement within 3 business days.

@@ -9,7 +9,7 @@ from app.config import get_settings
 from app.db import get_db
 from app.deps import OrgContext, load_project, parse_uuid, require
 from app.errors import ApiError, forbidden, not_found
-from app.models import AuditEvent, Evidence, Finding, Membership
+from app.models import AuditEvent, Evidence, Finding, Membership, Scan, Target
 from app.models.enums import FindingSource, FindingStatus, Severity
 from app.schemas import (
     AuditEventOut,
@@ -22,6 +22,8 @@ from app.schemas import (
     FindingOut,
     FindingPage,
     FindingPatch,
+    SourceExcerpt,
+    SourceLine,
     TransitionIn,
 )
 from app.security.permissions import Permission, has_permission
@@ -256,6 +258,44 @@ def preview_cvss(
         raise ApiError(422, "invalid_cvss", "Provide a CVSS vector string.")
     r = score_vector(vector)
     return CvssOut(version=r.version, vector=r.vector, score=r.score, severity=r.severity)
+
+
+@router.get("/{public_id}/source")
+def source_excerpt(
+    project_slug: str,
+    public_id: str,
+    context: int = Query(default=6, ge=0, le=40),
+    ctx: OrgContext = Depends(require(Permission.PROJECT_READ)),
+    db: Session = Depends(get_db),
+) -> SourceExcerpt:
+    """The lines around a finding's location, read from the analyzed source snapshot."""
+    project = load_project(db, ctx, project_slug)
+    finding = svc.get_finding(db, project, public_id)
+    if not finding.file_path or not finding.line:
+        raise not_found("Source location")
+    targets = db.scalars(
+        select(Target).where(Target.project_id == project.id).order_by(Target.created_at.desc())
+    ).all()
+    if finding.scan_id:
+        scan = db.get(Scan, finding.scan_id)
+        targets.sort(key=lambda t: t.id != (scan.target_id if scan else None))
+    for target in targets:
+        root = (get_settings().storage_dir / "sources" / str(target.id)).resolve()
+        candidate = (root / finding.file_path).resolve()
+        if root not in candidate.parents or not candidate.is_file() or candidate.is_symlink():
+            continue
+        if candidate.stat().st_size > 2 * 1024 * 1024:
+            raise ApiError(413, "too_large", "That file is too large to preview.")
+        lines = candidate.read_text(encoding="utf-8", errors="replace").splitlines()
+        start = max(1, finding.line - context)
+        end = min(len(lines), finding.line + context)
+        return SourceExcerpt(
+            path=finding.file_path,
+            commit=target.commit,
+            highlight=finding.line,
+            lines=[SourceLine(n=n, text=lines[n - 1]) for n in range(start, end + 1)],
+        )
+    raise not_found("Source snapshot")
 
 
 # ── Evidence ──────────────────────────────────────────────────────────────────

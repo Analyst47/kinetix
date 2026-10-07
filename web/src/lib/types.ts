@@ -1,0 +1,177 @@
+export type Role = "owner" | "admin" | "researcher" | "reviewer" | "viewer";
+export type Severity = "critical" | "high" | "medium" | "low" | "info";
+export type FindingSource = "sast" | "dependency" | "secret" | "manual";
+export type FindingStatus =
+  | "discovered"
+  | "triage"
+  | "needs_validation"
+  | "confirmed"
+  | "reported"
+  | "vendor_acknowledged"
+  | "fix_available"
+  | "public_disclosure"
+  | "false_positive"
+  | "duplicate"
+  | "not_a_security_issue"
+  | "out_of_scope";
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+}
+
+export interface Me {
+  user: User;
+  organizations: { slug: string; name: string; role: Role }[];
+}
+
+export interface Project {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  authorization_type: string;
+  in_scope: string;
+  out_of_scope: string;
+  authorization_reference: string | null;
+  attestation_text: string;
+  attested_at: string;
+  authorization_expires_at: string | null;
+  attested_by: User;
+  created_at: string;
+  open_findings?: number;
+  severity_counts?: Partial<Record<Severity, number>>;
+}
+
+export interface Finding {
+  id: string;
+  public_id: string;
+  number: number;
+  title: string;
+  description: string;
+  severity: Severity;
+  status: FindingStatus;
+  source: FindingSource;
+  cwe: string | null;
+  cvss_vector: string | null;
+  cvss_score: string | null;
+  file_path: string | null;
+  line: number | null;
+  rule_id: string | null;
+  reference: string | null;
+  reproduction: string;
+  assignee: User | null;
+  created_at: string;
+  updated_at: string;
+  confirmed_at: string | null;
+}
+
+export interface FindingDetail extends Finding {
+  allowed_transitions: FindingStatus[];
+  readiness: { key: string; label: string; done: boolean; detail: string | null }[];
+  evidence_count: number;
+}
+
+export interface FindingPage {
+  items: Finding[];
+  total: number;
+  status_counts: Record<string, number>;
+  severity_counts: Partial<Record<Severity, number>>;
+}
+
+export interface Evidence {
+  id: string;
+  filename: string;
+  content_type: string;
+  size: number;
+  sha256: string;
+  note: string;
+  uploaded_by: User;
+  created_at: string;
+}
+
+export interface AuditEvent {
+  seq: number;
+  actor_label: string;
+  action: string;
+  subject_type: string;
+  subject_id: string;
+  data: Record<string, unknown>;
+  created_at: string;
+  prev_hash: string;
+  hash: string;
+}
+
+export interface Chain {
+  verified: boolean;
+  entries: number;
+  first_broken_seq: number | null;
+  reason: string | null;
+}
+
+export interface SourceExcerpt {
+  path: string;
+  commit: string | null;
+  highlight: number;
+  lines: { n: number; text: string }[];
+}
+
+export interface Advisory {
+  id: string;
+  display_id: string;
+  aliases: string[];
+  summary: string;
+  severity: Severity | null;
+  cwe_ids: string[];
+  affected_range: string;
+  fixed_version: string | null;
+}
+
+export interface Dependency {
+  id: string;
+  ecosystem: string;
+  name: string;
+  version: string;
+  direct: boolean;
+  license: string | null;
+  manifest: string;
+  max_severity: Severity | null;
+  fixed_version: string | null;
+  finding_public_id: string | null;
+  advisories: Advisory[];
+}
+
+export interface DependencyPage {
+  items: Dependency[];
+  total: number;
+  vulnerable: number;
+}
+
+export interface Target {
+  id: string;
+  kind: string;
+  name: string;
+  locator: string;
+  version: string | null;
+  commit: string | null;
+  archive_sha256: string | null;
+  created_at: string;
+}
+
+export interface Scan {
+  id: string;
+  number: number;
+  target_id: string;
+  status: "queued" | "running" | "succeeded" | "failed";
+  analyzers: string[];
+  stats: Record<string, Record<string, unknown>>;
+  error: string | null;
+  created_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+}
+
+export interface ApiErrorBody {
+  error: { code: string; message: string; details?: Record<string, unknown> };
+}
