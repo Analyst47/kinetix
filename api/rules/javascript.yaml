@@ -1,0 +1,141 @@
+rules:
+  - id: kinetix-js-sqli-raw-query
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      A raw SQL string is built by interpolating a value and passed to $DB.query().
+      If the value is user-controlled this is SQL injection. Use bind parameters
+      (replacements / $1 placeholders) instead of string building.
+    metadata:
+      title: Potential SQL injection in raw query
+      kinetix_severity: critical
+      cwe: ["CWE-89: Improper Neutralization of Special Elements used in an SQL Command"]
+    pattern-either:
+      - pattern: $DB.query(`...${$X}...`, ...)
+      - pattern: $DB.query("..." + $X + ..., ...)
+      - pattern: $DB.query($A + $X, ...)
+
+  - id: kinetix-js-path-traversal-request
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      A file path is built from request data and used to read or send a file.
+      Normalize the path and verify it stays inside the intended directory.
+    metadata:
+      title: Potential path traversal from request data
+      kinetix_severity: high
+      cwe: ["CWE-22: Improper Limitation of a Pathname to a Restricted Directory"]
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: $REQ.params
+          - pattern: $REQ.query
+          - pattern: $REQ.body
+          # Express handlers that destructure the request: ({ params }, res) => ...
+          - patterns:
+              - pattern-either:
+                  - pattern-inside: "({ params }, $RES) => { ... }"
+                  - pattern-inside: "({ params }: $T, $RES: $R) => { ... }"
+              - pattern: params
+          - patterns:
+              - pattern-either:
+                  - pattern-inside: "({ query }, $RES) => { ... }"
+                  - pattern-inside: "({ query }: $T, $RES: $R) => { ... }"
+              - pattern: query
+    pattern-sinks:
+      - pattern-either:
+          - pattern: $RES.sendFile(...)
+          - pattern: $RES.download(...)
+          - pattern: fs.readFile(...)
+          - pattern: fs.readFileSync(...)
+          - pattern: fs.createReadStream(...)
+    pattern-sanitizers:
+      - pattern: path.basename(...)
+
+  - id: kinetix-js-command-injection
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Request data reaches a shell command. Use execFile/spawn with an argument array
+      and validate the input against an allowlist.
+    metadata:
+      title: Potential command injection from request data
+      kinetix_severity: critical
+      cwe: ["CWE-78: Improper Neutralization of Special Elements used in an OS Command"]
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: $REQ.params
+          - pattern: $REQ.query
+          - pattern: $REQ.body
+    pattern-sinks:
+      - pattern-either:
+          - pattern: child_process.exec(...)
+          - pattern: child_process.execSync(...)
+          - pattern: exec(...)
+          - pattern: execSync(...)
+
+  - id: kinetix-js-code-injection-eval
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Dynamic code evaluation of a non-literal value. Remove eval or parse the data instead.
+    metadata:
+      title: Dynamic code evaluation
+      kinetix_severity: high
+      cwe: ["CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code"]
+    patterns:
+      - pattern-either:
+          - pattern: eval($X)
+          - pattern: new Function(..., $X)
+          - pattern: vm.runInContext($X, ...)
+          - pattern: vm.runInNewContext($X, ...)
+      - pattern-not: eval("...")
+
+  - id: kinetix-angular-bypass-sanitizer
+    languages: [typescript]
+    severity: WARNING
+    message: >-
+      $SAN.$METHOD() disables Angular's built-in sanitization. If the value can contain
+      user input this enables cross-site scripting.
+    metadata:
+      title: Angular sanitizer bypassed
+      kinetix_severity: medium
+      cwe: ["CWE-79: Improper Neutralization of Input During Web Page Generation"]
+    patterns:
+      - pattern: $SAN.$METHOD($X)
+      - metavariable-regex:
+          metavariable: $METHOD
+          regex: ^bypassSecurityTrust(Html|Script|Style|Url|ResourceUrl)$
+      - pattern-not: $SAN.$METHOD("...")
+
+  - id: kinetix-js-weak-hash
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      $ALG is not suitable for passwords or integrity checks. Use a password hash
+      (argon2id, bcrypt) or SHA-256 for integrity.
+    metadata:
+      title: Weak hash algorithm
+      kinetix_severity: low
+      cwe: ["CWE-328: Use of Weak Hash"]
+    patterns:
+      - pattern: crypto.createHash("$ALG")
+      - metavariable-regex:
+          metavariable: $ALG
+          regex: (?i)^(md5|sha1|md4)$
+
+  - id: kinetix-js-open-redirect
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: Request data controls a redirect target. Redirect only to an allowlist of exact URLs.
+    metadata:
+      title: Potential open redirect
+      kinetix_severity: medium
+      cwe: ["CWE-601: URL Redirection to Untrusted Site"]
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: $REQ.query
+          - pattern: $REQ.params
+    pattern-sinks:
+      - pattern: $RES.redirect(...)

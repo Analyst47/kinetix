@@ -1,0 +1,53 @@
+rules:
+  - id: kinetix-py-sqli-string-build
+    languages: [python]
+    severity: ERROR
+    message: >-
+      An SQL statement is built with string formatting and executed. Pass values as
+      query parameters instead.
+    metadata:
+      title: Potential SQL injection in executed query
+      kinetix_severity: critical
+      cwe: ["CWE-89: Improper Neutralization of Special Elements used in an SQL Command"]
+    pattern-either:
+      - pattern: $CUR.execute(f"...", ...)
+      - pattern: $CUR.execute("..." % $X, ...)
+      - pattern: $CUR.execute("...".format(...), ...)
+      - pattern: $CUR.execute("..." + $X, ...)
+
+  - id: kinetix-py-shell-true
+    languages: [python]
+    severity: ERROR
+    message: subprocess with shell=True and a non-literal command. Pass an argument list without a shell.
+    metadata:
+      title: Potential command injection via shell=True
+      kinetix_severity: high
+      cwe: ["CWE-78: Improper Neutralization of Special Elements used in an OS Command"]
+    patterns:
+      - pattern: subprocess.$F($CMD, ..., shell=True, ...)
+      - pattern-not: subprocess.$F("...", ..., shell=True, ...)
+
+  - id: kinetix-py-unsafe-yaml
+    languages: [python]
+    severity: WARNING
+    message: yaml.load without a safe loader can construct arbitrary objects. Use yaml.safe_load.
+    metadata:
+      title: Unsafe YAML deserialization
+      kinetix_severity: high
+      cwe: ["CWE-502: Deserialization of Untrusted Data"]
+    patterns:
+      - pattern: yaml.load(...)
+      - pattern-not: yaml.load(..., Loader=yaml.SafeLoader, ...)
+      - pattern-not: yaml.load(..., Loader=SafeLoader, ...)
+
+  - id: kinetix-py-pickle-load
+    languages: [python]
+    severity: WARNING
+    message: pickle can execute code while loading. Never unpickle data from outside the trust boundary.
+    metadata:
+      title: Insecure deserialization with pickle
+      kinetix_severity: high
+      cwe: ["CWE-502: Deserialization of Untrusted Data"]
+    pattern-either:
+      - pattern: pickle.load(...)
+      - pattern: pickle.loads(...)

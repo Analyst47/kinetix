@@ -1,0 +1,41 @@
+[project]
+name = "kinetix-api"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.20.0",
+    "argon2-cffi>=25.1.0",
+    "celery[redis]>=5.6.3",
+    "cvss>=3.6",
+    "fastapi>=0.142.2",
+    "httpx>=0.28.1",
+    "psycopg[binary]>=3.3.6",
+    "pydantic-settings>=2.15.0",
+    "pydantic[email]>=2.13.5",
+    "python-multipart>=0.0.32",
+    "sqlalchemy>=2.0",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.0",
+    "pytest>=9.1.1",
+    "ruff>=0.16.10",
+]
+
+[tool.ruff]
+extend-exclude = ["migrations/versions", "tests/fixtures"]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S", "SIM", "RUF"]
+ignore = ["S101", "B008", "RUF012"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106", "S108"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
