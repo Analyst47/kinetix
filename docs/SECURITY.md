@@ -17,6 +17,10 @@ boundary. It is designed on the assumption that both its users and its inputs ca
 | Session theft | Opaque 256-bit tokens, only SHA-256 stored, `HttpOnly`, `SameSite=Lax`, server-side revocation, 12 h expiry | `routers/auth.py` |
 | CSRF | Double-submit token on every unsafe request, Origin check | `main.py` |
 | Credential stuffing | Argon2id, rate limiting per IP and email, timing-equal failures | `security/` |
+| Account takeover with a stolen password | TOTP two-step verification: secrets encrypted at rest, codes single-use (replay-protected), 5-attempt challenge lockout, hashed one-time recovery codes; enabling it signs out every other session | `security/mfa.py`, `routers/auth.py` |
+| Invitation link forwarding | 256-bit single-use tokens, stored hashed, 7-day expiry, accepted only by the invited email | `routers/members.py` |
+| Admin escalation to owner | Only owners can grant, change or remove the owner role; the last owner can't leave or be demoted | `routers/members.py` |
+| Report tampering after export | Each export records the SHA-256 of the exact file in the chain of custody | `routers/findings.py` |
 | Privilege escalation | Explicit permission sets per role, checked per status transition | `security/permissions.py` |
 | Record tampering | Hash-chained, append-only audit log; DB trigger blocks UPDATE/DELETE | `services/audit.py` |
 | Evidence tampering | Content addressing by SHA-256, re-verification on demand | `services/storage.py` |
@@ -32,7 +36,8 @@ boundary. It is designed on the assumption that both its users and its inputs ca
 
 These are tracked on the roadmap and are not yet in place:
 
-- MFA (TOTP and passkeys).
+- Passkeys (WebAuthn). TOTP is in place.
+- Invitation links are copied by hand; there is no email delivery yet.
 - Login rate limiting is per process; it moves to Redis for multi-instance deployments.
 - Analyzer jobs share a worker container rather than a per-job sandbox (gVisor or
   Firecracker is the plan before any reproduction environments ship).

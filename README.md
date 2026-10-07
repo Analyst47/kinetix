@@ -33,6 +33,12 @@ tamper-evident chain of custody.
 - **Multi-tenancy.** Every tenant table carries `org_id` and is protected by Postgres
   row-level security, so a missing filter in application code still can't leak data.
 - **CVSS 4.0 and 3.1** scoring, validated server-side.
+- **Two-step verification.** TOTP with encrypted secrets, replay protection and one-time
+  recovery codes. Session list with remote sign-out.
+- **Members.** Single-use invitation links bound to the invitee's email, role management with
+  owner safeguards.
+- **Reports.** A printable vulnerability report (save as PDF from the browser) and Markdown
+  export, each export recorded in the chain of custody with its SHA-256.
 
 ## Run it
 
@@ -67,7 +73,7 @@ Scans run in-process by default (`KINETIX_SCAN_MODE=inline`). Install Semgrep
 ## Tests
 
 ```bash
-cd api && uv run pytest        # 50+ tests against a real Postgres (kinetix_test database)
+cd api && uv run pytest        # 70 tests against a real Postgres (kinetix_test database)
 cd web && npm run lint && npm run typecheck && npm run build
 ```
 

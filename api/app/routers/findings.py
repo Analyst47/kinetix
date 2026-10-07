@@ -1,6 +1,7 @@
+import json
 from typing import Literal
 
-from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Query, Response, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy import case, func, or_, select
 from sqlalchemy.orm import Session
@@ -22,12 +23,13 @@ from app.schemas import (
     FindingOut,
     FindingPage,
     FindingPatch,
+    ReportExportIn,
     SourceExcerpt,
     SourceLine,
     TransitionIn,
 )
 from app.security.permissions import Permission, has_permission
-from app.services import audit, storage
+from app.services import audit, report, storage
 from app.services import findings as svc
 from app.services.cvss import score_vector
 
@@ -296,6 +298,55 @@ def source_excerpt(
             lines=[SourceLine(n=n, text=lines[n - 1]) for n in range(start, end + 1)],
         )
     raise not_found("Source snapshot")
+
+
+@router.get("/{public_id}/report")
+def report_data(
+    project_slug: str,
+    public_id: str,
+    ctx: OrgContext = Depends(require(Permission.PROJECT_READ)),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Structured report data for viewing. Exports go through POST, which is audited."""
+    project = load_project(db, ctx, project_slug)
+    return report.build(db, ctx.org, project, svc.get_finding(db, project, public_id))
+
+
+@router.post("/{public_id}/report/export")
+def export_report(
+    project_slug: str,
+    public_id: str,
+    body: ReportExportIn,
+    ctx: OrgContext = Depends(require(Permission.PROJECT_READ)),
+    db: Session = Depends(get_db),
+) -> Response:
+    project = load_project(db, ctx, project_slug)
+    finding = svc.get_finding(db, project, public_id)
+    data = report.build(db, ctx.org, project, finding)
+    if body.format == "markdown":
+        content, media, ext = report.to_markdown(data), "text/markdown; charset=utf-8", "md"
+    else:
+        content, media, ext = json.dumps(data, indent=2), "application/json", "json"
+    sha = report.digest(content)
+    # The export itself joins the chain of custody, with the hash of exactly what left.
+    audit.record(
+        db,
+        org_id=ctx.org.id,
+        actor=ctx.user,
+        action="report.exported",
+        subject_type="finding",
+        subject_id=finding.public_id,
+        data={"format": body.format, "sha256": sha, "draft": data["draft"]},
+    )
+    db.commit()
+    return Response(
+        content,
+        media_type=media,
+        headers={
+            "Content-Disposition": f'attachment; filename="{finding.public_id}-report.{ext}"',
+            "X-Report-SHA256": sha,
+        },
+    )
 
 
 # ── Evidence ──────────────────────────────────────────────────────────────────

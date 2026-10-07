@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { LogOut, Moon, Search, Sun } from "lucide-react";
+import { KeyRound, LogOut, Moon, Search, Sun } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fragment, useEffect, useState, useSyncExternalStore } from "react";
@@ -119,6 +119,15 @@ export function TopBar({
               <div className="text-muted truncate text-xs">{user.email}</div>
             </div>
             <div className="bg-rule my-1 h-px" />
+            <Link
+              role="menuitem"
+              href={`/${org}/settings/security`}
+              onClick={() => setMenu(false)}
+              className="hover:bg-paper flex h-8 w-full items-center gap-2 rounded-sm px-2.5"
+            >
+              <KeyRound className="text-muted size-4" aria-hidden />
+              Security
+            </Link>
             <button
               type="button"
               role="menuitem"

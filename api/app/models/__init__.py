@@ -1,5 +1,13 @@
 from app.models.audit import AuditEvent
-from app.models.identity import AuthSession, Membership, Organization, User
+from app.models.identity import (
+    AuthSession,
+    Invitation,
+    Membership,
+    MfaChallenge,
+    Organization,
+    RecoveryCode,
+    User,
+)
 from app.models.research import (
     Advisory,
     Dependency,
@@ -32,9 +40,12 @@ __all__ = [
     "DependencyAdvisory",
     "Evidence",
     "Finding",
+    "Invitation",
     "Membership",
+    "MfaChallenge",
     "Organization",
     "Project",
+    "RecoveryCode",
     "Scan",
     "Target",
     "User",

@@ -1,10 +1,10 @@
 import clsx from "clsx";
-import { Check, Circle, Download, FileText, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Check, Circle, Download, FileOutput, FileText, ShieldAlert, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
 import { PageBar } from "@/components/shell-context";
-import { EmptyState, Panel, SeverityMark, StatusLabel } from "@/components/ui";
+import { ButtonLink, EmptyState, Panel, SeverityMark, StatusLabel } from "@/components/ui";
 import {
   CLOSED,
   LIFECYCLE,
@@ -94,12 +94,16 @@ export default async function FindingPage({
               {finding.assignee ? ` Assigned to ${finding.assignee.name}.` : " Unassigned."}
             </p>
           </div>
-          {WRITE_ROLES.includes(role) || role === "reviewer" ? (
-            <div className="flex flex-wrap items-start gap-2">
-              {editable ? <EvidenceUpload org={org} project={project} findingId={id} compact /> : null}
+          <div className="flex flex-wrap items-start gap-2">
+            <ButtonLink href={`/report/${org}/${project}/${id}`}>
+              <FileOutput aria-hidden />
+              Report
+            </ButtonLink>
+            {editable ? <EvidenceUpload org={org} project={project} findingId={id} compact /> : null}
+            {WRITE_ROLES.includes(role) || role === "reviewer" ? (
               <FindingActions org={org} project={project} finding={finding} />
-            </div>
-          ) : null}
+            ) : null}
+          </div>
         </div>
 
         {closed ? (

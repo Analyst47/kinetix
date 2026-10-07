@@ -22,7 +22,8 @@ from app.security.ratelimit import login_limiter, register_limiter  # noqa: E402
 
 TABLES = (
     "dependency_advisories, dependencies, advisories, evidence, findings, scans, targets, "
-    "projects, audit_events, memberships, auth_sessions, organizations, users"
+    "projects, audit_events, invitations, recovery_codes, mfa_challenges, memberships, "
+    "auth_sessions, organizations, users"
 )
 
 

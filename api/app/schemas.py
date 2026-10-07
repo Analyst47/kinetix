@@ -2,7 +2,7 @@ import re
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, StringConstraints, field_validator
 
@@ -55,6 +55,46 @@ class MembershipOut(BaseModel):
 class MeOut(BaseModel):
     user: UserOut
     organizations: list[MembershipOut]
+    mfa_enabled: bool = False
+
+
+class MfaRequiredOut(BaseModel):
+    mfa_required: bool = True
+    challenge: str
+
+
+class MfaVerifyIn(BaseModel):
+    challenge: str = Field(max_length=100)
+    code: str | None = Field(default=None, max_length=12)
+    recovery_code: str | None = Field(default=None, max_length=20)
+
+
+class PasswordIn(BaseModel):
+    password: str = Field(max_length=256)
+
+
+class MfaSetupOut(BaseModel):
+    secret: str
+    otpauth_uri: str
+
+
+class MfaCodeIn(BaseModel):
+    code: str = Field(max_length=12)
+
+
+class MfaDisableIn(BaseModel):
+    password: str = Field(max_length=256)
+    code: str = Field(max_length=12)
+
+
+class MfaStatusOut(BaseModel):
+    enabled: bool
+    enabled_at: datetime | None
+    recovery_codes_remaining: int
+
+
+class RecoveryCodesOut(BaseModel):
+    recovery_codes: list[str]
 
 
 class SessionOut(Model):
@@ -246,6 +286,10 @@ class SourceExcerpt(BaseModel):
     lines: list[SourceLine]
 
 
+class ReportExportIn(BaseModel):
+    format: Literal["markdown", "json", "print"] = "markdown"
+
+
 class CvssOut(BaseModel):
     version: str
     vector: str
@@ -327,3 +371,41 @@ class ChainOut(BaseModel):
     entries: int
     first_broken_seq: int | None
     reason: str | None
+
+
+# ── Members ───────────────────────────────────────────────────────────────────
+
+
+class MemberOut(BaseModel):
+    user: UserOut
+    role: Role
+    joined_at: datetime
+    mfa_enabled: bool
+    you: bool = False
+
+
+class MemberRoleIn(BaseModel):
+    role: Role
+
+
+class InvitationIn(BaseModel):
+    email: EmailStr
+    role: Role
+
+
+class InvitationOut(BaseModel):
+    id: uuid.UUID
+    email: str
+    role: Role
+    invited_by: str
+    created_at: datetime
+    expires_at: datetime
+    link: str | None = None
+
+
+class InvitationPreview(BaseModel):
+    organization: str
+    role: Role
+    invited_by: str
+    email: str
+    expires_at: datetime

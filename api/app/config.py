@@ -1,7 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="KINETIX_", env_file=".env", extra="ignore")
 
     env: str = "development"
+    # Encrypts MFA secrets at rest. Must be set to a long random value outside development.
+    secret_key: str = "dev-only-insecure-secret-key-change-me"  # noqa: S105 - dev default, rejected elsewhere
+    app_url: str = "http://localhost:3000"
     database_url: str = "postgresql+psycopg://kinetix:kinetix@localhost:5432/kinetix"
     redis_url: str = "redis://localhost:6379/0"
 
@@ -42,6 +45,14 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.env == "production"
+
+    @model_validator(mode="after")
+    def _require_secret_outside_dev(self) -> "Settings":
+        if self.env not in ("development", "test") and (
+            self.secret_key.startswith("dev-only") or len(self.secret_key) < 32
+        ):
+            raise ValueError("KINETIX_SECRET_KEY must be set to at least 32 random characters.")
+        return self
 
 
 @lru_cache

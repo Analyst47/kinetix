@@ -7,7 +7,7 @@ from sqlalchemy import text
 from app.config import get_settings
 from app.db import engine
 from app.errors import ApiError, api_error_handler
-from app.routers import audit, auth, dependencies, findings, projects, scans
+from app.routers import audit, auth, dependencies, findings, members, projects, scans
 from app.security.tokens import constant_time_equals
 
 UNSAFE = {"POST", "PUT", "PATCH", "DELETE"}
@@ -92,7 +92,7 @@ def create_app() -> FastAPI:
         )
 
     prefix = "/api/v1"
-    for module in (auth, projects, findings, dependencies, scans, audit):
+    for module in (auth, projects, findings, dependencies, scans, audit, members):
         app.include_router(module.router, prefix=prefix)
 
     @app.get("/api/health", tags=["meta"])

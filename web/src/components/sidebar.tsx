@@ -9,6 +9,7 @@ import {
   ScanLine,
   ShieldCheck,
   ShieldAlert,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -87,14 +88,19 @@ export function Sidebar({
         </nav>
 
         <nav aria-label="Workspace" className="mt-auto flex flex-col gap-0.5">
-          <Link
-            href={`/${org}/audit`}
-            aria-current={pathname.startsWith(`/${org}/audit`) ? "page" : undefined}
-            className="text-ink hover:bg-rule flex h-8 items-center gap-2.5 rounded-md px-2.5 font-medium"
-          >
-            <ListTree className="text-muted size-4" aria-hidden />
-            Audit log
-          </Link>
+          {[
+            { href: `/${org}/members`, label: "Members", icon: Users },
+            { href: `/${org}/audit`, label: "Audit log", icon: ListTree },
+          ].map(({ href, label, icon: Icon }) => (
+            <Link
+              key={href}
+              href={href}
+              className="text-ink hover:bg-rule flex h-8 items-center gap-2.5 rounded-md px-2.5 font-medium"
+            >
+              <Icon className="text-muted size-4" aria-hidden />
+              {label}
+            </Link>
+          ))}
         </nav>
 
         <div className="border-rule bg-raised flex flex-col gap-1 rounded-md border px-3 py-2.5">

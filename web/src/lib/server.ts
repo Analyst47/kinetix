@@ -36,3 +36,14 @@ export async function apiOptional<T>(path: string): Promise<T | null> {
   if (!res.ok) throw new Error(`API request failed (${res.status})`);
   return res.json() as Promise<T>;
 }
+
+/** Fetch without redirecting: null when signed out or not found. For public pages. */
+export async function apiPublic<T>(path: string): Promise<T | null> {
+  const jar = await cookies();
+  const res = await fetch(`${API_URL}/api/v1${path}`, {
+    headers: { cookie: jar.toString(), accept: "application/json" },
+    cache: "no-store",
+  });
+  if (!res.ok) return null;
+  return res.json() as Promise<T>;
+}
