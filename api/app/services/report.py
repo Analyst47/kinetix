@@ -55,6 +55,22 @@ REMEDIATION: dict[str, str] = {
     "CWE-209": "Return generic error messages to clients and log details server-side.",
     "CWE-285": "Enforce authorization on the server for every request, and upgrade the affected "
     "component to a fixed version.",
+    "CWE-918": "Resolve the target and block requests to private, loopback and link-local "
+    "addresses. Allowlist the hosts the server may call, and disable redirects to new hosts.",
+    "CWE-1336": "Never compile or render user input as a template. Render data into a fixed, "
+    "precompiled template, and sandbox the engine where possible.",
+    "CWE-943": "Cast query inputs to their expected scalar type before building the query, and "
+    "reject object-valued inputs so operators like $gt or $where can't be injected.",
+    "CWE-1321": "Merge with a function that ignores __proto__, constructor and prototype keys, or "
+    "validate keys against an allowlist. Prefer Object.create(null) for untrusted maps.",
+    "CWE-1333": "Never build a regular expression from user input. Match against a fixed pattern, "
+    "or enforce a length limit and a linear-time matcher.",
+    "CWE-338": "Use a cryptographically secure generator (crypto.randomBytes, randomUUID, or the "
+    "platform CSPRNG) for tokens, keys and secrets, never Math.random.",
+    "CWE-611": "Parse XML with external-entity resolution disabled: use defusedxml, or an lxml "
+    "parser created with resolve_entities=False and no_network=True.",
+    "CWE-942": "Reflect only an allowlist of origins instead of '*', and never combine a wildcard "
+    "origin with credentials.",
 }
 
 

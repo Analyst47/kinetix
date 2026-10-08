@@ -24,9 +24,16 @@ tamper-evident chain of custody.
   path traversal, absolute paths, symlinks, hardlinks, device files, zip bombs and
   `.git/hooks` are all rejected or skipped.
 - **Analysis pipeline.** npm and PyPI lockfiles are matched against [OSV](https://osv.dev);
-  a built-in secret detector redacts what it finds; a Kinetix Semgrep rule pack covers SQL
-  injection, path traversal, command injection, unsafe deserialization and more. Findings
-  are de-duplicated by fingerprint across scans.
+  a built-in secret detector redacts what it finds; a Kinetix Semgrep rule pack (28 rules
+  for JavaScript/TypeScript and Python) covers SQL injection, SSRF, SSTI, reflected XSS,
+  NoSQL injection, command injection, path traversal, prototype pollution, ReDoS, open
+  redirect, insecure deserialization, XXE, weak JWT verification, insecure CORS and weak
+  crypto. Findings are de-duplicated by fingerprint across scans.
+- **Confidence ranking.** Each finding is **firm** or **tentative**. Firm means a Semgrep
+  taint-mode rule proved attacker input flows into the sink, or a dependency matched a known
+  CVE — the leads worth a researcher's time first. Everything else is a pattern match a human
+  still has to confirm. When AI analysis runs, it also sees where the flagged function is
+  called, to judge reachability.
 - **Finding lifecycle.** Discovered → Triage → Needs validation → Confirmed → Reported →
   Vendor acknowledged → Fix available → Public disclosure, plus four closed states. The
   state machine is enforced server-side, per role.

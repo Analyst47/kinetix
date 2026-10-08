@@ -28,6 +28,8 @@ The order favors a narrow product that works end to end over broad features that
   production-forced Secure cookies, independent penetration test
 - Per-finding export to CVE Record Format 5.1, OSV and PDF; project findings export to a
   JSONL training dataset
+- Confidence ranking (taint-verified vs pattern) and an expanded taint rule pack (SSRF, SSTI,
+  reflected XSS, NoSQL injection, prototype pollution, ReDoS, and more); AI caller context
 
 ## Next
 

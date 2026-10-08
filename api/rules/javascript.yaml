@@ -142,3 +142,196 @@ rules:
           - pattern: $REQ.params
     pattern-sinks:
       - pattern: $RES.redirect(...)
+
+  - id: kinetix-js-ssrf-request
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Request data controls the URL of an outbound HTTP request. An attacker can reach
+      internal services (SSRF). Validate against an allowlist of hosts.
+    metadata:
+      title: Potential server-side request forgery (SSRF)
+      kinetix_severity: high
+      kinetix_confidence: firm
+      cwe: ["CWE-918: Server-Side Request Forgery (SSRF)"]
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: $REQ.query
+          - pattern: $REQ.params
+          - pattern: $REQ.body
+          - pattern: $REQ.headers
+    pattern-sinks:
+      - pattern-either:
+          - pattern: axios.$M(...)
+          - pattern: fetch(...)
+          - pattern: http.get(...)
+          - pattern: http.request(...)
+          - pattern: https.get(...)
+          - pattern: https.request(...)
+          - pattern: got(...)
+          - pattern: request(...)
+          - pattern: superagent.$M(...)
+
+  - id: kinetix-js-ssti-template
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Request data is compiled as a template. Template injection can lead to code
+      execution. Render data into a precompiled template instead of compiling input.
+    metadata:
+      title: Potential server-side template injection
+      kinetix_severity: critical
+      kinetix_confidence: firm
+      cwe: ["CWE-1336: Improper Neutralization of Special Elements Used in a Template Engine"]
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: $REQ.query
+          - pattern: $REQ.params
+          - pattern: $REQ.body
+    pattern-sinks:
+      - pattern-either:
+          - pattern: $H.compile(...)
+          - pattern: ejs.render(...)
+          - pattern: pug.compile(...)
+          - pattern: pug.render(...)
+          - pattern: _.template(...)
+
+  - id: kinetix-js-reflected-xss
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Request data is written into an HTTP response body. If the response is HTML this is
+      reflected cross-site scripting. Encode output for its context.
+    metadata:
+      title: Potential reflected cross-site scripting
+      kinetix_severity: high
+      kinetix_confidence: firm
+      cwe: ["CWE-79: Improper Neutralization of Input During Web Page Generation"]
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: $REQ.query
+          - pattern: $REQ.params
+          - pattern: $REQ.body
+    pattern-sinks:
+      - pattern-either:
+          - pattern: $RES.send(...)
+          - pattern: $RES.write(...)
+          - pattern: $RES.end(...)
+    pattern-sanitizers:
+      - pattern: JSON.stringify(...)
+
+  - id: kinetix-js-nosql-injection
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Request data flows into a database query object. A crafted object ($gt, $where, $ne)
+      can bypass the filter. Cast inputs to their expected type before querying.
+    metadata:
+      title: Potential NoSQL injection
+      kinetix_severity: high
+      kinetix_confidence: firm
+      cwe: ["CWE-943: Improper Neutralization of Data within Query Logic"]
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: $REQ.query
+          - pattern: $REQ.body
+    pattern-sinks:
+      - pattern-either:
+          - pattern: $M.find(...)
+          - pattern: $M.findOne(...)
+          - pattern: $M.findOneAndUpdate(...)
+          - pattern: $M.updateMany(...)
+          - pattern: $M.deleteMany(...)
+
+  - id: kinetix-js-prototype-pollution
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Request data is deep-merged into an object. A __proto__ key can pollute the object
+      prototype. Use a merge that drops prototype keys, or validate keys.
+    metadata:
+      title: Potential prototype pollution
+      kinetix_severity: high
+      kinetix_confidence: firm
+      cwe: ["CWE-1321: Improperly Controlled Modification of Object Prototype Attributes"]
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: $REQ.query
+          - pattern: $REQ.body
+    pattern-sinks:
+      - pattern-either:
+          - pattern: _.merge(...)
+          - pattern: _.mergeWith(...)
+          - pattern: _.defaultsDeep(...)
+          - pattern: _.set(...)
+          - pattern: merge(...)
+
+  - id: kinetix-js-redos-request
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      A regular expression is built from request data. A crafted pattern can hang the
+      event loop (ReDoS). Never compile user input as a regular expression.
+    metadata:
+      title: Regular expression built from request data (ReDoS)
+      kinetix_severity: medium
+      kinetix_confidence: firm
+      cwe: ["CWE-1333: Inefficient Regular Expression Complexity"]
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: $REQ.query
+          - pattern: $REQ.params
+          - pattern: $REQ.body
+    pattern-sinks:
+      - pattern-either:
+          - pattern: new RegExp(...)
+          - pattern: RegExp(...)
+
+  - id: kinetix-js-jwt-no-algorithms
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      jwt.verify() is called without pinning algorithms. A token with alg:none or a
+      swapped algorithm may be accepted. Pass an explicit algorithms list.
+    metadata:
+      title: JWT verified without pinned algorithms
+      kinetix_severity: high
+      cwe: ["CWE-347: Improper Verification of Cryptographic Signature"]
+    patterns:
+      - pattern: $JWT.verify($T, $S)
+      - pattern-not: $JWT.verify("...", ...)
+
+  - id: kinetix-js-cors-wildcard-credentials
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      CORS allows any origin together with credentials. This exposes authenticated
+      responses to any site. Reflect only an allowlist of origins.
+    metadata:
+      title: Insecure CORS (any origin with credentials)
+      kinetix_severity: medium
+      cwe: ["CWE-942: Permissive Cross-domain Policy with Untrusted Domains"]
+    patterns:
+      - pattern: 'cors({..., origin: "*", ..., credentials: true, ...})'
+
+  - id: kinetix-js-insecure-randomness
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      Math.random() is not cryptographically secure. Using it for a token, key or secret
+      is predictable. Use crypto.randomBytes / crypto.randomUUID.
+    metadata:
+      title: Insecure randomness used for a secret
+      kinetix_severity: medium
+      cwe: ["CWE-338: Use of Cryptographically Weak Pseudo-Random Number Generator"]
+    patterns:
+      - pattern: $V = Math.random()
+      - metavariable-regex:
+          metavariable: $V
+          regex: (?i).*(token|secret|otp|password|passwd|key|nonce|salt|session).*

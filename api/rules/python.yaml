@@ -51,3 +51,186 @@ rules:
     pattern-either:
       - pattern: pickle.load(...)
       - pattern: pickle.loads(...)
+
+  - id: kinetix-py-ssrf-request
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Request data controls the URL of an outbound HTTP request (SSRF). An attacker can
+      reach internal services. Validate the host against an allowlist.
+    metadata:
+      title: Potential server-side request forgery (SSRF)
+      kinetix_severity: high
+      kinetix_confidence: firm
+      cwe: ["CWE-918: Server-Side Request Forgery (SSRF)"]
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: request.args
+          - pattern: request.form
+          - pattern: request.values
+          - pattern: request.json
+          - pattern: request.data
+          - pattern: request.cookies
+          - pattern: request.headers
+          - pattern: request.GET
+          - pattern: request.POST
+    pattern-sinks:
+      - pattern-either:
+          - pattern: requests.$M(...)
+          - pattern: urllib.request.urlopen(...)
+          - pattern: urlopen(...)
+          - pattern: httpx.$M(...)
+
+  - id: kinetix-py-command-injection-taint
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Request data reaches an OS command. Call programs with an argument list and no
+      shell, and validate inputs against an allowlist.
+    metadata:
+      title: Potential command injection from request data
+      kinetix_severity: critical
+      kinetix_confidence: firm
+      cwe: ["CWE-78: Improper Neutralization of Special Elements used in an OS Command"]
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: request.args
+          - pattern: request.form
+          - pattern: request.values
+          - pattern: request.json
+          - pattern: request.data
+          - pattern: request.GET
+          - pattern: request.POST
+    pattern-sinks:
+      - pattern-either:
+          - pattern: os.system(...)
+          - pattern: os.popen(...)
+          - pattern: subprocess.call(...)
+          - pattern: subprocess.run(...)
+          - pattern: subprocess.Popen(...)
+          - pattern: subprocess.check_output(...)
+
+  - id: kinetix-py-path-traversal-request
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Request data builds a file path that is opened or sent. Resolve the path and verify
+      it stays inside the intended directory.
+    metadata:
+      title: Potential path traversal from request data
+      kinetix_severity: high
+      kinetix_confidence: firm
+      cwe: ["CWE-22: Improper Limitation of a Pathname to a Restricted Directory"]
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: request.args
+          - pattern: request.form
+          - pattern: request.values
+          - pattern: request.GET
+          - pattern: request.POST
+    pattern-sinks:
+      - pattern-either:
+          - pattern: open(...)
+          - pattern: send_file(...)
+
+  - id: kinetix-py-ssti-request
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Request data is rendered as a template (SSTI), which can lead to code execution.
+      Render data into a fixed template instead of rendering input as a template.
+    metadata:
+      title: Potential server-side template injection
+      kinetix_severity: critical
+      kinetix_confidence: firm
+      cwe: ["CWE-1336: Improper Neutralization of Special Elements Used in a Template Engine"]
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: request.args
+          - pattern: request.form
+          - pattern: request.values
+          - pattern: request.GET
+          - pattern: request.POST
+    pattern-sinks:
+      - pattern-either:
+          - pattern: render_template_string(...)
+          - pattern: Template(...)
+
+  - id: kinetix-py-code-injection-request
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Request data reaches eval/exec. This is remote code execution. Parse the data
+      instead of evaluating it.
+    metadata:
+      title: Dynamic code evaluation of request data
+      kinetix_severity: critical
+      kinetix_confidence: firm
+      cwe: ["CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code"]
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: request.args
+          - pattern: request.form
+          - pattern: request.values
+          - pattern: request.GET
+          - pattern: request.POST
+    pattern-sinks:
+      - pattern-either:
+          - pattern: eval(...)
+          - pattern: exec(...)
+
+  - id: kinetix-py-open-redirect-request
+    languages: [python]
+    severity: WARNING
+    message: >-
+      Request data controls a redirect target. Redirect only to allowlisted URLs or to
+      relative paths on the same origin.
+    metadata:
+      title: Potential open redirect
+      kinetix_severity: medium
+      kinetix_confidence: firm
+      cwe: ["CWE-601: URL Redirection to Untrusted Site"]
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: request.args
+          - pattern: request.values
+          - pattern: request.GET
+    pattern-sinks:
+      - pattern: redirect(...)
+
+  - id: kinetix-py-xxe-lxml
+    languages: [python]
+    severity: WARNING
+    message: >-
+      XML is parsed with a parser that resolves external entities (XXE). Use defusedxml,
+      or an lxml parser created with resolve_entities=False and no_network=True.
+    metadata:
+      title: Potential XML external entity (XXE) processing
+      kinetix_severity: high
+      cwe: ["CWE-611: Improper Restriction of XML External Entity Reference"]
+    pattern-either:
+      - pattern: etree.fromstring(...)
+      - pattern: etree.parse(...)
+      - pattern: lxml.etree.fromstring(...)
+      - pattern: lxml.etree.parse(...)
+
+  - id: kinetix-py-weak-hash
+    languages: [python]
+    severity: WARNING
+    message: >-
+      $ALG is not suitable for passwords or integrity. Use a password hash (argon2id,
+      bcrypt, scrypt) or SHA-256 for integrity.
+    metadata:
+      title: Weak hash algorithm
+      kinetix_severity: low
+      cwe: ["CWE-328: Use of Weak Hash"]
+    patterns:
+      - pattern-either:
+          - pattern: hashlib.md5(...)
+          - pattern: hashlib.sha1(...)
