@@ -98,3 +98,17 @@ def parse_uuid(value: str, what: str) -> uuid.UUID:
         return uuid.UUID(value)
     except ValueError as exc:
         raise not_found(what) from exc
+
+
+def is_demo_account(user: User) -> bool:
+    demo = get_settings().demo_account_email
+    return bool(demo) and user.email.lower() == demo.lower()
+
+
+def forbid_demo_account(user: User) -> None:
+    if is_demo_account(user):
+        raise ApiError(
+            403,
+            "demo_account",
+            "The shared demo account can't change its sign-in settings. Create your own account.",
+        )

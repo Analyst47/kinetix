@@ -5,6 +5,7 @@ from app.models.identity import (
     Membership,
     MfaChallenge,
     Organization,
+    PasswordReset,
     RecoveryCode,
     User,
 )
@@ -53,6 +54,7 @@ __all__ = [
     "Membership",
     "MfaChallenge",
     "Organization",
+    "PasswordReset",
     "Project",
     "RecoveryCode",
     "Scan",

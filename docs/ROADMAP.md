@@ -20,14 +20,16 @@ The order favors a narrow product that works end to end over broad features that
 - Coordinated disclosure: security.txt lookup, notification draft, deadline tracking,
   vendor timeline driving the finding lifecycle
 - AI assistance: grounded triage, questions and drafting with injection defenses and
-  citation verification (Claude API, OpenAI-compatible/Ollama)
+  citation verification (Claude API, Gemini API, OpenAI-compatible/Ollama)
+- Restricted database role for the app, with a startup guard against RLS bypass
+- Password reset and change, security notification emails, emailed invitations (Resend)
 
 ## Next
 
-1. **Passkeys** (WebAuthn) alongside TOTP.
-2. **Email delivery** for invitations, security notifications and disclosure deadline reminders.
-3. **Advisory export**: CVE JSON 5 and OSV formats for a confirmed finding.
-4. **Git targets**: clone a repository at a commit, in the worker, without running hooks.
+1. **Git targets**: clone a repository at a commit, in the worker, without running hooks.
+2. **Disclosure deadline reminders** by email (the delivery path is in place).
+3. **Passkeys** (WebAuthn) alongside TOTP.
+4. **Advisory export**: CVE JSON 5 and OSV formats for a confirmed finding.
 
 ## Later
 

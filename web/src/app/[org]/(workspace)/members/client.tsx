@@ -149,6 +149,7 @@ export function InviteButton({ org, canInviteOwners }: { org: string; canInviteO
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<Role>("researcher");
   const [link, setLink] = useState<string | null>(null);
+  const [emailed, setEmailed] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -170,11 +171,13 @@ export function InviteButton({ org, canInviteOwners }: { org: string; canInviteO
       <Dialog
         open={open}
         onClose={close}
-        title={link ? "Invitation created" : "Invite member"}
+        title={link ? (emailed ? "Invitation sent" : "Invitation created") : "Invite member"}
         description={
           link
-            ? "Send this link to them directly. It's shown only once, works only for their email, and expires in 7 days."
-            : "They'll get access when they accept with this email address."
+            ? emailed
+              ? `We emailed ${email} a link to join. You can also share the link below; it's shown only once, works only for their email, and expires in 7 days.`
+              : "Email isn't set up on this server, so send this link to them directly. It's shown only once, works only for their email, and expires in 7 days."
+            : "They'll get an email with a link, and access when they accept with this address."
         }
         footer={
           link ? (
@@ -187,7 +190,7 @@ export function InviteButton({ org, canInviteOwners }: { org: string; canInviteO
                 Cancel
               </Button>
               <Button variant="primary" type="submit" form="invite-form" disabled={pending || !email}>
-                {pending ? "Creating…" : "Create invitation"}
+                {pending ? "Sending…" : "Send invitation"}
               </Button>
             </>
           )
@@ -220,8 +223,12 @@ export function InviteButton({ org, canInviteOwners }: { org: string; canInviteO
               setPending(true);
               setError(null);
               try {
-                const r = await call<{ link: string }>("POST", `/orgs/${org}/invitations`, { email, role });
+                const r = await call<{ link: string; emailed: boolean }>("POST", `/orgs/${org}/invitations`, {
+                  email,
+                  role,
+                });
                 setLink(r.link);
+                setEmailed(r.emailed);
                 router.refresh();
               } catch (err) {
                 setError(err instanceof ApiError ? err.message : "Couldn't create the invitation.");

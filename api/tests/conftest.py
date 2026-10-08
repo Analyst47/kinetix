@@ -40,14 +40,20 @@ from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
 from app.db import SessionLocal  # noqa: E402
+from app.email import MemoryMailer, set_mailer  # noqa: E402
 from app.main import app  # noqa: E402
-from app.security.ratelimit import login_limiter, register_limiter  # noqa: E402
+from app.security.ratelimit import (  # noqa: E402
+    login_limiter,
+    register_limiter,
+    reset_email_limiter,
+    reset_request_limiter,
+)
 
 TABLES = (
     "ai_runs, disclosure_events, disclosures, dependency_advisories, dependencies, advisories, "
     "evidence, findings, scans, targets, "
     "projects, audit_events, invitations, recovery_codes, mfa_challenges, memberships, "
-    "auth_sessions, organizations, users"
+    "auth_sessions, password_resets, organizations, users"
 )
 
 
@@ -64,9 +70,18 @@ def migrated() -> None:
 
 
 @pytest.fixture(autouse=True)
+def outbox() -> Iterator[MemoryMailer]:
+    """Every test captures email instead of printing or sending it."""
+    mailer = MemoryMailer()
+    set_mailer(mailer)
+    yield mailer
+    set_mailer(None)
+
+
+@pytest.fixture(autouse=True)
 def clean() -> Iterator[None]:
-    login_limiter.reset()
-    register_limiter.reset()
+    for limiter in (login_limiter, register_limiter, reset_request_limiter, reset_email_limiter):
+        limiter.reset()
     yield
     with admin_engine.begin() as conn:
         conn.execute(text(f"TRUNCATE {TABLES} RESTART IDENTITY CASCADE"))

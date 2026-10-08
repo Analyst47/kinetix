@@ -6,13 +6,15 @@ be accepted by a signed-in user whose email matches it, so a forwarded link is u
 
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.db import get_db, set_tenant
 from app.deps import OrgContext, current_user, parse_uuid, require
+from app.email import deliver, templates
+from app.email import is_configured as email_configured
 from app.errors import ApiError, forbidden, not_found
 from app.models import Invitation, Membership, User
 from app.models.enums import Role
@@ -168,6 +170,7 @@ def list_invitations(
 @router.post("/orgs/{org_slug}/invitations", status_code=201)
 def invite(
     body: InvitationIn,
+    background: BackgroundTasks,
     ctx: OrgContext = Depends(require(Permission.MEMBERS_MANAGE)),
     db: Session = Depends(get_db),
 ) -> InvitationOut:
@@ -207,8 +210,17 @@ def invite(
     )  # fmt: skip
     db.commit()
     db.refresh(inv)
-    # The link is shown once, to the person who created it.
-    return _invitation_out(inv, link=f"{get_settings().app_url}/invite/{token}")
+    link = f"{get_settings().app_url}/invite/{token}"
+    background.add_task(
+        deliver,
+        templates.invitation(
+            email, ctx.user.name, ctx.org.name, body.role.value, link, key=f"invite-{inv.id}"
+        ),
+    )
+    # The link is also shown once, to the person who created it, in case email is off.
+    out = _invitation_out(inv, link=link)
+    out.emailed = email_configured()
+    return out
 
 
 @router.delete("/orgs/{org_slug}/invitations/{invitation_id}", status_code=204)

@@ -141,3 +141,22 @@ class Invitation(Timestamped, Base):
 
     organization: Mapped[Organization] = relationship(lazy="joined")
     invited_by: Mapped[User] = relationship(lazy="joined")
+
+
+class PasswordReset(Timestamped, Base):
+    """A single-use password reset link. Only a SHA-256 of the token is stored."""
+
+    __tablename__ = "password_resets"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Wrong second-factor codes entered with this link. Five burns it.
+    attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    requested_ip: Mapped[str | None] = mapped_column(String(64))
+
+    user: Mapped[User] = relationship(lazy="joined")

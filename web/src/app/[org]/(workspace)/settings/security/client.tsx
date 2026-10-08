@@ -6,7 +6,7 @@ import QRCode from "qrcode";
 import { useState } from "react";
 
 import { Dialog } from "@/components/dialog";
-import { Button, Field, inputClass } from "@/components/ui";
+import { Button, Field, FormAlert, inputClass } from "@/components/ui";
 import { ApiError, call } from "@/lib/client";
 
 type Step = "password" | "scan" | "codes";
@@ -314,5 +314,121 @@ export function RevokeSession({ id }: { id: string }) {
     >
       Sign out
     </Button>
+  );
+}
+
+export function ChangePassword() {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  function close() {
+    setOpen(false);
+    setCurrent("");
+    setNext("");
+    setConfirm("");
+    setError(null);
+  }
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setPending(true);
+    setError(null);
+    try {
+      await call("POST", "/auth/password/change", { current_password: current, new_password: next });
+      close();
+      setSaved(true);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't change your password.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  const mismatch = confirm.length > 0 && confirm !== next;
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-3">
+        <Button
+          onClick={() => {
+            setSaved(false);
+            setOpen(true);
+          }}
+        >
+          Change password
+        </Button>
+        {saved ? (
+          <span className="text-ok inline-flex items-center gap-1 text-[13px]">
+            <Check className="size-3.5" aria-hidden />
+            Password changed. Other devices were signed out.
+          </span>
+        ) : null}
+      </div>
+      <Dialog
+        open={open}
+        onClose={close}
+        title="Change password"
+        footer={
+          <>
+            <Button variant="ghost" onClick={close}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              form="change-password-form"
+              variant="primary"
+              disabled={pending || !current || next.length < 12 || next !== confirm}
+            >
+              {pending ? "Saving…" : "Change password"}
+            </Button>
+          </>
+        }
+      >
+        <form id="change-password-form" onSubmit={submit} className="flex flex-col gap-4" noValidate>
+          <Field label="Current password" htmlFor="current-password">
+            <input
+              id="current-password"
+              type="password"
+              autoComplete="current-password"
+              autoFocus
+              value={current}
+              onChange={(e) => setCurrent(e.target.value)}
+              className={inputClass}
+            />
+          </Field>
+          <Field label="New password" htmlFor="new-password" hint="At least 12 characters.">
+            <input
+              id="new-password"
+              type="password"
+              autoComplete="new-password"
+              value={next}
+              onChange={(e) => setNext(e.target.value)}
+              className={inputClass}
+            />
+          </Field>
+          <Field
+            label="Confirm new password"
+            htmlFor="confirm-password"
+            error={mismatch ? "Passwords don't match." : null}
+          >
+            <input
+              id="confirm-password"
+              type="password"
+              autoComplete="new-password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              className={inputClass}
+            />
+          </Field>
+          {error ? <FormAlert>{error}</FormAlert> : null}
+        </form>
+      </Dialog>
+    </div>
   );
 }

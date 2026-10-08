@@ -34,6 +34,14 @@ class RateLimiter:
                 {"retry_after": retry},
             )
 
+    def allow(self, key: str) -> bool:
+        """Like hit(), but reports instead of raising. For limits the caller must not reveal."""
+        try:
+            self.hit(key)
+        except ApiError:
+            return False
+        return True
+
     def reset(self) -> None:
         with self._lock:
             self._hits.clear()
@@ -41,3 +49,7 @@ class RateLimiter:
 
 login_limiter = RateLimiter(limit=10, window_seconds=300)
 register_limiter = RateLimiter(limit=5, window_seconds=3600)
+# Per IP. Requests over it get a 429, which says nothing about any account.
+reset_request_limiter = RateLimiter(limit=10, window_seconds=3600)
+# Per address, silently: stops anyone flooding a person's inbox with reset emails.
+reset_email_limiter = RateLimiter(limit=3, window_seconds=3600)

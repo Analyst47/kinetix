@@ -1,14 +1,15 @@
 import re
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, Response
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.db import get_db
-from app.deps import Principal, current_principal, parse_uuid
+from app.deps import Principal, current_principal, forbid_demo_account, parse_uuid
+from app.email import deliver, templates
 from app.errors import ApiError, not_found
 from app.models import AuthSession, Membership, MfaChallenge, Organization, RecoveryCode, User
 from app.models.enums import Role
@@ -38,7 +39,18 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 MFA_CHALLENGE_TTL = timedelta(minutes=5)
 MFA_MAX_ATTEMPTS = 5
 # Top-level web routes that an organization slug must never shadow.
-RESERVED_ORG_SLUGS = frozenset({"report", "invite", "login", "register", "api", "settings"})
+RESERVED_ORG_SLUGS = frozenset(
+    {
+        "report",
+        "invite",
+        "login",
+        "register",
+        "api",
+        "settings",
+        "forgot-password",
+        "reset-password",
+    }
+)
 
 
 def _client_ip(request: Request) -> str:
@@ -320,6 +332,7 @@ def mfa_setup(
     db: Session = Depends(get_db),
 ) -> MfaSetupOut:
     user = principal.user
+    forbid_demo_account(user)
     _require_password(user, body.password)
     if user.mfa_enabled:
         raise ApiError(409, "mfa_enabled", "Two-step verification is already on.")
@@ -357,6 +370,7 @@ def mfa_enable(
 @router.post("/mfa/disable", status_code=204)
 def mfa_disable(
     body: MfaDisableIn,
+    background: BackgroundTasks,
     principal: Principal = Depends(current_principal),
     db: Session = Depends(get_db),
 ) -> Response:
@@ -371,6 +385,8 @@ def mfa_disable(
     user.totp_last_step = None
     db.execute(delete(RecoveryCode).where(RecoveryCode.user_id == user.id))
     db.commit()
+    when = datetime.now(UTC).strftime("%b %d, %Y at %H:%M UTC")
+    background.add_task(deliver, templates.mfa_disabled(user.email, user.name, when))
     return Response(status_code=204)
 
 

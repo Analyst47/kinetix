@@ -16,6 +16,11 @@ x-api-env: &api-env
   KINETIX_AI_MODEL: ${KINETIX_AI_MODEL:-}
   KINETIX_AI_BASE_URL: ${KINETIX_AI_BASE_URL:-}
   KINETIX_AI_GEMINI_TIER: ${KINETIX_AI_GEMINI_TIER:-free}
+  # Email: console (printed to logs) | resend. See README.
+  KINETIX_EMAIL_BACKEND: ${KINETIX_EMAIL_BACKEND:-console}
+  KINETIX_RESEND_API_KEY: ${KINETIX_RESEND_API_KEY:-}
+  KINETIX_EMAIL_FROM: ${KINETIX_EMAIL_FROM:-Kinetix <no-reply@localhost>}
+  KINETIX_DEMO_ACCOUNT_EMAIL: ${KINETIX_DEMO_ACCOUNT_EMAIL:-demo@kinetix.dev}
 
 services:
   postgres:

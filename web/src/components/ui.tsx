@@ -222,3 +222,11 @@ export const inputClass =
 
 export const textareaClass =
   "w-full rounded-sm border border-rule-strong bg-raised px-2.5 py-2 text-sm text-ink placeholder:text-muted focus-visible:outline-2 focus-visible:outline-offset-0";
+
+export function FormAlert({ children }: { children: ReactNode }) {
+  return (
+    <p role="alert" className="border-crit/40 bg-crit-soft text-crit rounded-sm border px-3 py-2 text-[13px]">
+      {children}
+    </p>
+  );
+}

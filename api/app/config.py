@@ -56,6 +56,16 @@ class Settings(BaseSettings):
     ai_timeout_seconds: float = 60.0
     ai_max_context_lines: int = 60
 
+    # Outgoing email: "console" prints messages (development), "resend" sends through Resend
+    # (free tier: 3,000 a month), "none" drops them.
+    email_backend: str = "console"
+    email_from: str = "Kinetix <no-reply@localhost>"
+    resend_api_key: str | None = None
+    password_reset_minutes: int = 30
+    # On a public demo, this shared account can't change its password, request resets or turn
+    # on two-step verification, so no visitor can lock the others out.
+    demo_account_email: str | None = None
+
     # "celery" hands scans to the worker; "inline" runs them in-process (local dev, tests).
     scan_mode: str = "inline"
 

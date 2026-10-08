@@ -5,7 +5,7 @@ import { PageHeader, Panel } from "@/components/ui";
 import { fullDate, relative } from "@/lib/format";
 import { api } from "@/lib/server";
 
-import { MfaControls, RevokeSession } from "./client";
+import { ChangePassword, MfaControls, RevokeSession } from "./client";
 
 export const metadata: Metadata = { title: "Security" };
 
@@ -60,6 +60,15 @@ export default async function SecurityPage() {
       <PageBar crumbs={[{ label: "Your account" }, { label: "Security" }]} />
       <main className="flex w-full max-w-[860px] flex-col gap-5 p-4 md:p-6">
         <PageHeader title="Security" description="Protect the account that holds your unreleased findings." />
+        <Panel title="Password">
+          <div className="flex flex-col gap-3 p-4">
+            <p className="text-muted max-w-[64ch]">
+              Changing your password signs out every other device and cancels any reset links you requested.
+              We email you when it changes.
+            </p>
+            <ChangePassword />
+          </div>
+        </Panel>
         <Panel
           title="Two-step verification"
           aside={

@@ -19,6 +19,7 @@ from app.routers import (
     disclosures,
     findings,
     members,
+    passwords,
     projects,
     scans,
 )
@@ -116,6 +117,7 @@ def create_app() -> FastAPI:
     prefix = "/api/v1"
     for module in (
         auth,
+        passwords,
         projects,
         findings,
         disclosures,

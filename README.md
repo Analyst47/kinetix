@@ -35,14 +35,17 @@ tamper-evident chain of custody.
 - **CVSS 4.0 and 3.1** scoring, validated server-side.
 - **Two-step verification.** TOTP with encrypted secrets, replay protection and one-time
   recovery codes. Session list with remote sign-out.
-- **Members.** Single-use invitation links bound to the invitee's email, role management with
-  owner safeguards.
+- **Password reset.** Single-use, 30-minute links that never reveal whether an account
+  exists, don't bypass two-step verification, and sign out every session. Security emails
+  when a password changes or two-step verification is turned off.
+- **Members.** Single-use invitation links, emailed to the invitee and bound to their email,
+  role management with owner safeguards.
 - **Coordinated disclosure.** Vendor contact lookup through `security.txt` (RFC 9116), a
   drafted notification, a deadline clock (90 days by default) with extensions, CVE and
   advisory tracking. Recording vendor milestones moves the finding through Reported,
   Vendor acknowledged, Fix available and Public disclosure, so the two never disagree.
 - **AI assistance (optional).** Evidence-cited triage, questions and drafting on a finding,
-  using the Claude API or a free local model through Ollama. The assistant only advises:
+  using the Claude API, the Gemini API, or a free local model through Ollama. The assistant only advises:
   analyzed code is fenced off as untrusted data, injection attempts are flagged, every
   citation is checked against the lines it was shown, and each request is recorded in the
   chain of custody. Off until a workspace owner or admin turns it on.
@@ -117,6 +120,23 @@ before AI can be turned on for a workspace. Don't use the free tier on confident
 engagements or vulnerabilities you aren't free to share; use the paid tier or a local model.
 Free-tier quotas vary by model and project; check them in AI Studio. When a key runs out,
 Kinetix returns a clear "quota used up" error instead of failing silently.
+
+## Email
+
+Without configuration, emails (reset links, invitations, security notices) are printed to
+the API log, which is all you need locally. To send real email, use
+[Resend](https://resend.com) (free tier: 3,000 emails a month, 100 a day, one domain):
+
+```bash
+KINETIX_EMAIL_BACKEND=resend
+KINETIX_RESEND_API_KEY=re_...
+KINETIX_EMAIL_FROM="Kinetix <security@yourdomain.com>"   # a domain verified in Resend
+KINETIX_APP_URL=https://yourdomain.com                    # used to build links in emails
+```
+
+In production, the console backend drops messages instead of logging them, because they
+contain sign-in links. On a public demo, set `KINETIX_DEMO_ACCOUNT_EMAIL` so the shared
+account can't change its password or turn on two-step verification.
 
 ## Tests
 

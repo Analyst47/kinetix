@@ -87,6 +87,31 @@ class MfaDisableIn(BaseModel):
     code: str = Field(max_length=12)
 
 
+class ForgotPasswordIn(BaseModel):
+    email: EmailStr
+
+
+class ResetTokenIn(BaseModel):
+    token: str = Field(min_length=20, max_length=100)
+
+
+class ResetStatusOut(BaseModel):
+    valid: bool
+    mfa_required: bool = False
+    email_hint: str | None = None
+
+
+class ResetPasswordIn(ResetTokenIn):
+    password: str = Field(min_length=MIN_PASSWORD_LENGTH, max_length=256)
+    code: str | None = Field(default=None, max_length=12)
+    recovery_code: str | None = Field(default=None, max_length=20)
+
+
+class ChangePasswordIn(BaseModel):
+    current_password: str = Field(max_length=256)
+    new_password: str = Field(min_length=MIN_PASSWORD_LENGTH, max_length=256)
+
+
 class MfaStatusOut(BaseModel):
     enabled: bool
     enabled_at: datetime | None
@@ -404,6 +429,8 @@ class InvitationOut(BaseModel):
     created_at: datetime
     expires_at: datetime
     link: str | None = None
+    # True when an email with the link was queued; False means share the link yourself.
+    emailed: bool = False
 
 
 class InvitationPreview(BaseModel):

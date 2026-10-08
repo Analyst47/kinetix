@@ -14,6 +14,7 @@ boundary. It is designed on the assumption that both its users and its inputs ca
 | Threat | Control | Where |
 | --- | --- | --- |
 | Cross-tenant data access (IDOR/BOLA) | Membership-checked org context; Postgres RLS on every tenant table; uniform 404s | `deps.py`, initial migration, `tests/test_tenancy.py` |
+| Account takeover through password reset | 256-bit single-use tokens stored as SHA-256, 30-minute expiry, voided by any password change; token in the URL fragment (never sent to servers or Referer); identical responses and background sending so neither content nor timing reveals accounts; per-address silent cap and per-IP limit; MFA still required; all sessions revoked; notification email | `routers/passwords.py`, `tests/test_passwords.py` |
 | RLS silently bypassed by a privileged DB user | The API connects as a restricted role (no superuser, no BYPASSRLS, owns nothing); migrations run as the owner; the API refuses to start in production if its connection could bypass RLS; tests run as a restricted role too | `app/dbguard.py`, `app_role_grants` migration, `infra/postgres/` |
 | Session theft | Opaque 256-bit tokens, only SHA-256 stored, `HttpOnly`, `SameSite=Lax`, server-side revocation, 12 h expiry | `routers/auth.py` |
 | CSRF | Double-submit token on every unsafe request, Origin check | `main.py` |

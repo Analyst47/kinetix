@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -143,6 +144,9 @@ export function LoginForm({ demo, next }: { demo: boolean; next?: string }) {
           className={inputClass}
         />
       </Field>
+      <Link href="/forgot-password" className="text-vg -mt-2 self-end text-[13px] hover:underline">
+        Forgot password?
+      </Link>
       {error ? (
         <p
           role="alert"
