@@ -24,6 +24,8 @@ The order favors a narrow product that works end to end over broad features that
 - Restricted database role for the app, with a startup guard against RLS bypass
 - Password reset and change, security notification emails, emailed invitations (Resend)
 - Public Git repository targets, fetched by the worker as pinned single-commit snapshots
+- Hardening: Caddy edge, nonce CSP, Redis-shared rate limits, trusted-proxy client IPs,
+  production-forced Secure cookies, independent penetration test
 
 ## Next
 

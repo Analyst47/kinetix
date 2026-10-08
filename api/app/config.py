@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     # The role migrations grant table access to. It must not be a superuser or have BYPASSRLS.
     db_app_role: str = "kinetix_app"
     redis_url: str = "redis://localhost:6379/0"
+    # "redis" shares rate limits across API processes; "memory" keeps them per process.
+    rate_limit_backend: str = "memory"
+    # Reverse proxies whose X-Forwarded-For is believed (CIDRs). Empty: use the socket peer.
+    trusted_proxies: list[str] = Field(default_factory=list)
+    client_ip_header: str = "x-forwarded-for"
 
     # Where evidence and ingested archives are stored. Content-addressed by SHA-256.
     storage_dir: Path = Path("./var/storage")
@@ -28,7 +33,7 @@ class Settings(BaseSettings):
     session_cookie: str = "kx_session"
     csrf_cookie: str = "kx_csrf"
     session_ttl_hours: int = 12
-    # Secure cookies are on everywhere except local development over plain HTTP.
+    # Secure cookies: off for local development over plain HTTP, always on in production.
     cookie_secure: bool = False
 
     # Evidence limits.
@@ -81,6 +86,9 @@ class Settings(BaseSettings):
             self.secret_key.startswith("dev-only") or len(self.secret_key) < 32
         ):
             raise ValueError("KINETIX_SECRET_KEY must be set to at least 32 random characters.")
+        if self.env == "production":
+            # Never send session cookies over plain HTTP in production, whatever was configured.
+            self.cookie_secure = True
         return self
 
 

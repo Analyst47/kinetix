@@ -30,8 +30,9 @@ from app.schemas import (
     UserOut,
 )
 from app.security import mfa
+from app.security.clientip import client_ip
 from app.security.passwords import hash_password, needs_rehash, verify_password
-from app.security.ratelimit import login_limiter, register_limiter
+from app.security.ratelimit import account_limiter, login_limiter, register_limiter
 from app.security.tokens import new_token, token_digest
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -54,7 +55,7 @@ RESERVED_ORG_SLUGS = frozenset(
 
 
 def _client_ip(request: Request) -> str:
-    return request.client.host if request.client else "unknown"
+    return client_ip(request)
 
 
 def _set_cookie(
@@ -154,6 +155,7 @@ def login(
 ) -> MeOut | MfaRequiredOut:
     email = body.email.lower()
     login_limiter.hit(f"{_client_ip(request)}|{email}")
+    account_limiter.hit(email)
     user = db.scalar(select(User).where(func.lower(User.email) == email))
     ok = verify_password(user.password_hash if user else None, body.password)
     if not ok or user is None or not user.is_active:

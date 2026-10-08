@@ -52,8 +52,9 @@ def create_app() -> FastAPI:
         title="Kinetix API",
         version="0.1.0",
         description="Vulnerability research and responsible-disclosure platform.",
-        docs_url="/api/docs",
-        openapi_url="/api/openapi.json",
+        # The interactive docs and schema are for development; production doesn't publish them.
+        docs_url=None if settings.is_production else "/api/docs",
+        openapi_url=None if settings.is_production else "/api/openapi.json",
         redoc_url=None,
     )
 

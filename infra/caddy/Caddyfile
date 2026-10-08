@@ -1,0 +1,47 @@
+# Kinetix edge: the only public entry point.
+#
+# - /api/* goes straight to the API; everything else goes to the web app.
+# - Caddy ignores any X-Forwarded-For a client sends and records the real client address,
+#   so the API's per-IP rate limits see real visitors (it trusts this proxy only).
+# - With KINETIX_SITE_ADDRESS set to your domain (e.g. kinetix.example.com), Caddy gets and
+#   renews HTTPS certificates automatically. The default, :80, is plain HTTP for local use.
+# - Caddy trusts no upstream proxy by default. Behind Cloudflare, add to the global block:
+#     servers {
+#         trusted_proxies cloudflare
+#         client_ip_headers CF-Connecting-IP
+#     }
+#   (the cloudflare module, or `trusted_proxies static <Cloudflare ranges>`).
+{
+	admin off
+}
+
+{$KINETIX_SITE_ADDRESS::80} {
+	encode zstd gzip
+
+	header {
+		-Server
+		-X-Powered-By
+	}
+
+	@api path /api/*
+	handle @api {
+		# Archive uploads are capped at 200 MB by the API; allow a little framing overhead.
+		request_body {
+			max_size 210MB
+		}
+		reverse_proxy {$KINETIX_API_UPSTREAM:api:8000} {
+			header_up X-Forwarded-Proto {scheme}
+		}
+	}
+
+	handle {
+		reverse_proxy {$KINETIX_WEB_UPSTREAM:web:3000} {
+			header_up X-Forwarded-Proto {scheme}
+		}
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

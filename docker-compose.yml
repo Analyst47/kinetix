@@ -1,4 +1,7 @@
-# Local development stack. `docker compose up --build`, then open http://localhost:3000
+# Full stack. `docker compose up --build`, then open http://localhost:3000
+#
+# Only the edge (Caddy) is published. The API and web app are reachable only inside the
+# Compose network, so nobody can reach the API directly or spoof the client address.
 name: kinetix
 
 x-api-env: &api-env
@@ -7,6 +10,9 @@ x-api-env: &api-env
   KINETIX_DATABASE_URL: postgresql+psycopg://kinetix_app:${KINETIX_DB_APP_PASSWORD:-kinetix_app}@postgres:5432/kinetix
   KINETIX_MIGRATION_DATABASE_URL: postgresql+psycopg://kinetix:${POSTGRES_PASSWORD:-kinetix}@postgres:5432/kinetix
   KINETIX_REDIS_URL: redis://redis:6379/0
+  # Rate limits are shared across API processes, and the client IP comes from the edge only.
+  KINETIX_RATE_LIMIT_BACKEND: redis
+  KINETIX_TRUSTED_PROXIES: '["172.28.0.10/32"]'
   KINETIX_STORAGE_DIR: /data
   KINETIX_SCAN_MODE: celery
   KINETIX_CORS_ORIGINS: '["http://localhost:3000"]'
@@ -57,7 +63,6 @@ services:
     build: { context: ./api, target: api }
     environment: *api-env
     volumes: [storage:/data]
-    ports: ["8000:8000"]
     depends_on:
       migrate: { condition: service_completed_successfully }
       redis: { condition: service_healthy }
@@ -84,9 +89,29 @@ services:
     environment:
       KINETIX_API_URL: http://api:8000
       KINETIX_DEMO: "1"
-    ports: ["3000:3000"]
     depends_on: [api]
+
+  edge:
+    image: caddy:2.10-alpine
+    environment:
+      # Set to your domain in production for automatic HTTPS; then publish 80 and 443.
+      KINETIX_SITE_ADDRESS: ${KINETIX_SITE_ADDRESS:-:80}
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    ports: ["3000:80"]
+    networks:
+      default:
+        ipv4_address: 172.28.0.10
+    depends_on: [api, web]
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
 
 volumes:
   pgdata:
   storage:
+  caddy-data:

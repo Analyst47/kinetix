@@ -43,6 +43,7 @@ from app.db import SessionLocal  # noqa: E402
 from app.email import MemoryMailer, set_mailer  # noqa: E402
 from app.main import app  # noqa: E402
 from app.security.ratelimit import (  # noqa: E402
+    account_limiter,
     login_limiter,
     register_limiter,
     reset_email_limiter,
@@ -80,7 +81,13 @@ def outbox() -> Iterator[MemoryMailer]:
 
 @pytest.fixture(autouse=True)
 def clean() -> Iterator[None]:
-    for limiter in (login_limiter, register_limiter, reset_request_limiter, reset_email_limiter):
+    for limiter in (
+        login_limiter,
+        account_limiter,
+        register_limiter,
+        reset_request_limiter,
+        reset_email_limiter,
+    ):
         limiter.reset()
     yield
     with admin_engine.begin() as conn:

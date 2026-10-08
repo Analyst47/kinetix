@@ -54,6 +54,10 @@ tamper-evident chain of custody.
   analyzed code is fenced off as untrusted data, injection attempts are flagged, every
   citation is checked against the lines it was shown, and each request is recorded in the
   chain of custody. Off until a workspace owner or admin turns it on.
+- **Hardened edge.** Only Caddy is public (automatic HTTPS with your domain). The web app
+  ships a per-request nonce Content Security Policy; rate limits are shared across API
+  processes through Redis and keyed on the real client address, which can't be spoofed.
+  An independent penetration test found no critical, high or medium issues.
 - **Reports.** A printable vulnerability report (save as PDF from the browser) and Markdown
   export, each export recorded in the chain of custody with its SHA-256.
 

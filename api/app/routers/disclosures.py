@@ -23,7 +23,7 @@ from app.services import findings as fsvc
 
 router = APIRouter(tags=["disclosure"])
 
-_lookup_limiter = RateLimiter(limit=30, window_seconds=3600)
+_lookup_limiter = RateLimiter("securitytxt", limit=30, window_seconds=3600)
 
 BASE = "/orgs/{org_slug}/projects/{project_slug}"
 

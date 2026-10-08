@@ -86,4 +86,10 @@ def safe_filename(name: str | None, fallback: str = "evidence.bin") -> str:
     name = name.replace("\\", "/").rsplit("/", 1)[-1]
     name = "".join(ch for ch in name if unicodedata.category(ch)[0] != "C").strip().strip(".")
     name = re.sub(r"\s+", " ", name)[:255]
+    # Windows device names (CON, nul.txt, COM1...) can't be saved as files on Windows.
+    if _RESERVED.match(name):
+        name = f"_{name}"
     return name or fallback
+
+
+_RESERVED = re.compile(r"^(con|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³])(\.|$)", re.IGNORECASE)
