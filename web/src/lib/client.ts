@@ -27,7 +27,7 @@ async function csrfToken(): Promise<string> {
 
 /** Browser-side API call. Unsafe methods carry the CSRF token the API expects. */
 export async function call<T = unknown>(
-  method: "GET" | "POST" | "PATCH" | "DELETE",
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
   path: string,
   body?: unknown,
 ): Promise<T> {

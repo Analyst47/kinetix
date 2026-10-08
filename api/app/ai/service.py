@@ -172,15 +172,18 @@ def _run(
     schema: dict,
     tool: str,
     question: str | None = None,
+    meter: bool = False,
 ) -> AiRun:
-    # Spend safeguard: refuse before spending anything if the monthly budget is used up.
-    budget.check()
+    # Spend safeguard applies only to operator-billed (managed) calls; a user's own key
+    # bills them directly and isn't metered against the server budget.
+    if meter:
+        budget.check()
     ctx = ctxmod.build(db, project, finding)
     user_prompt = f"{ctx.prompt}\n\n{task}"
     digest = hashlib.sha256((prompts.SYSTEM + "\n\n" + user_prompt).encode()).hexdigest()
     raw = provider.complete(system=prompts.SYSTEM, user=user_prompt, schema=schema, tool=tool)
     usage = getattr(provider, "last_usage", None)
-    if isinstance(usage, dict):
+    if meter and isinstance(usage, dict):
         budget.add(int(usage.get("input_tokens", 0)) + int(usage.get("output_tokens", 0)))
     if kind == "analysis":
         output = _validate_analysis(raw, ctx.lines)
@@ -240,28 +243,47 @@ def _run(
 
 
 def analyze(
-    db: Session, provider: Provider, project: Project, finding: Finding, actor: User
+    db: Session,
+    provider: Provider,
+    project: Project,
+    finding: Finding,
+    actor: User,
+    meter: bool = False,
 ) -> AiRun:
     return _run(
         db, provider=provider, project=project, finding=finding, actor=actor, kind="analysis",
         task=prompts.ANALYZE_TASK, schema=prompts.ANALYSIS_SCHEMA, tool="record_analysis",
+        meter=meter,
     )  # fmt: skip
 
 
 def ask(
-    db: Session, provider: Provider, project: Project, finding: Finding, actor: User, question: str
+    db: Session,
+    provider: Provider,
+    project: Project,
+    finding: Finding,
+    actor: User,
+    question: str,
+    meter: bool = False,
 ) -> AiRun:
     return _run(
         db, provider=provider, project=project, finding=finding, actor=actor, kind="question",
         task=prompts.ask_task(question), schema=prompts.ANSWER_SCHEMA, tool="record_answer",
-        question=question,
+        question=question, meter=meter,
     )  # fmt: skip
 
 
 def draft(
-    db: Session, provider: Provider, project: Project, finding: Finding, actor: User, field: str
+    db: Session,
+    provider: Provider,
+    project: Project,
+    finding: Finding,
+    actor: User,
+    field: str,
+    meter: bool = False,
 ) -> AiRun:
     return _run(
         db, provider=provider, project=project, finding=finding, actor=actor, kind=f"draft_{field}",
         task=prompts.DRAFT_TASKS[field], schema=prompts.DRAFT_SCHEMA, tool="record_draft",
+        meter=meter,
     )  # fmt: skip

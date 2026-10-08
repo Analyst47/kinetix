@@ -331,35 +331,53 @@ DEFAULT_MODELS = {
 }
 
 
-def get_provider() -> Provider | None:
+def build_provider(
+    provider: str,
+    api_key: str | None,
+    model: str | None,
+    *,
+    base_url: str | None = None,
+    gemini_tier: str = "free",
+) -> Provider | None:
+    """Construct a provider from explicit parameters. Used both for the server-configured
+    (managed) provider and for a user's bring-your-own-key, which supplies its own credentials."""
     s = get_settings()
-    model = s.ai_model or DEFAULT_MODELS.get(s.ai_provider, "")
-    if s.ai_provider == "anthropic" and s.ai_api_key:
+    model = model or DEFAULT_MODELS.get(provider, "")
+    if provider == "anthropic" and api_key:
         return AnthropicProvider(
-            api_key=s.ai_api_key,
+            api_key=api_key,
             model=model,
-            base_url=s.ai_base_url or "https://api.anthropic.com",
+            base_url=base_url or "https://api.anthropic.com",
             timeout=s.ai_timeout_seconds,
             max_tokens=s.ai_max_output_tokens,
             max_attempts=max(1, s.ai_max_retries),
         )
-    if s.ai_provider == "gemini" and s.ai_api_key:
+    if provider == "gemini" and api_key:
         return GeminiProvider(
-            api_key=s.ai_api_key,
+            api_key=api_key,
             model=model,
-            base_url=s.ai_base_url or "https://generativelanguage.googleapis.com/v1beta",
+            base_url=base_url or "https://generativelanguage.googleapis.com/v1beta",
             timeout=s.ai_timeout_seconds,
             max_tokens=s.ai_max_output_tokens,
             max_attempts=max(1, s.ai_max_retries),
-            data_notice=None if s.ai_gemini_tier == "paid" else GEMINI_FREE_NOTICE,
+            data_notice=None if gemini_tier == "paid" else GEMINI_FREE_NOTICE,
         )
-    if s.ai_provider == "openai_compatible" and s.ai_base_url and model:
+    if provider == "openai_compatible" and base_url and model:
         return OpenAICompatibleProvider(
-            base_url=s.ai_base_url,
-            model=model,
-            api_key=s.ai_api_key,
-            timeout=s.ai_timeout_seconds,
+            base_url=base_url, model=model, api_key=api_key, timeout=s.ai_timeout_seconds
         )
-    if s.ai_provider == "mock":
+    if provider == "mock":
         return MockProvider()
     return None
+
+
+def get_provider() -> Provider | None:
+    """The server-configured 'managed' provider (built-in, pay-as-you-go), if any."""
+    s = get_settings()
+    return build_provider(
+        s.ai_provider,
+        s.ai_api_key,
+        s.ai_model,
+        base_url=s.ai_base_url,
+        gemini_tier=s.ai_gemini_tier,
+    )

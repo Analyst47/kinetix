@@ -121,16 +121,21 @@ export function AssistantPanel({
     </span>
   );
 
-  if (!status.available || !status.enabled) {
+  if (!status.enabled || !status.available) {
+    const needsKey = status.enabled && !status.key_set && !status.managed_available;
     return (
       <Panel title="Assistant" aside={header}>
         <div className="flex items-start gap-3 px-4 py-3.5">
           <Sparkles className="text-muted mt-0.5 size-4 shrink-0" aria-hidden />
           <p className="text-muted text-[13px]">
-            {!status.available
-              ? "AI assistance isn't configured on this server. Set an AI provider to get evidence-cited triage, answers and drafts."
-              : "AI assistance is off for this workspace."}{" "}
-            {status.available && canManage ? (
+            {!status.enabled
+              ? "AI assistance is off for this workspace."
+              : "Add your own provider API key to use AI assistance — it's free and bills to your own account."}{" "}
+            {needsKey ? (
+              <Link href={`/${org}/settings/ai`} className="text-vg hover:underline">
+                Add your key
+              </Link>
+            ) : !status.enabled && canManage ? (
               <Link href={`/${org}/settings/ai`} className="text-vg hover:underline">
                 Turn it on
               </Link>

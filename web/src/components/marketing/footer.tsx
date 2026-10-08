@@ -10,8 +10,8 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
     links: [
       { href: "/product", label: "Capabilities" },
       { href: "/how-it-works", label: "How it works" },
-      { href: "/#demo", label: "Live preview" },
-      { href: "/#reports", label: "Reports & exports" },
+      { href: "/#plans", label: "Plans" },
+      { href: "/#faq", label: "FAQ" },
     ],
   },
   {
@@ -19,7 +19,6 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
     links: [
       { href: "/security", label: "Security & authorization" },
       { href: "/security#responsible-use", label: "Responsible use" },
-      { href: "/#faq", label: "FAQ" },
     ],
   },
   {
@@ -27,7 +26,6 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
     links: [
       { href: "/register", label: "Request access" },
       { href: "/login", label: "Sign in" },
-      { href: "/#pricing", label: "Early access" },
     ],
   },
 ];

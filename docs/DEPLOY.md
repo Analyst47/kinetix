@@ -109,10 +109,18 @@ KINETIX_EMAIL_FROM=Kinetix <security@kinetix.yourdomain.com>
 
 The "from" address must be on the verified domain.
 
-**AI (optional).** Kinetix supports your own **paid Claude API** account (recommended) or
-Google's free Gemini tier. The key is read server-side only — it is never sent to the
-browser, written to logs, or committed. There is no silent fallback: if the key is missing,
-AI features report "not configured" rather than switching providers.
+**AI (bring-your-own-key by default).** You do not need to set any AI key on the server. By
+default each user pastes their own Anthropic or Gemini key in the app under **Settings → AI
+assistance**; that key is encrypted, held only for their login session, never written to the
+database, and billed to their own provider account. This keeps a public deployment from ever
+spending the operator's credits on other people.
+
+The server-side keys below are only for the optional **built-in (managed)** provider, which
+serves every workspace from the operator's own key. It is off until you set
+`KINETIX_AI_MANAGED_ENABLED=true`, so leave it off until billing is in place. When you do run
+it, your own **paid Claude API** account (recommended) or Google's free Gemini tier work the
+same way. The key is read server-side only — never sent to the browser, logged, or committed —
+and there is no silent fallback.
 
 Paid Claude API — create a key at https://console.anthropic.com and set:
 

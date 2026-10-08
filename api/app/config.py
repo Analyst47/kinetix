@@ -53,6 +53,9 @@ class Settings(BaseSettings):
     # Ollama server (free); "mock" returns canned output for local development and tests.
     ai_provider: str = "none"
     ai_api_key: str | None = None
+    # The built-in ("managed") AI serves every workspace from the server's own key above and
+    # bills the operator. It stays OFF until billing is in place; users bring their own key.
+    ai_managed_enabled: bool = False
     # Empty means the provider's default model.
     ai_model: str | None = None
     ai_base_url: str | None = None
@@ -68,6 +71,10 @@ class Settings(BaseSettings):
     # Optional spend safeguard: refuse AI calls once this many total tokens (input + output)
     # have been used in the current UTC month. None disables the cap. Tracked in Redis.
     ai_monthly_token_budget: int | None = None
+    # Which workspaces may use the server's AI key (by workspace slug). Empty = every
+    # workspace may (single-tenant default). Set this on a public deployment so only your
+    # own workspaces can spend your API credits; all others see AI as unavailable.
+    ai_allowed_orgs: list[str] = Field(default_factory=list)
 
     # Outgoing email: "console" prints messages (development), "resend" sends through Resend
     # (free tier: 3,000 a month), "none" drops them.

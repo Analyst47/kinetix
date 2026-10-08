@@ -227,6 +227,11 @@ export interface AiStatus {
   provider: string | null;
   model: string | null;
   data_notice: string | null;
+  byok_providers: string[];
+  key_set: boolean;
+  key_provider: string | null;
+  key_model: string | null;
+  managed_available: boolean;
   monthly_token_budget: number | null;
   tokens_used_this_month: number | null;
 }

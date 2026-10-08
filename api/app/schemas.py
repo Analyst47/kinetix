@@ -585,9 +585,23 @@ class AiStatusOut(BaseModel):
     provider: str | None
     model: str | None
     data_notice: str | None = None
-    # Spend safeguard, when KINETIX_AI_MONTHLY_TOKEN_BUDGET is set (null = no cap).
+    # Bring-your-own-key: which providers a user may supply, and whether this user has set one
+    # for their current session (the key value is never returned).
+    byok_providers: list[str] = []
+    key_set: bool = False
+    key_provider: str | None = None
+    key_model: str | None = None
+    # Built-in ("managed") AI billed to the operator. False until they enable billing.
+    managed_available: bool = False
+    # Spend safeguard for managed usage, when a budget is set (null = no cap).
     monthly_token_budget: int | None = None
     tokens_used_this_month: int | None = None
+
+
+class AiKeyIn(BaseModel):
+    provider: str
+    api_key: str = Field(min_length=8, max_length=400)
+    model: str | None = Field(default=None, max_length=120)
 
 
 class AiTriageOut(BaseModel):

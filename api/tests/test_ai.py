@@ -75,6 +75,10 @@ def _setup(client, monkeypatch, output: dict, enable: bool = True) -> tuple[str,
     ).json()
     provider = FakeProvider(output)
     monkeypatch.setattr(ai_router, "get_provider", lambda: provider)
+    # Exercise the pipeline through the built-in ("managed") provider path.
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "ai_managed_enabled", True)
     if enable:
         assert client.patch(f"/api/v1/orgs/{org}/ai", json={"enabled": True}).status_code == 200
     return org, f"{base}/{f['public_id']}", provider
@@ -118,30 +122,43 @@ def test_status_reflects_server_config_and_workspace_switch(client, monkeypatch)
         "provider": None,
         "model": None,
         "data_notice": None,
+        "byok_providers": ["anthropic", "gemini"],
+        "key_set": False,
+        "key_provider": None,
+        "key_model": None,
+        "managed_available": False,
         "monthly_token_budget": None,
         "tokens_used_this_month": None,
     }
 
 
-def test_provider_that_may_keep_data_needs_an_acknowledgment_to_enable(client, monkeypatch):
-    org, url, provider = _setup(client, monkeypatch, GOOD, enable=False)
-    provider.data_notice = GEMINI_FREE_NOTICE
-    assert client.get(f"/api/v1/orgs/{org}/ai").json()["data_notice"] == GEMINI_FREE_NOTICE
-    r = client.patch(f"/api/v1/orgs/{org}/ai", json={"enabled": True})
-    assert r.status_code == 409 and r.json()["error"]["code"] == "acknowledge_data_notice"
-    assert client.post(f"{url}/ai/analyze").status_code == 403
-    r = client.patch(
-        f"/api/v1/orgs/{org}/ai", json={"enabled": True, "acknowledge_data_notice": True}
-    )
-    assert r.status_code == 200 and r.json()["enabled"] is True
+def test_bring_your_own_key_is_session_scoped_and_never_stored(client, monkeypatch):
+    org, url, _ = _setup(client, monkeypatch, GOOD)
+    # The fake managed provider carries no data notice.
+    assert client.get(f"/api/v1/orgs/{org}/ai").json()["data_notice"] is None
+
+    # A user supplies their own Gemini key: the free-tier notice is shown and the key is set
+    # for this session only.
+    r = client.put(f"/api/v1/orgs/{org}/ai/key", json={"provider": "gemini", "api_key": "AIza-abc123"})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["key_set"] is True
+    assert body["key_provider"] == "gemini"
+    assert body["data_notice"] == GEMINI_FREE_NOTICE
+
+    # The key itself is never echoed back or recorded in the audit log.
+    assert "AIza-abc123" not in r.text
     event = next(
-        e
-        for e in client.get(f"/api/v1/orgs/{org}/audit").json()
-        if e["action"] == "ai.settings_changed"
+        e for e in client.get(f"/api/v1/orgs/{org}/audit").json() if e["action"] == "ai.key_set"
     )
-    assert event["data"]["data_notice_acknowledged"] is True
-    # Turning it off never needs the acknowledgment.
-    assert client.patch(f"/api/v1/orgs/{org}/ai", json={"enabled": False}).status_code == 200
+    assert event["data"]["provider"] == "gemini"
+    assert "AIza-abc123" not in str(event["data"])
+
+    # An unknown provider or an obviously-bad key is rejected.
+    assert client.put(f"/api/v1/orgs/{org}/ai/key", json={"provider": "x", "api_key": "abcdefgh"}).status_code == 400
+
+    # Clearing it removes the key.
+    assert client.delete(f"/api/v1/orgs/{org}/ai/key").json()["key_set"] is False
 
 
 def test_ai_is_off_until_a_workspace_admin_turns_it_on(client, monkeypatch):
@@ -154,10 +171,12 @@ def test_ai_is_off_until_a_workspace_admin_turns_it_on(client, monkeypatch):
     assert "ai.settings_changed" in actions
 
 
-def test_unconfigured_server_returns_503(client, monkeypatch):
+def test_no_key_and_no_managed_provider_asks_for_a_key(client, monkeypatch):
     _, url, _ = _setup(client, monkeypatch, GOOD)
+    # No managed provider configured and the user hasn't supplied a key.
     monkeypatch.setattr(ai_router, "get_provider", lambda: None)
-    assert client.post(f"{url}/ai/analyze").json()["error"]["code"] == "ai_not_configured"
+    r = client.post(f"{url}/ai/analyze")
+    assert r.status_code == 400 and r.json()["error"]["code"] == "ai_no_key"
 
 
 def test_citations_are_verified_against_the_lines_sent(client, monkeypatch):
