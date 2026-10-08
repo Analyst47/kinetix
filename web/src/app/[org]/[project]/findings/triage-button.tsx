@@ -34,11 +34,13 @@ export function TriageButton({ org, project }: { org: string; project: string })
         setNote(`Reviewed ${reviewed}… ${r.remaining} left`);
         router.refresh();
         if (r.stopped) {
-          setNote(
+          const why =
             r.stopped === "quota"
-              ? `Reviewed ${reviewed}. The provider's quota is used up — try again later.`
-              : `Reviewed ${reviewed}. Hit the hourly AI limit — run again later for the rest.`,
-          );
+              ? "The provider's quota is used up — try again later."
+              : r.stopped === "overloaded"
+                ? "The free Gemini tier is overloaded right now — wait a minute or two and run it again."
+                : "Hit the hourly AI limit — run again later for the rest.";
+          setNote(`Reviewed ${reviewed}. ${why}`);
           return;
         }
         if (r.remaining === 0 || r.reviewed === 0) break;

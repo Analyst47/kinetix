@@ -144,8 +144,15 @@ def triage_findings(
             db.commit()
         except ApiError as exc:
             db.rollback()
-            if exc.code in ("ai_quota", "rate_limited"):
-                stopped = "quota" if exc.code == "ai_quota" else "rate_limited"
+            # Stop cleanly on conditions that will hit every remaining finding the same way,
+            # rather than grinding the whole batch through the same failure.
+            _stop = {
+                "ai_quota": "quota",
+                "rate_limited": "rate_limited",
+                "ai_overloaded": "overloaded",
+            }
+            if exc.code in _stop:
+                stopped = _stop[exc.code]
                 break
             continue  # a transient provider hiccup on one finding shouldn't sink the batch
         verdicts[finding.ai_verdict] = verdicts.get(finding.ai_verdict, 0) + 1

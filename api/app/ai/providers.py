@@ -4,6 +4,7 @@ its only output is data."""
 
 import json
 import re
+import time
 from dataclasses import dataclass
 from typing import Any, Protocol
 
@@ -167,37 +168,60 @@ class GeminiProvider:
     client: httpx.Client | None = None
     name: str = "gemini"
     data_notice: str | None = GEMINI_FREE_NOTICE
+    # 503 (overloaded) and 500 are transient on the free tier; retry with backoff before failing.
+    max_attempts: int = 4
 
     def complete(
         self, *, system: str, user: str, schema: dict[str, Any], tool: str
     ) -> dict[str, Any]:
         client = self.client or httpx.Client(timeout=self.timeout)
+        payload = {
+            "systemInstruction": {"parts": [{"text": system}]},
+            "contents": [{"role": "user", "parts": [{"text": user}]}],
+            "generationConfig": {
+                "temperature": 0.2,
+                "maxOutputTokens": 4096,
+                "responseMimeType": "application/json",
+                "responseJsonSchema": _gemini_schema(schema),
+            },
+        }
         try:
-            resp = client.post(
-                f"{self.base_url.rstrip('/')}/models/{self.model}:generateContent",
-                # Header, not ?key=, so the key never lands in proxy or access logs.
-                headers={"x-goog-api-key": self.api_key, "content-type": "application/json"},
-                json={
-                    "systemInstruction": {"parts": [{"text": system}]},
-                    "contents": [{"role": "user", "parts": [{"text": user}]}],
-                    "generationConfig": {
-                        "temperature": 0.2,
-                        "maxOutputTokens": 4096,
-                        "responseMimeType": "application/json",
-                        "responseJsonSchema": _gemini_schema(schema),
-                    },
-                },
-            )
-        except httpx.HTTPError as exc:
-            raise _unavailable("network error") from exc
+            resp = None
+            for attempt in range(self.max_attempts):
+                try:
+                    resp = client.post(
+                        f"{self.base_url.rstrip('/')}/models/{self.model}:generateContent",
+                        # Header, not ?key=, so the key never lands in proxy or access logs.
+                        headers={
+                            "x-goog-api-key": self.api_key,
+                            "content-type": "application/json",
+                        },
+                        json=payload,
+                    )
+                except httpx.HTTPError as exc:
+                    raise _unavailable("network error") from exc
+                # Google returns 503 when the model is overloaded and 500 on a transient
+                # internal error. Both clear on their own, so wait and try again.
+                if resp.status_code in (500, 503) and attempt < self.max_attempts - 1:
+                    time.sleep(2**attempt)
+                    continue
+                break
         finally:
             if self.client is None:
                 client.close()
+        assert resp is not None
         if resp.status_code == 429:
             raise ApiError(
                 429,
                 "ai_quota",
                 "The Gemini API quota for this key is used up for now. Try again later.",
+            )
+        if resp.status_code == 503:
+            raise ApiError(
+                503,
+                "ai_overloaded",
+                "Gemini's free tier is overloaded right now. It usually clears in a minute or "
+                "two — try the triage again shortly.",
             )
         if resp.status_code != 200:
             raise _unavailable(f"HTTP {resp.status_code}")
