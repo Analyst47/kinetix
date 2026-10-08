@@ -1,0 +1,16 @@
+# Cloudflare Tunnel overlay: no open ports at all. Use on top of the production overlay:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.tunnel.yml up -d
+# scripts/quickstart.sh does this for you.
+
+services:
+  edge:
+    environment:
+      # TLS ends at Cloudflare; the tunnel reaches the edge privately over plain HTTP.
+      KINETIX_SITE_ADDRESS: ":80"
+      KINETIX_EDGE_TRUST: cloudflared
+    ports: !reset []
+
+  cloudflared:
+    profiles: !reset []
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?add your Cloudflare Tunnel token to .env}
