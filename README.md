@@ -95,6 +95,21 @@ KINETIX_DEMO=1 npm run dev
 Scans run in-process by default (`KINETIX_SCAN_MODE=inline`). Install Semgrep
 (`uv tool install semgrep`) to enable the SAST analyzer.
 
+## Deploy
+
+One Docker Compose stack on a single machine, free apart from the domain: an Oracle Cloud
+Always Free VM with automatic HTTPS, or any computer behind Cloudflare Tunnel with no open
+ports. Step-by-step guide: [docs/DEPLOY.md](docs/DEPLOY.md).
+
+```bash
+sh scripts/setup-env.sh kinetix.yourdomain.com     # private .env with random secrets
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+python3 scripts/smoke.py https://kinetix.yourdomain.com
+```
+
+Every push runs the same stack in CI and smoke-tests it through the edge, with live GitHub,
+OSV and security.txt lookups.
+
 ## AI assistance
 
 Set one provider on the API (environment variables, or `.env`):

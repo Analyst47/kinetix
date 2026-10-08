@@ -31,14 +31,12 @@
 		}
 		reverse_proxy {$KINETIX_API_UPSTREAM:api:8000} {
 			header_up X-Forwarded-For {client_ip}
-			header_up X-Forwarded-Proto {scheme}
 		}
 	}
 
 	handle {
 		reverse_proxy {$KINETIX_WEB_UPSTREAM:web:3000} {
 			header_up X-Forwarded-For {client_ip}
-			header_up X-Forwarded-Proto {scheme}
 		}
 	}
 
