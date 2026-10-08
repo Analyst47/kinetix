@@ -44,7 +44,7 @@ export function WorkspaceSidebar({ org, orgName }: { org: string; orgName: strin
   return (
     <div className="border-rule bg-sunken w-full shrink-0 border-b md:w-[232px] md:border-r md:border-b-0">
       <aside className="flex flex-col gap-4 px-3 py-3.5 md:sticky md:top-0 md:h-dvh">
-        <Link href="/" className="rounded-md px-1.5 py-0.5">
+        <Link href="/app" className="rounded-md px-1.5 py-0.5">
           <Wordmark />
         </Link>
         <div className="px-2.5">

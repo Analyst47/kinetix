@@ -12,8 +12,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const { next } = await searchParams;
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-[22px] leading-7 font-semibold tracking-[-0.015em]">Sign in</h1>
+      <div className="flex flex-col gap-1.5">
+        <h1 className="display text-ink text-[28px]">Sign in</h1>
         <p className="text-muted">Pick up your research where you left it.</p>
       </div>
       <LoginForm demo={process.env.KINETIX_DEMO === "1" && !next?.startsWith("/invite/")} next={next} />

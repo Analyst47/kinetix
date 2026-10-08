@@ -227,6 +227,8 @@ export interface AiStatus {
   provider: string | null;
   model: string | null;
   data_notice: string | null;
+  monthly_token_budget: number | null;
+  tokens_used_this_month: number | null;
 }
 
 export interface AiCitation {

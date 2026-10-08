@@ -29,13 +29,19 @@ BASE = "/orgs/{org_slug}/projects/{project_slug}/findings/{public_id}/ai"
 
 
 def _status(ctx: OrgContext) -> AiStatusOut:
+    from app.ai import budget
+    from app.config import get_settings
+
     provider = get_provider()
+    cap = get_settings().ai_monthly_token_budget
     return AiStatusOut(
         available=provider is not None,
         enabled=ctx.org.ai_enabled,
         provider=provider.name if provider else None,
         model=provider.model if provider else None,
         data_notice=provider.data_notice if provider else None,
+        monthly_token_budget=cap,
+        tokens_used_this_month=budget.used() if cap else None,
     )
 
 
@@ -150,6 +156,7 @@ def triage_findings(
                 "ai_quota": "quota",
                 "rate_limited": "rate_limited",
                 "ai_overloaded": "overloaded",
+                "ai_budget_exhausted": "budget",
             }
             if exc.code in _stop:
                 stopped = _stop[exc.code]

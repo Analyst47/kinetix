@@ -1,3 +1,4 @@
+import os
 from functools import lru_cache
 from pathlib import Path
 
@@ -60,6 +61,13 @@ class Settings(BaseSettings):
     ai_gemini_tier: str = "free"
     ai_timeout_seconds: float = 60.0
     ai_max_context_lines: int = 60
+    # Cap on tokens the model may generate per request.
+    ai_max_output_tokens: int = 2048
+    # Transient-error retries (429/500/503/529) with exponential backoff, per request.
+    ai_max_retries: int = 4
+    # Optional spend safeguard: refuse AI calls once this many total tokens (input + output)
+    # have been used in the current UTC month. None disables the cap. Tracked in Redis.
+    ai_monthly_token_budget: int | None = None
 
     # Outgoing email: "console" prints messages (development), "resend" sends through Resend
     # (free tier: 3,000 a month), "none" drops them.
@@ -89,6 +97,12 @@ class Settings(BaseSettings):
         if self.env == "production":
             # Never send session cookies over plain HTTP in production, whatever was configured.
             self.cookie_secure = True
+        # Accept the conventional ANTHROPIC_API_KEY as a fallback when using the Claude API,
+        # so operators can reuse their existing Anthropic environment variable unchanged.
+        if self.ai_provider == "anthropic" and not self.ai_api_key:
+            self.ai_api_key = os.environ.get("ANTHROPIC_API_KEY") or None
+        if self.ai_provider == "anthropic" and not self.ai_model:
+            self.ai_model = os.environ.get("ANTHROPIC_MODEL") or None
         return self
 
 

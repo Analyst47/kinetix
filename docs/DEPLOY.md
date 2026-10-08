@@ -109,7 +109,32 @@ KINETIX_EMAIL_FROM=Kinetix <security@kinetix.yourdomain.com>
 
 The "from" address must be on the verified domain.
 
-**AI (optional).** Get a key at https://aistudio.google.com/apikey and set:
+**AI (optional).** Kinetix supports your own **paid Claude API** account (recommended) or
+Google's free Gemini tier. The key is read server-side only — it is never sent to the
+browser, written to logs, or committed. There is no silent fallback: if the key is missing,
+AI features report "not configured" rather than switching providers.
+
+Paid Claude API — create a key at https://console.anthropic.com and set:
+
+```
+KINETIX_AI_PROVIDER=anthropic
+KINETIX_AI_API_KEY=sk-ant-...        # or export ANTHROPIC_API_KEY instead
+KINETIX_AI_MODEL=claude-sonnet-5-5   # or ANTHROPIC_MODEL; omit for the default
+```
+
+Requests bill to your Anthropic Console account at usage-based rates. Model, output cap,
+retries, and a monthly spend ceiling are all configurable:
+
+```
+KINETIX_AI_MAX_OUTPUT_TOKENS=2048        # tokens generated per request
+KINETIX_AI_MAX_RETRIES=4                 # backoff retries on 429/500/503/529
+KINETIX_AI_MONTHLY_TOKEN_BUDGET=2000000  # optional hard cap per UTC month; omit for none
+```
+
+When a budget is set, Kinetix tracks tokens used this month (shown under **Settings → AI
+assistance**) and refuses AI calls once the cap is reached until the month rolls over.
+
+Free Gemini tier — get a key at https://aistudio.google.com/apikey and set:
 
 ```
 KINETIX_AI_PROVIDER=gemini
@@ -119,6 +144,8 @@ KINETIX_AI_API_KEY=AIza...
 On Gemini's free tier, Google may use prompts to improve its products and human reviewers
 may read them. Kinetix shows that notice and makes a workspace admin accept it before AI
 can be turned on. Set `KINETIX_AI_GEMINI_TIER=paid` only if billing is on for that key.
+
+Either way, each workspace must still turn AI on under **Settings → AI assistance**.
 
 **Demo workspace (optional).** `KINETIX_DEMO=1` loads the OWASP Juice Shop demo with a
 shared login pre-filled on the sign-in page. Anyone can change its data, so leave it off

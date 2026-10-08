@@ -19,6 +19,9 @@ class Provider(Protocol):
     model: str
     # Shown to admins and researchers when the provider may keep or reuse what it is sent.
     data_notice: str | None
+    # Token usage from the most recent complete() call, when the provider reports it:
+    # {"input_tokens": int, "output_tokens": int}. None when unknown.
+    last_usage: dict[str, int] | None
 
     def complete(
         self, *, system: str, user: str, schema: dict[str, Any], tool: str
@@ -27,6 +30,25 @@ class Provider(Protocol):
 
 def _unavailable(detail: str) -> ApiError:
     return ApiError(502, "ai_unavailable", f"The AI provider didn't respond usefully: {detail}")
+
+
+# Transient upstream statuses worth retrying: rate limits (429), server errors (500),
+# and the provider-overloaded signals (503, and Anthropic's 529).
+_RETRY_STATUS = {429, 500, 503, 529}
+
+
+def _transient_error(status: int) -> ApiError:
+    """Map a persistent transient status to a stable error code the triage loop understands."""
+    if status == 429:
+        return ApiError(
+            429, "rate_limited", "The AI provider is rate-limiting requests. Try again shortly."
+        )
+    return ApiError(
+        503,
+        "ai_overloaded",
+        "The AI provider is overloaded right now. It usually clears in a minute or two — "
+        "try again shortly.",
+    )
 
 
 @dataclass
@@ -40,42 +62,64 @@ class AnthropicProvider:
     client: httpx.Client | None = None
     name: str = "anthropic"
     data_notice: str | None = None
+    max_tokens: int = 2048
+    max_attempts: int = 4
+    last_usage: dict[str, int] | None = None
 
     def complete(
         self, *, system: str, user: str, schema: dict[str, Any], tool: str
     ) -> dict[str, Any]:
+        self.last_usage = None
         client = self.client or httpx.Client(timeout=self.timeout)
+        body = {
+            "model": self.model,
+            "max_tokens": self.max_tokens,
+            "system": system,
+            "messages": [{"role": "user", "content": user}],
+            "tools": [
+                {
+                    "name": tool,
+                    "description": "Return your result in this exact structure.",
+                    "input_schema": schema,
+                }
+            ],
+            "tool_choice": {"type": "tool", "name": tool},
+        }
         try:
-            resp = client.post(
-                f"{self.base_url.rstrip('/')}/v1/messages",
-                headers={
-                    "x-api-key": self.api_key,
-                    "anthropic-version": "2023-06-01",
-                    "content-type": "application/json",
-                },
-                json={
-                    "model": self.model,
-                    "max_tokens": 2048,
-                    "system": system,
-                    "messages": [{"role": "user", "content": user}],
-                    "tools": [
-                        {
-                            "name": tool,
-                            "description": "Return your result in this exact structure.",
-                            "input_schema": schema,
-                        }
-                    ],
-                    "tool_choice": {"type": "tool", "name": tool},
-                },
-            )
-        except httpx.HTTPError as exc:
-            raise _unavailable("network error") from exc
+            resp = None
+            for attempt in range(self.max_attempts):
+                try:
+                    resp = client.post(
+                        f"{self.base_url.rstrip('/')}/v1/messages",
+                        headers={
+                            "x-api-key": self.api_key,
+                            "anthropic-version": "2023-06-01",
+                            "content-type": "application/json",
+                        },
+                        json=body,
+                    )
+                except httpx.HTTPError as exc:
+                    raise _unavailable("network error") from exc
+                if resp.status_code in _RETRY_STATUS and attempt < self.max_attempts - 1:
+                    time.sleep(2**attempt)
+                    continue
+                break
         finally:
             if self.client is None:
                 client.close()
+        assert resp is not None
+        if resp.status_code in _RETRY_STATUS:
+            raise _transient_error(resp.status_code)
         if resp.status_code != 200:
             raise _unavailable(f"HTTP {resp.status_code}")
-        for block in resp.json().get("content", []):
+        payload = resp.json()
+        usage = payload.get("usage") or {}
+        if isinstance(usage, dict):
+            self.last_usage = {
+                "input_tokens": int(usage.get("input_tokens", 0) or 0),
+                "output_tokens": int(usage.get("output_tokens", 0) or 0),
+            }
+        for block in payload.get("content", []):
             if block.get("type") == "tool_use" and isinstance(block.get("input"), dict):
                 return block["input"]
         raise _unavailable("no structured result")
@@ -92,10 +136,12 @@ class OpenAICompatibleProvider:
     client: httpx.Client | None = None
     name: str = "openai_compatible"
     data_notice: str | None = None
+    last_usage: dict[str, int] | None = None
 
     def complete(
         self, *, system: str, user: str, schema: dict[str, Any], tool: str
     ) -> dict[str, Any]:
+        self.last_usage = None
         client = self.client or httpx.Client(timeout=self.timeout)
         headers = {"content-type": "application/json"}
         if self.api_key:
@@ -125,8 +171,15 @@ class OpenAICompatibleProvider:
                 client.close()
         if resp.status_code != 200:
             raise _unavailable(f"HTTP {resp.status_code}")
+        payload = resp.json()
+        usage = payload.get("usage") or {}
+        if isinstance(usage, dict) and usage:
+            self.last_usage = {
+                "input_tokens": int(usage.get("prompt_tokens", 0) or 0),
+                "output_tokens": int(usage.get("completion_tokens", 0) or 0),
+            }
         try:
-            content = resp.json()["choices"][0]["message"]["content"]
+            content = payload["choices"][0]["message"]["content"]
             match = re.search(r"\{.*\}", content, re.S)
             data = json.loads(match.group(0) if match else content)
         except (KeyError, IndexError, ValueError, TypeError) as exc:
@@ -168,19 +221,22 @@ class GeminiProvider:
     client: httpx.Client | None = None
     name: str = "gemini"
     data_notice: str | None = GEMINI_FREE_NOTICE
+    max_tokens: int = 4096
     # 503 (overloaded) and 500 are transient on the free tier; retry with backoff before failing.
     max_attempts: int = 4
+    last_usage: dict[str, int] | None = None
 
     def complete(
         self, *, system: str, user: str, schema: dict[str, Any], tool: str
     ) -> dict[str, Any]:
+        self.last_usage = None
         client = self.client or httpx.Client(timeout=self.timeout)
         payload = {
             "systemInstruction": {"parts": [{"text": system}]},
             "contents": [{"role": "user", "parts": [{"text": user}]}],
             "generationConfig": {
                 "temperature": 0.2,
-                "maxOutputTokens": 4096,
+                "maxOutputTokens": self.max_tokens,
                 "responseMimeType": "application/json",
                 "responseJsonSchema": _gemini_schema(schema),
             },
@@ -228,6 +284,12 @@ class GeminiProvider:
         body: Any = None
         try:
             body = resp.json()
+            meta = body.get("usageMetadata") or {}
+            if isinstance(meta, dict) and meta:
+                self.last_usage = {
+                    "input_tokens": int(meta.get("promptTokenCount", 0) or 0),
+                    "output_tokens": int(meta.get("candidatesTokenCount", 0) or 0),
+                }
             candidate = body["candidates"][0]
             if candidate.get("finishReason") not in (None, "STOP"):
                 raise _unavailable(f"generation stopped ({candidate['finishReason'].lower()})")
@@ -251,12 +313,14 @@ class MockProvider:
     model: str = "mock"
     name: str = "mock"
     data_notice: str | None = None
+    last_usage: dict[str, int] | None = None
 
     def complete(
         self, *, system: str, user: str, schema: dict[str, Any], tool: str
     ) -> dict[str, Any]:
         from app.ai import mock
 
+        self.last_usage = {"input_tokens": 0, "output_tokens": 0}
         return mock.respond(tool, user)
 
 
@@ -276,6 +340,8 @@ def get_provider() -> Provider | None:
             model=model,
             base_url=s.ai_base_url or "https://api.anthropic.com",
             timeout=s.ai_timeout_seconds,
+            max_tokens=s.ai_max_output_tokens,
+            max_attempts=max(1, s.ai_max_retries),
         )
     if s.ai_provider == "gemini" and s.ai_api_key:
         return GeminiProvider(
@@ -283,6 +349,8 @@ def get_provider() -> Provider | None:
             model=model,
             base_url=s.ai_base_url or "https://generativelanguage.googleapis.com/v1beta",
             timeout=s.ai_timeout_seconds,
+            max_tokens=s.ai_max_output_tokens,
+            max_attempts=max(1, s.ai_max_retries),
             data_notice=None if s.ai_gemini_tier == "paid" else GEMINI_FREE_NOTICE,
         )
     if s.ai_provider == "openai_compatible" and s.ai_base_url and model:

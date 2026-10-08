@@ -118,6 +118,8 @@ def test_status_reflects_server_config_and_workspace_switch(client, monkeypatch)
         "provider": None,
         "model": None,
         "data_notice": None,
+        "monthly_token_budget": None,
+        "tokens_used_this_month": None,
     }
 
 
@@ -351,14 +353,50 @@ def test_anthropic_adapter_forces_a_structured_tool_call():
 
 
 def test_anthropic_adapter_errors_cleanly():
+    # A non-transient HTTP error surfaces as ai_unavailable, not a crash.
     p = AnthropicProvider(
         api_key="k",
         model="m",
-        client=httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(529))),
+        client=httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(403))),
     )
     with pytest.raises(ApiError) as exc:
         p.complete(system="s", user="u", schema={}, tool="t")
     assert exc.value.code == "ai_unavailable"
+
+
+def test_anthropic_adapter_maps_transient_status_and_captures_usage(monkeypatch):
+    monkeypatch.setattr(providers_mod.time, "sleep", lambda _s: None)
+    # Persistent overload (529) maps to a stable ai_overloaded code the triage loop stops on.
+    overloaded = AnthropicProvider(
+        api_key="k",
+        model="m",
+        client=httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(529))),
+        max_attempts=2,
+    )
+    with pytest.raises(ApiError) as exc:
+        overloaded.complete(system="s", user="u", schema={}, tool="t")
+    assert exc.value.code == "ai_overloaded"
+
+    # A transient 503 that then succeeds recovers, and token usage is captured.
+    calls = {"n": 0}
+
+    def flaky(_r: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        if calls["n"] < 2:
+            return httpx.Response(503)
+        return httpx.Response(
+            200,
+            json={
+                "content": [{"type": "tool_use", "input": {"ok": True}}],
+                "usage": {"input_tokens": 50, "output_tokens": 12},
+            },
+        )
+
+    p = AnthropicProvider(
+        api_key="k", model="m", client=httpx.Client(transport=httpx.MockTransport(flaky))
+    )
+    assert p.complete(system="s", user="u", schema={}, tool="t") == {"ok": True}
+    assert p.last_usage == {"input_tokens": 50, "output_tokens": 12}
 
 
 def test_openai_compatible_adapter_parses_json_and_rejects_garbage():

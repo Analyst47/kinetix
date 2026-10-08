@@ -38,8 +38,10 @@ export function TriageButton({ org, project }: { org: string; project: string })
             r.stopped === "quota"
               ? "The provider's quota is used up — try again later."
               : r.stopped === "overloaded"
-                ? "The free Gemini tier is overloaded right now — wait a minute or two and run it again."
-                : "Hit the hourly AI limit — run again later for the rest.";
+                ? "The AI provider is overloaded right now — wait a minute or two and run it again."
+                : r.stopped === "budget"
+                  ? "The monthly AI token budget for this server is used up."
+                  : "Hit the hourly AI limit — run again later for the rest.";
           setNote(`Reviewed ${reviewed}. ${why}`);
           return;
         }

@@ -48,6 +48,18 @@ export default async function AiSettingsPage({ params }: { params: Promise<{ org
               </dd>
               <dt className="text-muted text-xs leading-5">Model</dt>
               <dd className="mono">{status.model ?? "—"}</dd>
+              {status.monthly_token_budget ? (
+                <>
+                  <dt className="text-muted text-xs leading-5">Monthly budget</dt>
+                  <dd>
+                    <span className="mono">
+                      {(status.tokens_used_this_month ?? 0).toLocaleString()} /{" "}
+                      {status.monthly_token_budget.toLocaleString()}
+                    </span>{" "}
+                    <span className="text-muted">tokens used this month</span>
+                  </dd>
+                </>
+              ) : null}
             </dl>
             {status.data_notice ? (
               <div className="border-high/40 bg-high/5 rounded-md border px-3 py-2.5 text-[13px]">

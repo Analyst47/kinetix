@@ -169,8 +169,8 @@ export function PageHeader({
 }) {
   return (
     <div className="flex flex-wrap items-end gap-3">
-      <div className="mr-auto flex min-w-0 flex-col gap-0.5">
-        <h1 className="text-[22px] leading-7 font-semibold tracking-[-0.015em]">{title}</h1>
+      <div className="mr-auto flex min-w-0 flex-col gap-1">
+        <h1 className="display text-ink text-[23px] leading-[1.15]">{title}</h1>
         {description ? <p className="text-muted">{description}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}

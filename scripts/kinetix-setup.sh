@@ -64,13 +64,32 @@ else
   set_env KINETIX_APP_URL "https://$DOMAIN"
 fi
 
-bold "2. AI assistance with Gemini (optional, free key from aistudio.google.com/apikey)"
-read -r -s -p "Gemini API key (Enter to skip; typing is hidden): " GEMINI; echo
-if [ -n "$GEMINI" ]; then
-  set_env KINETIX_AI_PROVIDER gemini
-  set_env KINETIX_AI_API_KEY "$GEMINI"
-  echo "Saved. Turn it on in Kinetix under AI assistance."
-fi
+bold "2. AI assistance (optional)"
+echo "  1) Claude API  — paid, billed to your own Anthropic account (console.anthropic.com)"
+echo "  2) Gemini API  — free key from aistudio.google.com/apikey"
+echo "  3) Skip"
+read -r -p "Choose a provider [1/2/3]: " AICHOICE
+case "$AICHOICE" in
+  1)
+    read -r -s -p "Anthropic API key (sk-ant-…; typing is hidden): " CLAUDE; echo
+    if [ -n "$CLAUDE" ]; then
+      set_env KINETIX_AI_PROVIDER anthropic
+      set_env KINETIX_AI_API_KEY "$CLAUDE"
+      read -r -p "Model [claude-sonnet-5-5]: " AIMODEL
+      set_env KINETIX_AI_MODEL "${AIMODEL:-claude-sonnet-5-5}"
+      echo "Saved. Requests bill to your Anthropic account. Turn it on under AI assistance."
+    fi
+    ;;
+  2)
+    read -r -s -p "Gemini API key (Enter to skip; typing is hidden): " GEMINI; echo
+    if [ -n "$GEMINI" ]; then
+      set_env KINETIX_AI_PROVIDER gemini
+      set_env KINETIX_AI_API_KEY "$GEMINI"
+      echo "Saved. Turn it on in Kinetix under AI assistance."
+    fi
+    ;;
+  *) echo "Skipped. You can add a key to .env later." ;;
+esac
 
 bold "3. Email with Resend (optional, free key from resend.com)"
 echo "Without your own domain, Resend only delivers to the email you signed up to Resend with."

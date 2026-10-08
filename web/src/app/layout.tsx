@@ -4,9 +4,41 @@ import type { ReactNode } from "react";
 
 import "./globals.css";
 
+const SITE_URL = process.env.KINETIX_SITE_URL ?? "https://kinetixusa.duckdns.org";
+const TAGLINE = "Find the paths attackers would take. Fix them before they do.";
+const DESCRIPTION =
+  "Kinetix is an AI-assisted application security platform. It analyzes source code and " +
+  "dependencies, correlates findings with public vulnerability intelligence, and helps " +
+  "researchers validate and responsibly disclose real vulnerabilities.";
+
 export const metadata: Metadata = {
-  title: { default: "Kinetix", template: "%s · Kinetix" },
-  description: "Vulnerability research and responsible-disclosure platform.",
+  metadataBase: new URL(SITE_URL),
+  title: { default: `Kinetix — ${TAGLINE}`, template: "%s · Kinetix" },
+  description: DESCRIPTION,
+  applicationName: "Kinetix",
+  keywords: [
+    "application security",
+    "vulnerability research",
+    "SAST",
+    "dependency scanning",
+    "responsible disclosure",
+    "AI security",
+    "penetration testing",
+  ],
+  authors: [{ name: "Kinetix" }],
+  openGraph: {
+    type: "website",
+    siteName: "Kinetix",
+    title: `Kinetix — ${TAGLINE}`,
+    description: DESCRIPTION,
+    url: SITE_URL,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Kinetix — ${TAGLINE}`,
+    description: DESCRIPTION,
+  },
+  robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {

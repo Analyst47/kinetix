@@ -9,7 +9,9 @@ import { ApiError, call } from "@/lib/client";
 
 /** Only same-origin paths are accepted as a post-login destination (no open redirect). */
 export function safeNext(next: string | null | undefined): string {
-  return next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : "/";
+  return next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\")
+    ? next
+    : "/app";
 }
 
 export function LoginForm({ demo, next }: { demo: boolean; next?: string }) {

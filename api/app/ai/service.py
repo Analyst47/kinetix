@@ -17,8 +17,8 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from app.ai import budget, prompts
 from app.ai import context as ctxmod
-from app.ai import prompts
 from app.ai.providers import Provider
 from app.errors import ApiError
 from app.models import AiRun, Finding, Project, User
@@ -173,10 +173,15 @@ def _run(
     tool: str,
     question: str | None = None,
 ) -> AiRun:
+    # Spend safeguard: refuse before spending anything if the monthly budget is used up.
+    budget.check()
     ctx = ctxmod.build(db, project, finding)
     user_prompt = f"{ctx.prompt}\n\n{task}"
     digest = hashlib.sha256((prompts.SYSTEM + "\n\n" + user_prompt).encode()).hexdigest()
     raw = provider.complete(system=prompts.SYSTEM, user=user_prompt, schema=schema, tool=tool)
+    usage = getattr(provider, "last_usage", None)
+    if isinstance(usage, dict):
+        budget.add(int(usage.get("input_tokens", 0)) + int(usage.get("output_tokens", 0)))
     if kind == "analysis":
         output = _validate_analysis(raw, ctx.lines)
         # Record the model's read on the finding itself, so a triage pass can rank by it.
@@ -194,6 +199,11 @@ def _run(
             )
         output = {"text": text}
     output["source_lines_sent"] = ctx.source_line_count
+    if isinstance(usage, dict):
+        output["usage"] = {
+            "input_tokens": int(usage.get("input_tokens", 0)),
+            "output_tokens": int(usage.get("output_tokens", 0)),
+        }
     signals = [f"{s.path}:{s.line} {s.reason}" for s in ctx.signals]
     run = AiRun(
         org_id=finding.org_id,
@@ -222,6 +232,7 @@ def _run(
             "input_sha256": digest,
             "source_lines_sent": ctx.source_line_count,
             **({"verdict": output["verdict"]} if kind == "analysis" else {}),
+            **({"tokens": output["usage"]} if isinstance(usage, dict) else {}),
             **({"injection_signals": len(signals)} if signals else {}),
         },
     )

@@ -36,7 +36,7 @@ export function RegisterForm({ next }: { next?: string }) {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-[22px] leading-7 font-semibold tracking-[-0.015em]">Create an account</h1>
+        <h1 className="display text-ink text-[28px]">Create an account</h1>
         <p className="text-muted">You&apos;ll set up your first research project next.</p>
       </div>
       <form onSubmit={submit} className="flex flex-col gap-4" noValidate>

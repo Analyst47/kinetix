@@ -585,6 +585,9 @@ class AiStatusOut(BaseModel):
     provider: str | None
     model: str | None
     data_notice: str | None = None
+    # Spend safeguard, when KINETIX_AI_MONTHLY_TOKEN_BUDGET is set (null = no cap).
+    monthly_token_budget: int | None = None
+    tokens_used_this_month: int | None = None
 
 
 class AiTriageOut(BaseModel):
