@@ -14,6 +14,7 @@ interface Report {
   draft: boolean;
   status: FindingStatus;
   severity: Severity;
+  confidence: "firm" | "tentative";
   cvss: { score: string; vector: string } | null;
   cwe: string | null;
   reference: string | null;
@@ -94,6 +95,13 @@ export default async function ReportPage({ params }: { params: Params }) {
       </span>,
     ],
     ["Severity", <SeverityMark key="s" severity={r.severity} />],
+    [
+      "Confidence",
+      <span key="cf">
+        {r.confidence === "firm" ? "Firm" : "Tentative"}
+        {r.confidence === "firm" ? <span className="text-muted text-xs"> · data-flow verified</span> : null}
+      </span>,
+    ],
     [
       "CVSS",
       r.cvss ? (

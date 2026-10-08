@@ -110,6 +110,7 @@ def build(db: Session, org: Organization, project: Project, finding: Finding) ->
         "draft": finding.status not in CONFIRMED_OR_LATER,
         "status": finding.status.value,
         "severity": finding.severity.value,
+        "confidence": finding.confidence.value,
         "cvss": {"score": str(finding.cvss_score), "vector": finding.cvss_vector}
         if finding.cvss_vector
         else None,
@@ -222,6 +223,11 @@ def to_markdown(r: dict[str, Any]) -> str:
             f"{version}" + (f" (commit {product['commit']})" if product["commit"] else ""),
         ),
         ("Severity", r["severity"].capitalize()),
+        (
+            "Confidence",
+            r["confidence"].capitalize()
+            + (" (data-flow verified)" if r["confidence"] == "firm" else ""),
+        ),
         (
             "CVSS",
             f"{r['cvss']['score']} `{r['cvss']['vector']}` (preliminary)"

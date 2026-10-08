@@ -1,6 +1,7 @@
 export type Role = "owner" | "admin" | "researcher" | "reviewer" | "viewer";
 export type Severity = "critical" | "high" | "medium" | "low" | "info";
 export type FindingSource = "sast" | "dependency" | "secret" | "manual";
+export type Confidence = "firm" | "tentative";
 export type FindingStatus =
   | "discovered"
   | "triage"
@@ -53,6 +54,7 @@ export interface Finding {
   severity: Severity;
   status: FindingStatus;
   source: FindingSource;
+  confidence: Confidence;
   cwe: string | null;
   cvss_vector: string | null;
   cvss_score: string | null;

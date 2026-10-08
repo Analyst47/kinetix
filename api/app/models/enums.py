@@ -48,6 +48,13 @@ class FindingSource(StrEnum):
     MANUAL = "manual"
 
 
+class Confidence(StrEnum):
+    # FIRM: a verified data-flow (taint) path, or a matched known-vulnerable dependency.
+    # TENTATIVE: a pattern match that still needs a human to confirm input is attacker-controlled.
+    FIRM = "firm"
+    TENTATIVE = "tentative"
+
+
 class FindingStatus(StrEnum):
     DISCOVERED = "discovered"
     TRIAGE = "triage"

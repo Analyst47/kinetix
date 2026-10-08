@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { PageBar } from "@/components/shell-context";
-import { ButtonLink, EmptyState, Panel, SeverityMark, StatusLabel } from "@/components/ui";
+import { ButtonLink, Chip, EmptyState, Panel, SeverityMark, StatusLabel } from "@/components/ui";
 import {
   CLOSED,
   EVENT_LABEL,
@@ -105,6 +105,14 @@ export default async function FindingPage({
               </span>
               <SeverityMark severity={finding.severity} />
               <StatusLabel status={finding.status} />
+              {finding.confidence === "firm" ? (
+                <Chip
+                  className="border-vg/30 bg-vg-soft text-vg"
+                  title="A verified data-flow path, or a matched known-vulnerable dependency"
+                >
+                  Firm
+                </Chip>
+              ) : null}
             </div>
             <h1 className="text-[22px] leading-7 font-semibold tracking-[-0.015em]">{finding.title}</h1>
             <p className="text-muted">

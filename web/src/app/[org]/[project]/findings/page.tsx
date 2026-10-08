@@ -190,7 +190,17 @@ export default async function FindingsPage({
                       </td>
                       <td className="mono px-3 py-2.5 align-top whitespace-nowrap">{f.cwe ?? "—"}</td>
                       <td className="px-3 py-2.5 align-top">
-                        <Chip>{SOURCE_LABEL[f.source]}</Chip>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <Chip>{SOURCE_LABEL[f.source]}</Chip>
+                          {f.confidence === "firm" ? (
+                            <Chip
+                              className="border-vg/30 bg-vg-soft text-vg"
+                              title="A verified data-flow path, or a matched known-vulnerable dependency"
+                            >
+                              Firm
+                            </Chip>
+                          ) : null}
+                        </div>
                       </td>
                       <td className="px-3 py-2.5 align-top">
                         <StatusLabel status={f.status} />

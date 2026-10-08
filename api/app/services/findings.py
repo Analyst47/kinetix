@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.errors import ApiError, forbidden, not_found
 from app.models import Evidence, Finding, Organization, Project, User
-from app.models.enums import FindingSource, FindingStatus, Severity
+from app.models.enums import Confidence, FindingSource, FindingStatus, Severity
 from app.schemas import ReadinessItem
 from app.security.permissions import Permission
 from app.services import audit
@@ -74,6 +74,7 @@ def create_finding(
     reference: str | None = None,
     scan_id: uuid.UUID | None = None,
     actor_label: str | None = None,
+    confidence: Confidence = Confidence.TENTATIVE,
 ) -> Finding:
     finding = Finding(
         org_id=project.org_id,
@@ -85,6 +86,7 @@ def create_finding(
         severity=severity,
         status=S.DISCOVERED,
         source=source,
+        confidence=confidence,
         cwe=cwe,
         file_path=file_path,
         line=line,

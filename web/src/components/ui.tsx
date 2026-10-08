@@ -128,9 +128,18 @@ export function Avatar({ name, className }: { name: string; className?: string }
   );
 }
 
-export function Chip({ children, className }: { children: ReactNode; className?: string }) {
+export function Chip({
+  children,
+  className,
+  title,
+}: {
+  children: ReactNode;
+  className?: string;
+  title?: string;
+}) {
   return (
     <span
+      title={title}
       className={clsx(
         "border-rule bg-raised text-ink inline-flex h-6 items-center gap-1.5 rounded-sm border px-2 text-xs font-medium whitespace-nowrap",
         className,

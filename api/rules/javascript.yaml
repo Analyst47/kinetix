@@ -24,6 +24,7 @@ rules:
     metadata:
       title: Potential path traversal from request data
       kinetix_severity: high
+      kinetix_confidence: firm
       cwe: ["CWE-22: Improper Limitation of a Pathname to a Restricted Directory"]
     mode: taint
     pattern-sources:
@@ -61,6 +62,7 @@ rules:
     metadata:
       title: Potential command injection from request data
       kinetix_severity: critical
+      kinetix_confidence: firm
       cwe: ["CWE-78: Improper Neutralization of Special Elements used in an OS Command"]
     mode: taint
     pattern-sources:
@@ -131,6 +133,7 @@ rules:
     metadata:
       title: Potential open redirect
       kinetix_severity: medium
+      kinetix_confidence: firm
       cwe: ["CWE-601: URL Redirection to Untrusted Site"]
     mode: taint
     pattern-sources:

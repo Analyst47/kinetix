@@ -146,6 +146,7 @@ def to_osv(data: dict[str, Any]) -> dict[str, Any]:
         "database_specific": {
             "cwe": data.get("cwe"),
             "severity": data["severity"],
+            "confidence": data.get("confidence"),
             "status": data["status"],
             "kinetix_finding": data["id"],
             "draft": data["draft"],
@@ -357,6 +358,7 @@ def dataset_record(finding: Any, excerpt: list[str] | None) -> dict[str, Any]:
             "cwe": finding.cwe,
             "rule_id": finding.rule_id,
             "severity": finding.severity.value,
+            "confidence": finding.confidence.value,
             "file_ext": ext or None,
             "line": finding.line,
             "cvss_vector": finding.cvss_vector,

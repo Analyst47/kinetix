@@ -20,6 +20,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db import Base, Timestamped
 from app.models.enums import (
     AuthorizationType,
+    Confidence,
     FindingSource,
     FindingStatus,
     ScanStatus,
@@ -122,6 +123,10 @@ class Finding(Timestamped, Base):
     severity: Mapped[Severity] = mapped_column(_enum(Severity), nullable=False)
     status: Mapped[FindingStatus] = mapped_column(_enum(FindingStatus), nullable=False)
     source: Mapped[FindingSource] = mapped_column(_enum(FindingSource), nullable=False)
+    # How much the scanner trusts this finding before a human looks (see enums.Confidence).
+    confidence: Mapped[Confidence] = mapped_column(
+        _enum(Confidence), default=Confidence.TENTATIVE, server_default="tentative", nullable=False
+    )
     cwe: Mapped[str | None] = mapped_column(String(16))
     cvss_vector: Mapped[str | None] = mapped_column(String(200))
     cvss_score: Mapped[Decimal | None] = mapped_column(Numeric(3, 1))

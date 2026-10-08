@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.db import set_tenant
 from app.models import Advisory, Dependency, DependencyAdvisory, Finding, Project, Scan, Target
-from app.models.enums import SEVERITY_RANK, FindingSource, ScanStatus, Severity
+from app.models.enums import SEVERITY_RANK, Confidence, FindingSource, ScanStatus, Severity
 from app.scanners import lockfiles, secrets, semgrep
 from app.scanners.osv import NormalizedAdvisory, OsvClient
 from app.services import audit
@@ -145,6 +145,7 @@ def analyze_dependencies(
             title=title,
             severity=top.severity or Severity.MEDIUM,
             source=FindingSource.DEPENDENCY,
+            confidence=Confidence.FIRM,
             description=description,
             cwe=(top.cwe_ids[0] if top.cwe_ids else None),
             file_path=pkg.manifest,
@@ -179,6 +180,7 @@ def analyze_secrets(db: Session, scan: Scan, project: Project, root: Path) -> di
             title=f"{m.rule.title} in {'test fixture' if test_path else 'source'}",
             severity=Severity.INFO if test_path else m.rule.severity,
             source=FindingSource.SECRET,
+            confidence=Confidence.TENTATIVE,
             description=f"Matched rule {m.rule.id} ({m.preview}). The value itself is not stored.",
             cwe=m.rule.cwe,
             file_path=m.file_path,
@@ -208,6 +210,7 @@ def analyze_sast(db: Session, scan: Scan, project: Project, root: Path) -> dict:
             title=m.title,
             severity=m.severity,
             source=FindingSource.SAST,
+            confidence=m.confidence,
             description=m.message,
             cwe=m.cwe,
             file_path=m.file_path,

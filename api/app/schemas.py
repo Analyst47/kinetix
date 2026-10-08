@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field, StringConstraints, 
 
 from app.models.enums import (
     AuthorizationType,
+    Confidence,
     FindingSource,
     FindingStatus,
     Role,
@@ -285,6 +286,7 @@ class FindingOut(Model):
     severity: Severity
     status: FindingStatus
     source: FindingSource
+    confidence: Confidence
     cwe: str | None
     cvss_vector: str | None
     cvss_score: Decimal | None

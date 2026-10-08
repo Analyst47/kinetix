@@ -12,7 +12,7 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from app.models.enums import Severity
+from app.models.enums import Confidence, Severity
 
 RULES_DIR = Path(__file__).resolve().parent.parent.parent / "rules"
 TIMEOUT_SECONDS = 600
@@ -29,6 +29,9 @@ class SastMatch:
     cwe: str | None
     file_path: str
     line: int
+    confidence: Confidence = Confidence.TENTATIVE
+    # Where attacker-controlled input enters, for taint findings: "file:line".
+    taint_source: str | None = None
 
 
 def available() -> bool:
@@ -54,19 +57,56 @@ def parse(output: dict, root: Path) -> list[SastMatch]:
             rel = path.resolve().relative_to(root.resolve()).as_posix()
         except ValueError:
             rel = path.as_posix()
+        conf = (
+            Confidence.FIRM
+            if meta.get("kinetix_confidence") == "firm"
+            else Confidence.TENTATIVE
+        )
+        source = _taint_source(extra, root) if conf is Confidence.FIRM else None
+        message = extra.get("message", "")
+        if source:
+            message = f"{message}\n\nData-flow: attacker-controlled input enters at {source}."
         matches.append(
             SastMatch(
                 # Semgrep prefixes local rule ids with the config path; Kinetix ids contain no dots.
                 rule_id=str(r.get("check_id", "unknown")).rsplit(".", 1)[-1],
                 title=meta.get("title") or extra.get("message", "")[:120],
-                message=extra.get("message", ""),
+                message=message,
                 severity=severity,
                 cwe=cwe if cwe and cwe.startswith("CWE-") else None,
                 file_path=rel,
                 line=int(r.get("start", {}).get("line", 1)),
+                confidence=conf,
+                taint_source=source,
             )
         )
     return matches
+
+
+def _taint_source(extra: dict, root: Path) -> str | None:
+    """The 'file:line' where tainted input enters, from Semgrep's dataflow trace."""
+    trace = extra.get("dataflow_trace") or {}
+    src = trace.get("taint_source") or trace.get("intermediate_vars")
+    # taint_source is ["Loc", [ {location...}, "..." ]] in Semgrep JSON; dig out a location.
+    def _loc(node: object) -> dict | None:
+        if isinstance(node, dict) and "start" in node and "path" in node:
+            return node
+        if isinstance(node, list):
+            for item in node:
+                found = _loc(item)
+                if found:
+                    return found
+        return None
+
+    loc = _loc(src)
+    if not loc:
+        return None
+    try:
+        rel = Path(loc["path"]).resolve().relative_to(root.resolve()).as_posix()
+    except (ValueError, KeyError, TypeError):
+        rel = str(loc.get("path", "?"))
+    line = loc.get("start", {}).get("line")
+    return f"{rel}:{line}" if line else rel
 
 
 # Replaces Semgrep's defaults, which would skip test/ directories where real issues also live.
@@ -94,6 +134,7 @@ def run(root: Path) -> list[SastMatch]:
             exe, "scan", "--json", "--metrics=off", "--disable-version-check", "--quiet",
             "--config", str(RULES_DIR / "javascript.yaml"),
             "--config", str(RULES_DIR / "python.yaml"),
+            "--dataflow-traces",
             "--timeout", "30", "--max-target-bytes", "2000000", ".",
         ]  # fmt: skip
         proc = subprocess.run(  # noqa: S603 - fixed argv, no shell

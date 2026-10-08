@@ -38,3 +38,24 @@ def test_target_cannot_hide_files_with_its_own_ignore_files(tmp_path):
     (target / ".semgrepignore").write_text("routes/\npy/\n")
     (target / ".gitignore").write_text("*\n")
     assert ("kinetix-js-sqli-raw-query", "routes/login.ts", 6) in _hits(target)
+
+
+def test_taint_findings_are_firm_with_a_dataflow_source_and_pattern_findings_tentative():
+    from app.models.enums import Confidence
+
+    by_rule = {m.rule_id: m for m in semgrep.run(FIXTURES)}
+    # A verified source->sink data-flow path (taint mode) is firm.
+    for rule in (
+        "kinetix-js-path-traversal-request",
+        "kinetix-js-command-injection",
+        "kinetix-js-open-redirect",
+    ):
+        if rule in by_rule:
+            assert by_rule[rule].confidence is Confidence.FIRM, rule
+    # When Semgrep reports a multi-step flow, the source location is captured and surfaced.
+    traced = [m for m in by_rule.values() if m.taint_source]
+    for m in traced:
+        assert ":" in m.taint_source and "Data-flow" in m.message
+    # A syntactic pattern match (no flow analysis) stays tentative for a human to confirm.
+    assert by_rule["kinetix-js-sqli-raw-query"].confidence is Confidence.TENTATIVE
+    assert by_rule["kinetix-js-weak-hash"].confidence is Confidence.TENTATIVE

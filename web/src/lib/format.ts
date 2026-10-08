@@ -66,6 +66,11 @@ export const SOURCE_LABEL: Record<FindingSource, string> = {
   manual: "Manual",
 };
 
+export const CONFIDENCE_LABEL: Record<string, string> = {
+  firm: "Firm",
+  tentative: "Tentative",
+};
+
 export const AUTHORIZATION_LABEL: Record<string, string> = {
   open_source: "Open-source project",
   bug_bounty: "Bug bounty scope",

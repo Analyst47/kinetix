@@ -30,6 +30,7 @@ from app.models import (
 )
 from app.models.enums import (
     AuthorizationType,
+    Confidence,
     FindingSource,
     FindingStatus,
     Role,
@@ -214,6 +215,10 @@ def seed() -> None:
                 scan_id=None if source == FindingSource.MANUAL else scan.id,
             )
             f.assignee_id = user.id
+            # Mirror the real scanner: known-vulnerable dependencies and taint-verified
+            # weaknesses are firm; the rest are tentative until a human confirms them.
+            if source == FindingSource.DEPENDENCY or cwe in ("CWE-22", "CWE-78", "CWE-601"):
+                f.confidence = Confidence.FIRM
             by_title[title] = f
             _advance(db, f, final, user)
 
