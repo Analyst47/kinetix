@@ -57,11 +57,7 @@ def parse(output: dict, root: Path) -> list[SastMatch]:
             rel = path.resolve().relative_to(root.resolve()).as_posix()
         except ValueError:
             rel = path.as_posix()
-        conf = (
-            Confidence.FIRM
-            if meta.get("kinetix_confidence") == "firm"
-            else Confidence.TENTATIVE
-        )
+        conf = Confidence.FIRM if meta.get("kinetix_confidence") == "firm" else Confidence.TENTATIVE
         source = _taint_source(extra, root) if conf is Confidence.FIRM else None
         message = extra.get("message", "")
         if source:
@@ -87,6 +83,7 @@ def _taint_source(extra: dict, root: Path) -> str | None:
     """The 'file:line' where tainted input enters, from Semgrep's dataflow trace."""
     trace = extra.get("dataflow_trace") or {}
     src = trace.get("taint_source") or trace.get("intermediate_vars")
+
     # taint_source is ["Loc", [ {location...}, "..." ]] in Semgrep JSON; dig out a location.
     def _loc(node: object) -> dict | None:
         if isinstance(node, dict) and "start" in node and "path" in node:
