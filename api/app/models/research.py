@@ -142,6 +142,10 @@ class Finding(Timestamped, Base):
     created_by_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
     confirmed_by_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
     confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # The AI triage pass's latest read: a verdict a human still verifies before acting.
+    ai_verdict: Mapped[str | None] = mapped_column(String(24))
+    ai_confidence: Mapped[str | None] = mapped_column(String(8))
+    ai_reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )

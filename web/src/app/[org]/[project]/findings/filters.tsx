@@ -21,6 +21,13 @@ const SOURCE_OPTIONS = [
   { value: "manual", label: "Manual" },
 ];
 
+const AI_OPTIONS = [
+  { value: "", label: "Any AI verdict" },
+  { value: "likely_vulnerable", label: "AI: likely real" },
+  { value: "needs_more_context", label: "AI: needs context" },
+  { value: "likely_false_positive", label: "AI: likely false positive" },
+];
+
 export function FindingFilters() {
   const router = useRouter();
   const pathname = usePathname();
@@ -44,7 +51,8 @@ export function FindingFilters() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
-  const hasFilters = params.has("q") || params.has("severity") || params.has("source");
+  const hasFilters =
+    params.has("q") || params.has("severity") || params.has("source") || params.has("ai_verdict");
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -69,6 +77,12 @@ export function FindingFilters() {
         value={params.get("source") ?? ""}
         options={SOURCE_OPTIONS}
         onChange={(v) => update("source", v)}
+      />
+      <Select
+        label="AI verdict"
+        value={params.get("ai_verdict") ?? ""}
+        options={AI_OPTIONS}
+        onChange={(v) => update("ai_verdict", v)}
       />
       {hasFilters ? (
         <Button

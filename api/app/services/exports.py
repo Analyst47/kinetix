@@ -366,6 +366,8 @@ def dataset_record(finding: Any, excerpt: list[str] | None) -> dict[str, Any]:
             "has_reference": bool(finding.reference),
             "description_len": len(finding.description or ""),
             "has_reproduction": bool((finding.reproduction or "").strip()),
+            "ai_verdict": finding.ai_verdict,
+            "ai_confidence": finding.ai_confidence,
             "code_excerpt": excerpt,
         },
         "label": {

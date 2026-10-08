@@ -2,6 +2,7 @@ export type Role = "owner" | "admin" | "researcher" | "reviewer" | "viewer";
 export type Severity = "critical" | "high" | "medium" | "low" | "info";
 export type FindingSource = "sast" | "dependency" | "secret" | "manual";
 export type Confidence = "firm" | "tentative";
+export type AiVerdict = "likely_vulnerable" | "likely_false_positive" | "needs_more_context";
 export type FindingStatus =
   | "discovered"
   | "triage"
@@ -64,6 +65,9 @@ export interface Finding {
   reference: string | null;
   reproduction: string;
   remediation: string;
+  ai_verdict: AiVerdict | null;
+  ai_confidence: "low" | "medium" | "high" | null;
+  ai_reviewed_at: string | null;
   assignee: User | null;
   created_at: string;
   updated_at: string;

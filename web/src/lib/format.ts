@@ -71,6 +71,19 @@ export const CONFIDENCE_LABEL: Record<string, string> = {
   tentative: "Tentative",
 };
 
+export const AI_VERDICT_LABEL: Record<string, string> = {
+  likely_vulnerable: "Likely real",
+  likely_false_positive: "Likely false positive",
+  needs_more_context: "Needs more context",
+};
+
+// Tailwind classes for the AI verdict chip.
+export const AI_VERDICT_CLASS: Record<string, string> = {
+  likely_vulnerable: "border-crit/40 bg-crit-soft text-crit",
+  likely_false_positive: "border-rule bg-sunken text-muted",
+  needs_more_context: "border-med/40 bg-med/10 text-med",
+};
+
 export const AUTHORIZATION_LABEL: Record<string, string> = {
   open_source: "Open-source project",
   bug_bounty: "Bug bounty scope",

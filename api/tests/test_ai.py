@@ -446,3 +446,53 @@ def test_python_def_is_detected():
     lines = ["def handler(req):", "    run(req.GET['q'])"]
     assert ctxmod._enclosing_symbol(lines, 2) == "handler"
     assert ctxmod._enclosing_symbol(lines, 2) not in ctxmod._NOT_A_NAME
+
+
+def test_triage_reviews_open_findings_and_records_verdicts(client, monkeypatch):
+    org, _url, _provider = _setup(client, monkeypatch, GOOD)
+    # A second open finding so the batch has more than one to review.
+    base = f"/api/v1/orgs/{org}/projects/juice-shop/findings"
+    client.post(
+        base,
+        json={
+            "title": "Another",
+            "severity": "high",
+            "cwe": "CWE-79",
+            "file_path": "routes/login.ts",
+            "line": 4,
+        },
+    )
+    r = client.post(f"/api/v1/orgs/{org}/projects/juice-shop/ai/triage?limit=5")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["reviewed"] >= 2 and body["stopped"] is None
+    assert body["verdicts"]["likely_vulnerable"] >= 1
+    assert body["remaining"] == 0
+    # The verdict is now on the finding and in the list payload.
+    listed = client.get(f"{base}?status=open").json()["items"]
+    assert all(f["ai_verdict"] for f in listed)
+    actions = [e["action"] for e in client.get(f"/api/v1/orgs/{org}/audit").json()]
+    assert "ai.triage" in actions
+
+
+def test_triage_stops_cleanly_when_rate_limited(client, monkeypatch):
+    org, _url, _provider = _setup(client, monkeypatch, GOOD)
+    base = f"/api/v1/orgs/{org}/projects/juice-shop/findings"
+    for i in range(3):
+        client.post(
+            base,
+            json={
+                "title": f"Noise {i}",
+                "severity": "low",
+                "cwe": "CWE-79",
+                "file_path": "routes/login.ts",
+                "line": 4,
+            },
+        )
+    ai_router._limiter.limit = 1  # allow a single analysis, then stop
+    try:
+        r = client.post(f"/api/v1/orgs/{org}/projects/juice-shop/ai/triage?limit=10")
+    finally:
+        ai_router._limiter.limit = 40
+    body = r.json()
+    assert body["reviewed"] == 1 and body["stopped"] == "rate_limited" and body["remaining"] >= 1

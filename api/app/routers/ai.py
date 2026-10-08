@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from app.ai import service
@@ -7,8 +7,16 @@ from app.ai.providers import Provider, get_provider
 from app.db import get_db
 from app.deps import OrgContext, load_project, require
 from app.errors import ApiError
-from app.models import AiRun
-from app.schemas import AiAskIn, AiDraftIn, AiRunOut, AiSettingsIn, AiStatusOut
+from app.models import AiRun, Finding
+from app.models.enums import Severity
+from app.schemas import (
+    AiAskIn,
+    AiDraftIn,
+    AiRunOut,
+    AiSettingsIn,
+    AiStatusOut,
+    AiTriageOut,
+)
 from app.security.permissions import Permission
 from app.security.ratelimit import RateLimiter
 from app.services import audit
@@ -31,7 +39,8 @@ def _status(ctx: OrgContext) -> AiStatusOut:
     )
 
 
-def _require_ai(ctx: OrgContext) -> Provider:
+def _ai_provider(ctx: OrgContext) -> Provider:
+    """Permission, configuration and workspace checks, without spending rate budget."""
     ctx.require(Permission.AI_USE)
     provider = get_provider()
     if provider is None:
@@ -42,8 +51,19 @@ def _require_ai(ctx: OrgContext) -> Provider:
             "ai_disabled",
             "AI assistance is off for this workspace. An owner or admin can turn it on.",
         )
+    return provider
+
+
+def _require_ai(ctx: OrgContext) -> Provider:
+    provider = _ai_provider(ctx)
     _limiter.hit(str(ctx.user.id))
     return provider
+
+
+_SEV_RANK = case(
+    {Severity.CRITICAL: 0, Severity.HIGH: 1, Severity.MEDIUM: 2, Severity.LOW: 3, Severity.INFO: 4},
+    value=Finding.severity,
+)
 
 
 @router.get("/orgs/{org_slug}/ai")
@@ -82,6 +102,67 @@ def update_ai_settings(
         )
         db.commit()
     return _status(ctx)
+
+
+@router.post("/orgs/{org_slug}/projects/{project_slug}/ai/triage")
+def triage_findings(
+    project_slug: str,
+    limit: int = Query(default=8, ge=1, le=25),
+    recheck: bool = False,
+    ctx: OrgContext = Depends(require(Permission.PROJECT_READ)),
+    db: Session = Depends(get_db),
+) -> AiTriageOut:
+    """Run AI analysis across a batch of open findings and record each verdict on the finding,
+    so the researcher gets a vetted, ranked shortlist. Advisory only: nothing is confirmed or
+    changed. Stops cleanly when the rate limit or the provider quota is reached."""
+    provider = _ai_provider(ctx)
+    project = load_project(db, ctx, project_slug)
+
+    def _open():
+        q = select(Finding).where(Finding.project_id == project.id, Finding.status.in_(fsvc.OPEN))
+        if not recheck:
+            q = q.where(Finding.ai_reviewed_at.is_(None))
+        return q
+
+    batch = db.scalars(
+        _open()
+        .order_by(Finding.ai_reviewed_at.asc().nulls_first(), _SEV_RANK, Finding.created_at)
+        .limit(limit)
+    ).all()
+
+    verdicts = {"likely_vulnerable": 0, "likely_false_positive": 0, "needs_more_context": 0}
+    reviewed = 0
+    stopped: str | None = None
+    for finding in batch:
+        try:
+            _limiter.hit(str(ctx.user.id))
+        except ApiError:
+            stopped = "rate_limited"
+            break
+        try:
+            service.analyze(db, provider, project, finding, ctx.user)
+            db.commit()
+        except ApiError as exc:
+            db.rollback()
+            if exc.code in ("ai_quota", "rate_limited"):
+                stopped = "quota" if exc.code == "ai_quota" else "rate_limited"
+                break
+            continue  # a transient provider hiccup on one finding shouldn't sink the batch
+        verdicts[finding.ai_verdict] = verdicts.get(finding.ai_verdict, 0) + 1
+        reviewed += 1
+
+    remaining = db.scalar(select(func.count()).select_from(_open().subquery())) or 0
+    audit.record(
+        db,
+        org_id=ctx.org.id,
+        actor=ctx.user,
+        action="ai.triage",
+        subject_type="project",
+        subject_id=project.slug,
+        data={"reviewed": reviewed, "remaining": remaining, "stopped": stopped, **verdicts},
+    )
+    db.commit()
+    return AiTriageOut(reviewed=reviewed, remaining=remaining, stopped=stopped, verdicts=verdicts)
 
 
 @router.get(BASE)

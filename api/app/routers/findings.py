@@ -80,6 +80,7 @@ def list_findings(
     status: StatusGroup = "open",
     severity: list[Severity] = Query(default=[]),
     source: FindingSource | None = None,
+    ai_verdict: str | None = Query(default=None, max_length=24),
     q: str | None = Query(default=None, max_length=200),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
@@ -90,6 +91,8 @@ def list_findings(
     base = select(Finding).where(Finding.project_id == project.id)
     if source:
         base = base.where(Finding.source == source)
+    if ai_verdict:
+        base = base.where(Finding.ai_verdict == ai_verdict)
     if q:
         like = f"%{q.replace('%', r'\%').replace('_', r'\_')}%"
         base = base.where(

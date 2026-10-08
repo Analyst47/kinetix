@@ -12,6 +12,7 @@ Guarantees, regardless of what the model returns:
 
 import hashlib
 import re
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -127,6 +128,10 @@ def _run(
     raw = provider.complete(system=prompts.SYSTEM, user=user_prompt, schema=schema, tool=tool)
     if kind == "analysis":
         output = _validate_analysis(raw, ctx.lines)
+        # Record the model's read on the finding itself, so a triage pass can rank by it.
+        finding.ai_verdict = output["verdict"]
+        finding.ai_confidence = output["confidence"]
+        finding.ai_reviewed_at = datetime.now(UTC)
     elif kind == "question":
         output = _validate_answer(raw, ctx.lines)
     else:

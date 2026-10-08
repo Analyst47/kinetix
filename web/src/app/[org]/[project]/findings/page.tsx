@@ -4,12 +4,20 @@ import Link from "next/link";
 
 import { PageBar } from "@/components/shell-context";
 import { Avatar, Chip, EmptyState, PageHeader, SeverityMark, StatusLabel } from "@/components/ui";
-import { SEVERITY_BG, SEVERITY_ORDER, SOURCE_LABEL, relative } from "@/lib/format";
+import {
+  AI_VERDICT_CLASS,
+  AI_VERDICT_LABEL,
+  SEVERITY_BG,
+  SEVERITY_ORDER,
+  SOURCE_LABEL,
+  relative,
+} from "@/lib/format";
 import { api } from "@/lib/server";
-import type { FindingPage, Scan, Severity, Target } from "@/lib/types";
+import type { AiStatus, FindingPage, Scan, Severity, Target } from "@/lib/types";
 
 import { FindingFilters } from "./filters";
 import { ExportDatasetButton } from "./export-dataset";
+import { TriageButton } from "./triage-button";
 import { NewFindingButton } from "./new-finding";
 
 export const metadata: Metadata = { title: "Findings" };
@@ -25,7 +33,14 @@ const TABS = [
 
 const PAGE_SIZE = 50;
 
-type Search = { status?: string; severity?: string; source?: string; q?: string; page?: string };
+type Search = {
+  status?: string;
+  severity?: string;
+  source?: string;
+  ai_verdict?: string;
+  q?: string;
+  page?: string;
+};
 
 export default async function FindingsPage({
   params,
@@ -49,14 +64,17 @@ export default async function FindingsPage({
   });
   severities.forEach((s) => qs.append("severity", s));
   if (sp.source) qs.set("source", sp.source);
+  if (sp.ai_verdict) qs.set("ai_verdict", sp.ai_verdict);
   if (sp.q) qs.set("q", sp.q);
 
   const base = `/orgs/${org}/projects/${project}`;
-  const [data, scans, targets] = await Promise.all([
+  const [data, scans, targets, ai] = await Promise.all([
     api<FindingPage>(`${base}/findings?${qs}`),
     api<Scan[]>(`${base}/scans`),
     api<Target[]>(`${base}/targets`),
+    api<AiStatus>(`/orgs/${org}/ai`),
   ]);
+  const canTriage = ai.available && ai.enabled;
   const lastScan = scans.find((s) => s.finished_at);
   const lastTarget = lastScan ? targets.find((t) => t.id === lastScan.target_id) : undefined;
   const totalSev = SEVERITY_ORDER.reduce((n, s) => n + (data.severity_counts[s] ?? 0), 0);
@@ -66,6 +84,7 @@ export default async function FindingsPage({
     if (key !== "open") next.set("status", key);
     if (sp.severity) next.set("severity", sp.severity);
     if (sp.source) next.set("source", sp.source);
+    if (sp.ai_verdict) next.set("ai_verdict", sp.ai_verdict);
     if (sp.q) next.set("q", sp.q);
     const s = next.toString();
     return `/${org}/${project}/findings${s ? `?${s}` : ""}`;
@@ -98,6 +117,7 @@ export default async function FindingsPage({
           }
           actions={
             <div className="flex flex-wrap gap-2">
+              {canTriage ? <TriageButton org={org} project={project} /> : null}
               <ExportDatasetButton org={org} project={project} />
               <NewFindingButton org={org} project={project} />
             </div>
@@ -198,6 +218,19 @@ export default async function FindingsPage({
                               title="A verified data-flow path, or a matched known-vulnerable dependency"
                             >
                               Firm
+                            </Chip>
+                          ) : null}
+                          {f.ai_verdict ? (
+                            <Chip
+                              className={AI_VERDICT_CLASS[f.ai_verdict]}
+                              title={`AI triage: ${AI_VERDICT_LABEL[f.ai_verdict]}${f.ai_confidence ? ` (${f.ai_confidence} confidence)` : ""}`}
+                            >
+                              AI:{" "}
+                              {f.ai_verdict === "likely_vulnerable"
+                                ? "likely real"
+                                : f.ai_verdict === "likely_false_positive"
+                                  ? "likely FP"
+                                  : "needs context"}
                             </Chip>
                           ) : null}
                         </div>

@@ -296,6 +296,9 @@ class FindingOut(Model):
     reference: str | None
     reproduction: str
     remediation: str
+    ai_verdict: str | None = None
+    ai_confidence: str | None = None
+    ai_reviewed_at: datetime | None = None
     assignee: UserOut | None
     created_at: datetime
     updated_at: datetime
@@ -582,6 +585,13 @@ class AiStatusOut(BaseModel):
     provider: str | None
     model: str | None
     data_notice: str | None = None
+
+
+class AiTriageOut(BaseModel):
+    reviewed: int
+    remaining: int
+    stopped: str | None = None
+    verdicts: dict[str, int]
 
 
 class AiSettingsIn(BaseModel):

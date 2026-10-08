@@ -30,6 +30,7 @@ The order favors a narrow product that works end to end over broad features that
   JSONL training dataset
 - Confidence ranking (taint-verified vs pattern) and an expanded taint rule pack (SSRF, SSTI,
   reflected XSS, NoSQL injection, prototype pollution, ReDoS, and more); AI caller context
+- AI triage pass: batch review of open findings, verdict recorded per finding, filterable
 
 ## Next
 
