@@ -6,6 +6,7 @@ can't close it early or pose as instructions: an attacker would have to guess th
 Lines that look like attempts to instruct the model are flagged for the researcher.
 """
 
+import os
 import re
 import secrets
 from dataclasses import dataclass, field
@@ -52,10 +53,9 @@ def scan_for_injection(path: str, numbered: list[tuple[int, str]]) -> list[Injec
     return found
 
 
-def _source(
-    db: Session, project: Project, finding: Finding, span: int
-) -> tuple[str, list[tuple[int, str]]] | None:
-    if not finding.file_path or not finding.line:
+def _resolve(db: Session, project: Project, finding: Finding) -> tuple[Path, Path] | None:
+    """The analyzed target's root and the finding's file on disk, or None."""
+    if not finding.file_path:
         return None
     targets = db.scalars(select(Target).where(Target.project_id == project.id)).all()
     if finding.scan_id and (scan := db.get(Scan, finding.scan_id)):
@@ -63,16 +63,87 @@ def _source(
     for target in targets:
         root = (get_settings().storage_dir / "sources" / str(target.id)).resolve()
         path = (root / finding.file_path).resolve()
-        if root not in path.parents or not path.is_file() or path.is_symlink():
-            continue
-        if path.stat().st_size > 2 * 1024 * 1024:
-            return None
-        all_lines = Path(path).read_text(encoding="utf-8", errors="replace").splitlines()
-        start = max(1, finding.line - span)
-        end = min(len(all_lines), finding.line + span)
-        # Cap each line so a minified file can't blow up the prompt.
-        return finding.file_path, [(n, all_lines[n - 1][:400]) for n in range(start, end + 1)]
+        if root in path.parents and path.is_file() and not path.is_symlink():
+            return root, path
     return None
+
+
+def _source(
+    db: Session, project: Project, finding: Finding, span: int
+) -> tuple[str, list[tuple[int, str]]] | None:
+    resolved = _resolve(db, project, finding)
+    if resolved is None or not finding.line:
+        return None
+    _, path = resolved
+    if path.stat().st_size > 2 * 1024 * 1024:
+        return None
+    all_lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    start = max(1, finding.line - span)
+    end = min(len(all_lines), finding.line + span)
+    # Cap each line so a minified file can't blow up the prompt.
+    return finding.file_path, [(n, all_lines[n - 1][:400]) for n in range(start, end + 1)]
+
+
+# Heuristic function-name detectors for JS/TS and Python. Good enough to name the enclosing
+# function and find where it is called; a wrong guess just yields an empty callers block.
+_SYMBOL_PATTERNS = [
+    re.compile(r"\bfunction\s+([A-Za-z_$][\w$]*)\s*\("),
+    re.compile(r"\bdef\s+([A-Za-z_$][\w$]*)\s*\("),
+    re.compile(
+        r"\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*"
+        r"(?:async\s*)?(?:function\b|\([^)]*\)\s*(?::[^=]+)?=>|[A-Za-z_$][\w$]*\s*=>)"
+    ),
+    re.compile(r"\b([A-Za-z_$][\w$]*)\s*:\s*(?:async\s*)?function\b"),
+    re.compile(r"^\s*(?:async\s+)?([A-Za-z_$][\w$]*)\s*\([^;{]*\)\s*\{"),
+]
+_NOT_A_NAME = {
+    "if", "for", "while", "switch", "catch", "function", "return", "await",
+    "typeof", "else", "do", "constructor", "class",
+}  # fmt: skip
+_CALLER_EXTS = {".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".py"}
+_MAX_FILES_SCANNED = 3000
+
+
+def _enclosing_symbol(lines: list[str], line: int) -> str | None:
+    for n in range(min(line, len(lines)), 0, -1):
+        for pat in _SYMBOL_PATTERNS:
+            m = pat.search(lines[n - 1])
+            if m and m.group(1) not in _NOT_A_NAME:
+                return m.group(1)
+    return None
+
+
+def _callers(root: Path, decl_file: str, symbol: str, limit: int = 6) -> list[tuple[str, int, str]]:
+    """Up to `limit` places in the target that call `symbol(`, excluding its declaration."""
+    call = re.compile(rf"(?<![\w.$]){re.escape(symbol)}\s*\(")
+    decl = re.compile(
+        rf"\b(?:function|def)\s+{re.escape(symbol)}\b|"
+        rf"\b(?:const|let|var)\s+{re.escape(symbol)}\b"
+    )
+    hits: list[tuple[str, int, str]] = []
+    scanned = 0
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d not in {"node_modules", ".git", "dist", "build"}]
+        for name in sorted(filenames):
+            if Path(name).suffix.lower() not in _CALLER_EXTS:
+                continue
+            p = Path(dirpath) / name
+            if p.is_symlink() or scanned >= _MAX_FILES_SCANNED:
+                continue
+            scanned += 1
+            try:
+                if p.stat().st_size > 512 * 1024:
+                    continue
+                text = p.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            rel = p.relative_to(root).as_posix()
+            for i, ln in enumerate(text.splitlines(), 1):
+                if call.search(ln) and not decl.search(ln):
+                    hits.append((rel, i, ln.strip()[:200]))
+                    if len(hits) >= limit:
+                        return hits
+    return hits
 
 
 def build(db: Session, project: Project, finding: Finding) -> Context:
@@ -117,6 +188,31 @@ def build(db: Session, project: Project, finding: Finding) -> Context:
             body,
             close_tag,
         ]
+        # Reachability: where the enclosing function is actually called. This lets the model
+        # judge whether attacker-controlled input can reach the flagged line, instead of
+        # guessing from the excerpt alone. Callers are untrusted source, so they are fenced
+        # and scanned for injection like the excerpt.
+        resolved = _resolve(db, project, finding)
+        full = (
+            resolved[1].read_text(encoding="utf-8", errors="replace").splitlines()
+            if resolved
+            else [t for _, t in numbered]
+        )
+        symbol = _enclosing_symbol(full, finding.line or 0)
+        callers = _callers(resolved[0], path, symbol) if (resolved and symbol) else []
+        if symbol and callers:
+            caller_body = "\n".join(f"{p}:{n} | {text}" for p, n, text in callers)
+            for p, n, text in callers:
+                ctx.lines[(p, n)] = text
+                ctx.signals += scan_for_injection(p, [(n, text)])
+            parts += [
+                "",
+                f"## Callers of {symbol}() elsewhere in the target "
+                "(for judging whether input reaches the flagged line)",
+                open_tag("callers", f' symbol="{symbol}"'),
+                caller_body,
+                close_tag,
+            ]
     else:
         parts += ["", "## Source excerpt", "(No source snapshot is available for this finding.)"]
 

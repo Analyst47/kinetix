@@ -417,3 +417,32 @@ def test_gemini_is_selected_from_settings_with_free_tier_notice(monkeypatch):
     assert providers_mod.get_provider().data_notice is None
     monkeypatch.setattr(s, "ai_api_key", None)
     assert providers_mod.get_provider() is None
+
+
+def test_enclosing_symbol_and_caller_discovery(tmp_path):
+    from app.ai import context as ctxmod
+
+    (tmp_path / "routes").mkdir()
+    (tmp_path / "routes" / "login.ts").write_text(
+        "export function login () {\n  return models.query(req.body.email)\n}\n"
+    )
+    (tmp_path / "app.ts").write_text(
+        "import { login } from './routes/login'\n"
+        "app.post('/login', wrap(login))\n"  # a reference, not a call -> ignored
+        "login(req, res)\n"  # a real call -> found
+    )
+    lines = (tmp_path / "routes" / "login.ts").read_text().splitlines()
+    assert ctxmod._enclosing_symbol(lines, 2) == "login"
+
+    callers = ctxmod._callers(tmp_path, "routes/login.ts", "login")
+    assert ("app.ts", 3, "login(req, res)") in callers
+    # The declaration line is never reported as a caller.
+    assert not any(path == "routes/login.ts" for path, _, _ in callers)
+
+
+def test_python_def_is_detected():
+    from app.ai import context as ctxmod
+
+    lines = ["def handler(req):", "    run(req.GET['q'])"]
+    assert ctxmod._enclosing_symbol(lines, 2) == "handler"
+    assert ctxmod._enclosing_symbol(lines, 2) not in ctxmod._NOT_A_NAME
