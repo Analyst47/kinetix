@@ -58,7 +58,11 @@ tamper-evident chain of custody.
   ships a per-request nonce Content Security Policy; rate limits are shared across API
   processes through Redis and keyed on the real client address, which can't be spoofed.
   An independent penetration test found no critical, high or medium issues.
-- **Reports.** A printable vulnerability report (save as PDF from the browser) and Markdown
+- **Exports.** Per finding: a server-generated **PDF** disclosure report, a **CVE Record
+  Format 5.1** JSON ready to submit to a CNA, an **OSV** advisory record, a printable report, and Markdown
+  — each export recorded in the chain of custody with its SHA-256.
+- **Training dataset.** Export a project's findings as JSONL (the scanner's features plus the
+  researcher's verdict) to train a model such as Aegis.
   export, each export recorded in the chain of custody with its SHA-256.
 
 ## Run it

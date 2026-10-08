@@ -1,3 +1,4 @@
+import hashlib
 import json
 from typing import Literal
 
@@ -29,7 +30,7 @@ from app.schemas import (
     TransitionIn,
 )
 from app.security.permissions import Permission, has_permission
-from app.services import audit, report, storage
+from app.services import audit, exports, report, storage
 from app.services import findings as svc
 from app.services.cvss import score_vector
 
@@ -319,6 +320,24 @@ def report_data(
     return report.build(db, ctx.org, project, svc.get_finding(db, project, public_id))
 
 
+def _render_export(fmt: str, data: dict) -> tuple[bytes, str, str]:
+    """Return (bytes, media type, filename suffix) for one export format."""
+    if fmt == "markdown":
+        return report.to_markdown(data).encode(), "text/markdown; charset=utf-8", "report.md"
+    if fmt == "pdf":
+        return exports.to_pdf(data), "application/pdf", "report.pdf"
+    if fmt == "cve":
+        return (
+            json.dumps(exports.to_cve_record(data), indent=2).encode(),
+            "application/json",
+            "cve.json",
+        )
+    if fmt == "osv":
+        return json.dumps(exports.to_osv(data), indent=2).encode(), "application/json", "osv.json"
+    # "json" and "print" both hand back the full structured report.
+    return json.dumps(data, indent=2).encode(), "application/json", "report.json"
+
+
 @router.post("/{public_id}/report/export")
 def export_report(
     project_slug: str,
@@ -330,11 +349,8 @@ def export_report(
     project = load_project(db, ctx, project_slug)
     finding = svc.get_finding(db, project, public_id)
     data = report.build(db, ctx.org, project, finding)
-    if body.format == "markdown":
-        content, media, ext = report.to_markdown(data), "text/markdown; charset=utf-8", "md"
-    else:
-        content, media, ext = json.dumps(data, indent=2), "application/json", "json"
-    sha = report.digest(content)
+    content, media, suffix = _render_export(body.format, data)
+    sha = hashlib.sha256(content).hexdigest()
     # The export itself joins the chain of custody, with the hash of exactly what left.
     audit.record(
         db,
@@ -350,7 +366,7 @@ def export_report(
         content,
         media_type=media,
         headers={
-            "Content-Disposition": f'attachment; filename="{finding.public_id}-report.{ext}"',
+            "Content-Disposition": f'attachment; filename="{finding.public_id}-{suffix}"',
             "X-Report-SHA256": sha,
         },
     )

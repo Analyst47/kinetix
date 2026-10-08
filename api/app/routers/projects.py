@@ -1,9 +1,10 @@
+import hashlib
 import shutil
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Response, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -23,7 +24,7 @@ from app.schemas import (
     TargetOut,
 )
 from app.security.permissions import Permission, has_permission
-from app.services import audit, gitfetch, storage
+from app.services import audit, exports, gitfetch, report, storage
 from app.services.archives import ArchiveRejected, extract
 from app.services.findings import OPEN
 from app.services.scans import dispatch_fetch, source_dir
@@ -236,3 +237,42 @@ def add_repository_target(
     db.refresh(target)
     dispatch_fetch(background, target, ctx.user.id if scan_after else None, list(ANALYZERS))
     return TargetOut.model_validate(target)
+
+
+@router.post("/{project_slug}/export/dataset")
+def export_dataset(
+    project_slug: str,
+    ctx: OrgContext = Depends(require(Permission.PROJECT_READ)),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Every finding in the project as JSONL: the scanner's features plus the researcher's
+    verdict (the training label). Feeds a model such as Aegis. Each export is audited."""
+    project = load_project(db, ctx, project_slug)
+    findings = db.scalars(
+        select(Finding).where(Finding.project_id == project.id).order_by(Finding.created_at)
+    ).all()
+    records = []
+    for finding in findings:
+        excerpt = report._source_excerpt(db, project, finding, context=3)
+        records.append(exports.dataset_record(finding, excerpt["lines"] if excerpt else None))
+    content = exports.dataset_to_jsonl(records).encode()
+    sha = hashlib.sha256(content).hexdigest()
+    audit.record(
+        db,
+        org_id=ctx.org.id,
+        actor=ctx.user,
+        action="dataset.exported",
+        subject_type="project",
+        subject_id=project.slug,
+        data={"findings": len(records), "sha256": sha},
+    )
+    db.commit()
+    return Response(
+        content,
+        media_type="application/x-ndjson",
+        headers={
+            "Content-Disposition": f'attachment; filename="{project.slug}-findings.jsonl"',
+            "X-Dataset-SHA256": sha,
+            "X-Dataset-Count": str(len(records)),
+        },
+    )

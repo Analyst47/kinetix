@@ -26,13 +26,14 @@ The order favors a narrow product that works end to end over broad features that
 - Public Git repository targets, fetched by the worker as pinned single-commit snapshots
 - Hardening: Caddy edge, nonce CSP, Redis-shared rate limits, trusted-proxy client IPs,
   production-forced Secure cookies, independent penetration test
+- Per-finding export to CVE Record Format 5.1, OSV and PDF; project findings export to a
+  JSONL training dataset
 
 ## Next
 
 1. **Disclosure deadline reminders** by email (the delivery path is in place).
 2. **Passkeys** (WebAuthn) alongside TOTP.
-3. **Advisory export**: CVE JSON 5 and OSV formats for a confirmed finding.
-4. **Private repositories** through a GitHub App installation (read-only, per repository).
+3. **Private repositories** through a GitHub App installation (read-only, per repository).
 
 ## Later
 

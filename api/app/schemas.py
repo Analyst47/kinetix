@@ -327,7 +327,7 @@ class SourceExcerpt(BaseModel):
 
 
 class ReportExportIn(BaseModel):
-    format: Literal["markdown", "json", "print"] = "markdown"
+    format: Literal["markdown", "json", "print", "pdf", "cve", "osv"] = "markdown"
 
 
 class CvssOut(BaseModel):

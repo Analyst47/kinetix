@@ -1,13 +1,20 @@
 "use client";
 
-import { ArrowLeft, Download, Printer } from "lucide-react";
+import { ArrowLeft, Download, FileText, Printer, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 import { Button } from "@/components/ui";
 import { ApiError, call } from "@/lib/client";
 
-export async function downloadMarkdown(org: string, project: string, id: string) {
+const SUFFIX: Record<string, string> = {
+  markdown: "report.md",
+  pdf: "report.pdf",
+  cve: "cve.json",
+  osv: "osv.json",
+};
+
+export async function downloadExport(org: string, project: string, id: string, format: string) {
   const csrf = document.cookie
     .split("; ")
     .find((c) => c.startsWith("kx_csrf="))
@@ -15,14 +22,14 @@ export async function downloadMarkdown(org: string, project: string, id: string)
   const res = await fetch(`/api/v1/orgs/${org}/projects/${project}/findings/${id}/report/export`, {
     method: "POST",
     headers: { "content-type": "application/json", "X-CSRF-Token": decodeURIComponent(csrf ?? "") },
-    body: JSON.stringify({ format: "markdown" }),
+    body: JSON.stringify({ format }),
     credentials: "same-origin",
   });
   if (!res.ok) throw new Error("Export failed. Reload the page and try again.");
   const url = URL.createObjectURL(await res.blob());
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${id}-report.md`;
+  a.download = `${id}-${SUFFIX[format] ?? "report"}`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -39,10 +46,34 @@ export function ReportToolbar({ org, project, id }: { org: string; project: stri
         Back to finding
       </Link>
       {error ? <span className="text-crit text-xs">{error}</span> : null}
-      <div className="ml-auto flex gap-2">
-        <Button onClick={() => downloadMarkdown(org, project, id).catch((e: Error) => setError(e.message))}>
+      <div className="ml-auto flex flex-wrap gap-2">
+        <Button
+          onClick={() => downloadExport(org, project, id, "pdf").catch((e: Error) => setError(e.message))}
+        >
+          <FileText aria-hidden />
+          PDF
+        </Button>
+        <Button
+          onClick={() =>
+            downloadExport(org, project, id, "markdown").catch((e: Error) => setError(e.message))
+          }
+        >
           <Download aria-hidden />
           Markdown
+        </Button>
+        <Button
+          onClick={() => downloadExport(org, project, id, "cve").catch((e: Error) => setError(e.message))}
+          title="CVE Record Format 5.1, ready to submit to a CNA"
+        >
+          <ShieldAlert aria-hidden />
+          CVE
+        </Button>
+        <Button
+          onClick={() => downloadExport(org, project, id, "osv").catch((e: Error) => setError(e.message))}
+          title="OSV advisory record"
+        >
+          <ShieldAlert aria-hidden />
+          OSV
         </Button>
         <Button
           variant="primary"
@@ -59,7 +90,7 @@ export function ReportToolbar({ org, project, id }: { org: string; project: stri
           }}
         >
           <Printer aria-hidden />
-          Print or save as PDF
+          Print
         </Button>
       </div>
     </div>

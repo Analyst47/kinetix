@@ -9,6 +9,7 @@ import { api } from "@/lib/server";
 import type { FindingPage, Scan, Severity, Target } from "@/lib/types";
 
 import { FindingFilters } from "./filters";
+import { ExportDatasetButton } from "./export-dataset";
 import { NewFindingButton } from "./new-finding";
 
 export const metadata: Metadata = { title: "Findings" };
@@ -95,7 +96,12 @@ export default async function FindingsPage({
               )}
             </>
           }
-          actions={<NewFindingButton org={org} project={project} />}
+          actions={
+            <div className="flex flex-wrap gap-2">
+              <ExportDatasetButton org={org} project={project} />
+              <NewFindingButton org={org} project={project} />
+            </div>
+          }
         />
 
         <section
