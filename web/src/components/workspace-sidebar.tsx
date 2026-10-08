@@ -1,11 +1,11 @@
 "use client";
 
-import clsx from "clsx";
 import { FolderKanban, KeyRound, ListTree, Sparkles, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { Wordmark } from "@/components/logo";
+import { NavLink } from "@/components/nav-link";
 
 export function WorkspaceSidebar({ org, orgName }: { org: string; orgName: string }) {
   const pathname = usePathname();
@@ -42,29 +42,26 @@ export function WorkspaceSidebar({ org, orgName }: { org: string; orgName: strin
     },
   ];
   return (
-    <div className="border-rule bg-sunken w-full shrink-0 border-b md:w-[232px] md:border-r md:border-b-0">
-      <aside className="flex flex-col gap-4 px-3 py-3.5 md:sticky md:top-0 md:h-dvh">
-        <Link href="/app" className="rounded-md px-1.5 py-0.5">
-          <Wordmark />
+    <div className="border-rule bg-sunken w-full shrink-0 border-b md:w-[256px] md:border-r md:border-b-0">
+      <aside className="flex flex-col gap-5 px-3.5 py-4 md:sticky md:top-0 md:h-dvh">
+        <Link
+          href="/app"
+          className="focus-visible:ring-vg/40 rounded-md px-1.5 py-1 focus-visible:ring-2 focus-visible:outline-none"
+        >
+          <Wordmark size={18} interactive />
         </Link>
-        <div className="px-2.5">
-          <div className="truncate font-semibold">{orgName}</div>
-          <div className="text-muted text-xs">Workspace</div>
+        <div className="border-rule bg-raised flex items-center gap-2.5 rounded-xl border px-3 py-2.5 shadow-sm">
+          <span className="bg-vg-soft text-vg grid size-8 shrink-0 place-items-center rounded-lg text-[13px] font-semibold">
+            {orgName.slice(0, 1).toUpperCase()}
+          </span>
+          <span className="flex min-w-0 flex-col">
+            <span className="truncate text-[14px] font-semibold">{orgName}</span>
+            <span className="text-muted text-xs">Workspace</span>
+          </span>
         </div>
-        <nav aria-label="Workspace" className="flex flex-col gap-0.5">
-          {items.map(({ href, label, icon: Icon, active }) => (
-            <Link
-              key={href}
-              href={href}
-              aria-current={active ? "page" : undefined}
-              className={clsx(
-                "flex h-8 items-center gap-2.5 rounded-md px-2.5 font-medium",
-                active ? "bg-vg-soft" : "hover:bg-rule",
-              )}
-            >
-              <Icon className={clsx("size-4", active ? "text-vg" : "text-muted")} aria-hidden />
-              {label}
-            </Link>
+        <nav aria-label="Workspace" className="flex flex-col gap-1">
+          {items.map(({ href, label, icon, active }) => (
+            <NavLink key={href} href={href} label={label} icon={icon} active={active} />
           ))}
         </nav>
       </aside>

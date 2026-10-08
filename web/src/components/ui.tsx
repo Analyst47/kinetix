@@ -8,12 +8,12 @@ import type { FindingStatus, Severity } from "@/lib/types";
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 
 const BUTTON_BASE =
-  "inline-flex h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-md border px-3 text-sm font-medium transition-colors disabled:cursor-not-allowed [&_svg]:size-4 [&_svg]:shrink-0";
+  "inline-flex h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-md border px-3 text-sm font-medium transition-all duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100 [&_svg]:size-4 [&_svg]:shrink-0";
 
 const BUTTON_VARIANT: Record<Variant, string> = {
   primary:
-    "border-vg bg-vg text-on-vg hover:brightness-110 disabled:border-rule disabled:bg-sunken disabled:text-muted disabled:hover:brightness-100",
-  secondary: "border-rule-strong bg-raised text-ink hover:bg-paper disabled:text-muted",
+    "border-vg bg-vg text-on-vg shadow-sm hover:brightness-110 disabled:border-rule disabled:bg-sunken disabled:text-muted disabled:shadow-none disabled:hover:brightness-100",
+  secondary: "border-rule-strong bg-raised text-ink shadow-sm hover:bg-paper disabled:text-muted",
   ghost: "border-transparent bg-transparent text-ink hover:bg-rule disabled:text-muted",
   danger: "border-rule-strong bg-raised text-crit hover:bg-crit-soft",
 };
@@ -52,9 +52,15 @@ export function Panel({
   className?: string;
 } & Omit<ComponentProps<"section">, "title">) {
   return (
-    <section className={clsx("border-rule bg-raised rounded-md border", className)} {...rest}>
+    <section
+      className={clsx(
+        "border-rule bg-raised rounded-xl border shadow-sm shadow-black/[0.03]",
+        className,
+      )}
+      {...rest}
+    >
       {title ? (
-        <header className="border-rule flex items-center gap-2 border-b px-4 py-3">
+        <header className="border-rule flex items-center gap-2 border-b px-5 py-3.5">
           <h2 className="text-[15px] leading-[22px] font-semibold">{title}</h2>
           {aside ? <div className="ml-auto flex items-center gap-2">{aside}</div> : null}
         </header>
@@ -170,8 +176,8 @@ export function PageHeader({
   return (
     <div className="flex flex-wrap items-end gap-3">
       <div className="mr-auto flex min-w-0 flex-col gap-1">
-        <h1 className="display text-ink text-[23px] leading-[1.15]">{title}</h1>
-        {description ? <p className="text-muted">{description}</p> : null}
+        <h1 className="display text-ink text-[26px] leading-[1.12]">{title}</h1>
+        {description ? <p className="text-muted text-[14.5px]">{description}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
     </div>

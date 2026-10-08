@@ -49,17 +49,17 @@ export function TopBar({
   }
 
   return (
-    <header className="border-rule bg-raised sticky top-0 z-20 flex h-12 items-center gap-3 border-b px-4 md:px-6">
-      <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-2">
+    <header className="border-rule bg-raised/85 sticky top-0 z-20 flex h-14 items-center gap-3 border-b px-4 backdrop-blur-md md:px-6">
+      <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-2 text-[14px]">
         {crumbs.map((c, i) => (
           <Fragment key={`${c.label}-${i}`}>
             {i > 0 ? (
-              <span aria-hidden className="text-muted">
+              <span aria-hidden className="text-rule-strong">
                 /
               </span>
             ) : null}
             {c.href && i < crumbs.length - 1 ? (
-              <Link href={c.href} className={clsx("text-muted hover:text-ink truncate", c.mono && "mono")}>
+              <Link href={c.href} className={clsx("text-muted hover:text-ink truncate transition-colors", c.mono && "mono")}>
                 {c.label}
               </Link>
             ) : (
@@ -67,7 +67,7 @@ export function TopBar({
                 aria-current={i === crumbs.length - 1 ? "page" : undefined}
                 className={clsx(
                   "truncate",
-                  i === crumbs.length - 1 ? "font-medium" : "text-muted",
+                  i === crumbs.length - 1 ? "font-semibold" : "text-muted",
                   c.mono && "mono",
                 )}
               >
@@ -81,7 +81,7 @@ export function TopBar({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="border-rule-strong bg-raised text-muted hover:bg-paper ml-auto hidden h-8 w-[300px] max-w-[40vw] items-center gap-2 rounded-sm border px-2.5 sm:flex"
+        className="border-rule-strong bg-sunken/50 text-muted hover:bg-sunken hover:text-ink ml-auto hidden h-9 w-[320px] max-w-[40vw] items-center gap-2 rounded-lg border px-3 text-[13.5px] transition-colors sm:flex"
       >
         <Search className="size-4" aria-hidden />
         <span className="flex-1 text-left">Search or jump to</span>
@@ -91,9 +91,9 @@ export function TopBar({
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Search"
-        className="hover:bg-rule ml-auto inline-flex size-8 items-center justify-center rounded-md sm:hidden"
+        className="hover:bg-rule text-muted hover:text-ink ml-auto inline-flex size-9 items-center justify-center rounded-lg transition-colors sm:hidden"
       >
-        <Search className="size-4" />
+        <Search className="size-[18px]" />
       </button>
 
       <ThemeToggle />
@@ -105,9 +105,9 @@ export function TopBar({
           aria-haspopup="menu"
           aria-expanded={menu}
           aria-label="Account"
-          className="rounded-full"
+          className="focus-visible:ring-vg/40 rounded-full transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:outline-none"
         >
-          <Avatar name={user.name} />
+          <Avatar name={user.name} className="size-8 text-[12px]" />
         </button>
         {menu ? (
           <div
@@ -182,9 +182,9 @@ function ThemeToggle() {
       type="button"
       onClick={toggle}
       aria-label={dark ? "Use light theme" : "Use dark theme"}
-      className="text-muted hover:bg-rule hover:text-ink inline-flex size-8 items-center justify-center rounded-md"
+      className="text-muted hover:bg-rule hover:text-ink inline-flex size-9 items-center justify-center rounded-lg transition-colors"
     >
-      {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+      {dark ? <Sun className="size-[18px]" /> : <Moon className="size-[18px]" />}
     </button>
   );
 }

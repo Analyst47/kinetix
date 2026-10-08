@@ -1,11 +1,20 @@
 import clsx from "clsx";
 
 /**
- * The Kinetix mark: three chain-of-custody tiles cut from a verdigris block, with a fourth
- * "leading" tile breaking forward in the signal accent — evidence in motion, which is the
- * idea the product is built around.
+ * The Kinetix mark: an ascending path of three nodes — source → flow → sink — with the final
+ * node lit in the signal accent. It is the product in one glyph: tracing the path an attacker
+ * would take to the target. One colour-safe, scales cleanly, and matches the data-flow visuals
+ * used across the site.
  */
-export function LogoMark({ size = 20, className }: { size?: number; className?: string }) {
+export function LogoMark({
+  size = 22,
+  className,
+  interactive,
+}: {
+  size?: number;
+  className?: string;
+  interactive?: boolean;
+}) {
   return (
     <svg
       width={size}
@@ -15,12 +24,27 @@ export function LogoMark({ size = 20, className }: { size?: number; className?: 
       aria-hidden="true"
       className={className}
     >
-      <rect x="0.5" y="0.5" width="23" height="23" rx="5.5" fill="var(--vg)" />
-      <rect x="5" y="5" width="4.5" height="4.5" rx="1.25" fill="var(--on-vg)" opacity="0.95" />
-      <rect x="5" y="14.5" width="4.5" height="4.5" rx="1.25" fill="var(--on-vg)" opacity="0.95" />
-      <rect x="14.5" y="14.5" width="4.5" height="4.5" rx="1.25" fill="var(--on-vg)" opacity="0.95" />
-      {/* The leading tile, lifted forward in the electric signal colour. */}
-      <rect x="14.5" y="5" width="4.5" height="4.5" rx="1.25" fill="var(--signal)" />
+      <rect x="0.5" y="0.5" width="23" height="23" rx="6" fill="var(--vg)" />
+      <path
+        d="M6.6 17.4 L12 12 L17.4 6.6"
+        stroke="var(--on-vg)"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity="0.9"
+      />
+      <circle cx="6.6" cy="17.4" r="2" fill="var(--on-vg)" />
+      <circle cx="12" cy="12" r="2" fill="var(--on-vg)" />
+      <circle
+        cx="17.4"
+        cy="6.6"
+        r="2.7"
+        fill="var(--signal)"
+        className={clsx(
+          interactive &&
+            "origin-center transition-transform duration-300 ease-out group-hover:translate-x-[0.6px] group-hover:-translate-y-[0.6px]",
+        )}
+      />
     </svg>
   );
 }
@@ -29,14 +53,16 @@ export function Wordmark({
   size = 15,
   markSize,
   className,
+  interactive,
 }: {
   size?: number;
   markSize?: number;
   className?: string;
+  interactive?: boolean;
 }) {
   return (
-    <span className={clsx("flex items-center gap-2.5", className)}>
-      <LogoMark size={markSize ?? Math.round(size * 1.35)} />
+    <span className={clsx("group inline-flex items-center gap-2.5", className)}>
+      <LogoMark size={markSize ?? Math.round(size * 1.4)} interactive={interactive} />
       <span
         className="font-display font-semibold tracking-[-0.02em]"
         style={{ fontSize: size, lineHeight: 1 }}
