@@ -116,10 +116,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
-      KINETIX_HOME: ${{ runner.temp }}/kinetix
       KINETIX_SRC: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@v4
+      - name: Use a fresh install directory
+        run: echo "KINETIX_HOME=$RUNNER_TEMP/kinetix" >> "$GITHUB_ENV"
       - name: Install with the quickstart script
         run: |
           KINETIX_DOMAIN=kinetix.example.com \
