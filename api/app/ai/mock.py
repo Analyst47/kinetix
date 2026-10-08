@@ -29,14 +29,18 @@ def respond(tool: str, user: str) -> dict[str, Any]:
     )
     if tool == "record_analysis":
         severe = re.search(r"Severity \(current\): (critical|high)", user) is not None
+        definite = "yes" if (severe and flagged) else "unclear"
+        step = lambda ans: {  # noqa: E731
+            "answer": ans,
+            "explanation": f"{NOTICE} Shown for wiring and layout checks only.",
+            "citations": citations if ans != "unclear" else [],
+        }
         return {
-            "verdict": "likely_vulnerable" if (severe and flagged) else "needs_more_context",
-            "confidence": "low",
+            "input_controlled": step(definite),
+            "reaches_sink": step(definite),
+            "sanitized": step("no" if (severe and flagged) else "unclear"),
+            "impact": f"{NOTICE} No real impact assessment was made.",
             "summary": f"{NOTICE} The flagged line is shown for wiring and layout checks only.",
-            "reasoning": [
-                {"point": "The flagged line from the source excerpt.", "citations": citations},
-                {"point": "Callers outside the excerpt were not reviewed.", "citations": []},
-            ],
             "checks_before_confirming": [
                 "Check whether any middleware or validation runs before this code.",
                 "Reproduce on a local, authorized build before confirming.",

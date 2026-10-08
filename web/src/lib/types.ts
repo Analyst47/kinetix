@@ -243,6 +243,12 @@ export interface AiRun {
     verdict?: "likely_vulnerable" | "likely_false_positive" | "needs_more_context";
     confidence?: "low" | "medium" | "high";
     summary?: string;
+    assessment?: {
+      input_controlled: "yes" | "no" | "unclear";
+      reaches_sink: "yes" | "no" | "unclear";
+      sanitized: "yes" | "no" | "unclear";
+      impact: string;
+    };
     reasoning?: { point: string; citations: AiCitation[]; supported: boolean }[];
     checks_before_confirming?: string[];
     suggested_cwe?: string | null;

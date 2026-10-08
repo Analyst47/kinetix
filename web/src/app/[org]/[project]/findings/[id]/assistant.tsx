@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { AlertTriangle, Circle, Pencil, RefreshCw, Sparkles } from "lucide-react";
+import { AlertTriangle, Check, Circle, Minus, Pencil, RefreshCw, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -45,6 +45,33 @@ function useAi(org: string, project: string, id: string) {
     }
   }
   return { base, run, busy, error };
+}
+
+function AssessmentRow({ label, answer }: { label: string; answer: "yes" | "no" | "unclear" }) {
+  const icon =
+    answer === "yes" ? (
+      <Check className="text-crit size-3.5" aria-hidden />
+    ) : answer === "no" ? (
+      <X className="text-ok size-3.5" aria-hidden />
+    ) : (
+      <Minus className="text-muted size-3.5" aria-hidden />
+    );
+  return (
+    <div className="flex items-center justify-between gap-3 text-[13px]">
+      <span className="flex items-center gap-1.5">
+        {icon}
+        {label}
+      </span>
+      <span
+        className={clsx(
+          "text-xs font-medium",
+          answer === "yes" ? "text-crit" : answer === "no" ? "text-ok" : "text-muted",
+        )}
+      >
+        {answer === "unclear" ? "Unclear" : answer === "yes" ? "Yes" : "No"}
+      </span>
+    </div>
+  );
 }
 
 function Citation({ c }: { c: AiCitation }) {
@@ -147,6 +174,28 @@ export function AssistantPanel({
               <span className="text-muted text-xs">Confidence: {o.confidence}</span>
             </div>
             {o.summary ? <p className="max-w-[76ch]">{o.summary}</p> : null}
+            {o.assessment ? (
+              <div className="border-rule bg-sunken/40 flex flex-col gap-1.5 rounded-sm border px-3 py-2.5">
+                <span className="text-muted text-xs font-medium">Data-flow assessment</span>
+                <AssessmentRow label="Input is attacker-controlled" answer={o.assessment.input_controlled} />
+                <AssessmentRow
+                  label="Input reaches the flagged operation"
+                  answer={o.assessment.reaches_sink}
+                />
+                <AssessmentRow
+                  label="An effective sanitizer is on the path"
+                  answer={o.assessment.sanitized}
+                />
+                {o.assessment.impact ? (
+                  <p className="text-muted mt-1 text-[13px]">
+                    <span className="font-medium">If real:</span> {o.assessment.impact}
+                  </p>
+                ) : null}
+                <p className="text-muted mt-0.5 text-[11.5px]">
+                  Kinetix derived the verdict from these cited answers.
+                </p>
+              </div>
+            ) : null}
             {o.reasoning?.length ? (
               <ul className="flex flex-col gap-2.5">
                 {o.reasoning.map((r, i) => (

@@ -145,6 +145,8 @@ class Finding(Timestamped, Base):
     # The AI triage pass's latest read: a verdict a human still verifies before acting.
     ai_verdict: Mapped[str | None] = mapped_column(String(24))
     ai_confidence: Mapped[str | None] = mapped_column(String(8))
+    # The cited yes/no/unclear answers the verdict was derived from (see ai/service.py).
+    ai_assessment: Mapped[dict | None] = mapped_column(JSONB)
     ai_reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False

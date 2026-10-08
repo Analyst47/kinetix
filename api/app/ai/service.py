@@ -51,23 +51,70 @@ def verify_citations(raw: Any, lines: dict[tuple[str, int], str]) -> tuple[list[
     return valid, dropped
 
 
+_STEP_QUESTION = {
+    "input_controlled": "Input is attacker-controlled",
+    "reaches_sink": "Input reaches the flagged operation",
+    "sanitized": "An effective sanitizer or guard is on the path",
+}
+
+
+def _step(raw: Any, lines: dict[tuple[str, int], str]) -> tuple[str, list[dict], str, int]:
+    """Validate one assessment step. A definitive yes/no needs a verified citation, or it is
+    downgraded to 'unclear' — the platform never acts on an uncited claim."""
+    raw = raw if isinstance(raw, dict) else {}
+    answer = raw.get("answer") if raw.get("answer") in ("yes", "no", "unclear") else "unclear"
+    cites, dropped = verify_citations(raw.get("citations"), lines)
+    if answer in ("yes", "no") and not cites:
+        answer = "unclear"
+    return answer, cites, _text(raw.get("explanation"), 400), dropped
+
+
+def _derive_verdict(controlled: str, reaches: str, sanitized: str) -> str:
+    # Any proven reason it can't be exploited makes it a likely false positive.
+    if controlled == "no" or reaches == "no" or sanitized == "yes":
+        return "likely_false_positive"
+    # All three conditions for exploitability met, with evidence.
+    if controlled == "yes" and reaches == "yes" and sanitized == "no":
+        return "likely_vulnerable"
+    return "needs_more_context"
+
+
 def _validate_analysis(data: dict, lines: dict[tuple[str, int], str]) -> dict:
-    verdict = data.get("verdict")
-    if verdict not in ("likely_vulnerable", "likely_false_positive", "needs_more_context"):
-        verdict = "needs_more_context"
-    confidence = (
-        data.get("confidence") if data.get("confidence") in ("low", "medium", "high") else "low"
-    )
-    reasoning, dropped, supported = [], 0, 0
-    for item in (data.get("reasoning") or [])[:6]:
-        if not isinstance(item, dict):
-            continue
-        cites, d = verify_citations(item.get("citations"), lines)
+    steps, dropped = {}, 0
+    for key in ("input_controlled", "reaches_sink", "sanitized"):
+        answer, cites, explanation, d = _step(data.get(key), lines)
         dropped += d
-        supported += bool(cites)
-        reasoning.append(
-            {"point": _text(item.get("point"), 600), "citations": cites, "supported": bool(cites)}
+        steps[key] = {"answer": answer, "citations": cites, "explanation": explanation}
+
+    controlled = steps["input_controlled"]["answer"]
+    reaches = steps["reaches_sink"]["answer"]
+    sanitized = steps["sanitized"]["answer"]
+    verdict = _derive_verdict(controlled, reaches, sanitized)
+
+    # Confidence reflects how well the deciding facts are evidenced.
+    if verdict == "needs_more_context":
+        confidence = "low"
+    elif verdict == "likely_vulnerable":
+        both = steps["input_controlled"]["citations"] and steps["reaches_sink"]["citations"]
+        confidence = "high" if (both and steps["sanitized"]["citations"]) else "medium"
+    else:  # likely_false_positive: the deciding step is whichever ruled it out
+        decider = (
+            "input_controlled"
+            if controlled == "no"
+            else "reaches_sink"
+            if reaches == "no"
+            else "sanitized"
         )
+        confidence = "high" if steps[decider]["citations"] else "medium"
+
+    reasoning = [
+        {
+            "point": f"{_STEP_QUESTION[key]}: {steps[key]['answer']}. {steps[key]['explanation']}",
+            "citations": steps[key]["citations"],
+            "supported": bool(steps[key]["citations"]),
+        }
+        for key in ("input_controlled", "reaches_sink", "sanitized")
+    ]
     notes = []
     if dropped:
         plural = dropped != 1
@@ -75,11 +122,9 @@ def _validate_analysis(data: dict, lines: dict[tuple[str, int], str]) -> dict:
             f"{dropped} citation{'s' if plural else ''} didn't match the code the assistant was "
             f"shown and {'were' if plural else 'was'} removed."
         )
-    # A confident verdict with nothing to point at is not trustworthy.
-    if verdict != "needs_more_context" and supported == 0:
-        confidence = "low"
+    if "unclear" in (controlled, reaches, sanitized) and verdict == "needs_more_context":
         notes.append(
-            "The assistant didn't cite any line it was shown, so its confidence was lowered."
+            "Kinetix derives the verdict from cited answers; an unproven step reads as unclear."
         )
     cwe = data.get("suggested_cwe")
     severity = data.get("suggested_severity")
@@ -87,6 +132,12 @@ def _validate_analysis(data: dict, lines: dict[tuple[str, int], str]) -> dict:
         "verdict": verdict,
         "confidence": confidence,
         "summary": _text(data.get("summary"), 1200),
+        "assessment": {
+            "input_controlled": controlled,
+            "reaches_sink": reaches,
+            "sanitized": sanitized,
+            "impact": _text(data.get("impact"), 600),
+        },
         "reasoning": reasoning,
         "checks_before_confirming": [
             _text(c, 300) for c in (data.get("checks_before_confirming") or [])[:5] if c
@@ -131,6 +182,7 @@ def _run(
         # Record the model's read on the finding itself, so a triage pass can rank by it.
         finding.ai_verdict = output["verdict"]
         finding.ai_confidence = output["confidence"]
+        finding.ai_assessment = output["assessment"]
         finding.ai_reviewed_at = datetime.now(UTC)
     elif kind == "question":
         output = _validate_answer(raw, ctx.lines)

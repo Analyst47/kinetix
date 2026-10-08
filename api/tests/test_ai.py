@@ -80,26 +80,28 @@ def _setup(client, monkeypatch, output: dict, enable: bool = True) -> tuple[str,
     return org, f"{base}/{f['public_id']}", provider
 
 
+def _cite(quote):
+    return [{"path": "routes/login.ts", "line": 4, "quote": quote}]
+
+
 GOOD = {
-    "verdict": "likely_vulnerable",
-    "confidence": "high",
+    "input_controlled": {
+        "answer": "yes",
+        "explanation": "req.body.email is request input.",
+        "citations": _cite("WHERE email = '${req.body.email}'"),
+    },
+    "reaches_sink": {
+        "answer": "yes",
+        "explanation": "It is interpolated into the raw query.",
+        "citations": _cite("models.sequelize.query"),
+    },
+    "sanitized": {
+        "answer": "no",
+        "explanation": "No escaping or parameterization.",
+        "citations": _cite("SELECT * FROM Users"),
+    },
+    "impact": "Authentication bypass and data exfiltration.",
     "summary": "req.body.email is interpolated into raw SQL.",
-    "reasoning": [
-        {
-            "point": "User input reaches the query string.",
-            "citations": [
-                {"path": "routes/login.ts", "line": 4, "quote": "WHERE email = '${req.body.email}'"}
-            ],
-        },
-        {
-            "point": "A fabricated claim.",
-            "citations": [{"path": "routes/login.ts", "line": 4, "quote": "db.escape(email)"}],
-        },
-        {
-            "point": "Cites a file it never saw.",
-            "citations": [{"path": "server.ts", "line": 1, "quote": "app.use"}],
-        },
-    ],
     "checks_before_confirming": ["Check middleware on /rest/user/login."],
     "suggested_cwe": "CWE-89",
     "suggested_severity": "critical",
@@ -157,31 +159,70 @@ def test_unconfigured_server_returns_503(client, monkeypatch):
 
 
 def test_citations_are_verified_against_the_lines_sent(client, monkeypatch):
-    _, url, _ = _setup(client, monkeypatch, GOOD)
-    out = client.post(f"{url}/ai/analyze").json()["output"]
-    first, fabricated, other_file = out["reasoning"]
-    assert first["supported"] is True and first["citations"][0]["line"] == 4
-    assert fabricated["supported"] is False and fabricated["citations"] == []
-    assert other_file["supported"] is False
-    assert "2 citations didn't match" in out["validation_notes"][0]
-    assert "extra_field" not in out
-    assert out["suggested_cwe"] == "CWE-89" and out["suggested_severity"] == "critical"
-
-
-def test_confident_verdict_without_support_is_downgraded(client, monkeypatch):
-    output = {**GOOD, "reasoning": [{"point": "Trust me.", "citations": []}]}
+    output = {
+        "input_controlled": {
+            "answer": "yes",
+            "explanation": "x",
+            "citations": _cite("req.body.email"),
+        },
+        # A quote that isn't on the line -> citation dropped -> answer downgraded.
+        "reaches_sink": {
+            "answer": "yes",
+            "explanation": "x",
+            "citations": _cite("db.escape(email)"),
+        },
+        # A file the model was never shown -> citation dropped.
+        "sanitized": {
+            "answer": "no",
+            "explanation": "x",
+            "citations": [{"path": "server.ts", "line": 1, "quote": "app.use"}],
+        },
+        "summary": "s",
+        "suggested_cwe": "CWE-89",
+        "suggested_severity": "critical",
+        "extra_field": "dropped",
+    }
     _, url, _ = _setup(client, monkeypatch, output)
     out = client.post(f"{url}/ai/analyze").json()["output"]
-    assert out["confidence"] == "low"
-    assert any("didn't cite" in n for n in out["validation_notes"])
+    controlled, reaches, sanitized = out["reasoning"]
+    assert controlled["supported"] is True and controlled["citations"][0]["line"] == 4
+    assert reaches["supported"] is False and reaches["citations"] == []
+    assert sanitized["supported"] is False
+    assert "2 citations didn't match" in " ".join(out["validation_notes"])
+    assert "extra_field" not in out
+    assert out["suggested_cwe"] == "CWE-89" and out["suggested_severity"] == "critical"
+    # An uncited "yes"/"no" is treated as unclear, so the verdict is not asserted here.
+    assert out["assessment"]["reaches_sink"] == "unclear"
+
+
+def test_uncited_answers_cannot_produce_a_verdict(client, monkeypatch):
+    # The model claims exploitability but cites nothing: Kinetix must not call it vulnerable.
+    def nocite(ans):
+        return {"answer": ans, "explanation": "trust me", "citations": []}
+
+    output = {
+        "input_controlled": nocite("yes"),
+        "reaches_sink": nocite("yes"),
+        "sanitized": nocite("no"),
+        "summary": "s",
+    }
+    _, url, _ = _setup(client, monkeypatch, output)
+    out = client.post(f"{url}/ai/analyze").json()["output"]
+    assert out["verdict"] == "needs_more_context" and out["confidence"] == "low"
+    assert out["assessment"] == {
+        "input_controlled": "unclear",
+        "reaches_sink": "unclear",
+        "sanitized": "unclear",
+        "impact": "",
+    }
 
 
 def test_malformed_output_is_coerced_safely(client, monkeypatch):
     output = {
-        "verdict": "confirmed",
-        "confidence": "absolute",
+        "input_controlled": "nope",
+        "reaches_sink": {"answer": "maybe"},
+        "sanitized": 123,
         "summary": "x" * 5000,
-        "reasoning": "nope",
         "checks_before_confirming": None,
         "suggested_cwe": "89; DROP",
         "suggested_severity": "extreme",

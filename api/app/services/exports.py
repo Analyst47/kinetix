@@ -368,6 +368,9 @@ def dataset_record(finding: Any, excerpt: list[str] | None) -> dict[str, Any]:
             "has_reproduction": bool((finding.reproduction or "").strip()),
             "ai_verdict": finding.ai_verdict,
             "ai_confidence": finding.ai_confidence,
+            "ai_input_controlled": (finding.ai_assessment or {}).get("input_controlled"),
+            "ai_reaches_sink": (finding.ai_assessment or {}).get("reaches_sink"),
+            "ai_sanitized": (finding.ai_assessment or {}).get("sanitized"),
             "code_excerpt": excerpt,
         },
         "label": {
@@ -382,6 +385,21 @@ def dataset_record(finding: Any, excerpt: list[str] | None) -> dict[str, Any]:
                 "public_disclosure",
             ),
             "is_false_positive": status == "false_positive",
+            # True/False once a human has judged it; None while still open. The clean target.
+            "ground_truth_vulnerable": (
+                True
+                if status
+                in (
+                    "confirmed",
+                    "reported",
+                    "vendor_acknowledged",
+                    "fix_available",
+                    "public_disclosure",
+                )
+                else False
+                if status in ("false_positive", "not_a_security_issue")
+                else None
+            ),
         },
     }
 
