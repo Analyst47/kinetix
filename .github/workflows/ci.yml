@@ -81,6 +81,8 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+      - name: Lint server scripts
+        run: shellcheck -S warning scripts/*.sh
       - name: Build and start the stack
         run: docker compose up --build -d
       - name: Wait for the edge

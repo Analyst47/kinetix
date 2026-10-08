@@ -30,6 +30,8 @@ services:
   worker:
     restart: unless-stopped
     environment: *prod-env
+    # One scan at a time suits a 2 GB server; raise it on bigger machines.
+    command: ["celery", "-A", "app.worker", "worker", "--loglevel=INFO", "--concurrency=${KINETIX_WORKER_CONCURRENCY:-1}"]
 
   web:
     restart: unless-stopped

@@ -12,6 +12,44 @@ You need:
 
 The machine needs about 4 GB of free RAM and 20 GB of disk to start.
 
+## Quickest: Amazon Lightsail with AWS credits
+
+About 25 minutes, most of it waiting. No card, no domain purchase: the $12 Lightsail
+plan (2 GB RAM, static IP included) runs on AWS credits, and DuckDNS gives a free name.
+
+1. **DuckDNS.** At https://www.duckdns.org, sign in with GitHub, type a subdomain (for
+   example `kinetix-fahim`) and click **add domain**. Leave the IP for now.
+2. **Create the server.** In the AWS console, open **Lightsail**, then **Create instance**:
+   - Region: the one your credits are in (for example Ohio, us-east-2)
+   - Platform **Linux/Unix**, blueprint **OS Only**, **Ubuntu 24.04 LTS**
+   - **Add launch script**, and paste:
+     `curl -fsSL https://raw.githubusercontent.com/Analyst47/kinetix/main/scripts/server-bootstrap.sh | bash`
+   - Plan: **$12 USD** (2 GB memory). Name it `kinetix`, then **Create instance**.
+3. **Static IP.** Open the instance, go to **Networking**, click **Attach static IP**, then
+   **Create and attach**. Copy the IP. (It's free while attached; delete it if you delete
+   the instance.)
+4. **Firewall.** On the same **Networking** tab, under IPv4 firewall, **Add rule**: HTTPS,
+   TCP 443. (SSH 22 and HTTP 80 are already there; HTTP is needed for the certificate.)
+5. **Point the name.** Back on DuckDNS, paste the static IP next to your subdomain and click
+   **update ip**.
+6. **Optional keys.** A Gemini key from https://aistudio.google.com/apikey, and a Resend API
+   key from https://resend.com (without your own domain, Resend only delivers to the email
+   you signed up with, which covers password resets for your own account).
+7. **Run setup.** On the instance page, click **Connect using SSH**. When the terminal opens,
+   type `sudo kinetix-setup` and answer the questions. It waits if the server is still
+   installing (15-20 minutes after creation), and keys you paste stay on the server. Paste
+   with the clipboard icon at the bottom right of the terminal.
+8. Open `https://kinetix-fahim.duckdns.org/register`, create your account, then turn on
+   two-step verification under **Security**.
+
+Day to day: `sudo kinetix status`, `sudo kinetix logs`, `sudo kinetix update`,
+`sudo kinetix backup`. Backups run daily at 03:15 UTC into `/opt/kinetix/backups`. Before
+your credits or free period end, download a backup (or move to a paid plan), because AWS
+closes free-plan resources then.
+
+The rest of this guide covers other hosts (Oracle, a home computer through Cloudflare
+Tunnel) and the details behind these steps.
+
 ## Choose a path
 
 | | Path A: Oracle Cloud free VM | Path B: Cloudflare Tunnel |
