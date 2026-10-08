@@ -63,10 +63,14 @@ Open http://localhost:3000 and sign in with the demo account
 **Without Docker**, you need Postgres 16 and Python 3.12+ with [uv](https://docs.astral.sh/uv/):
 
 ```bash
+# Database roles: an owner for migrations, a restricted role for the app (see docs/SECURITY.md)
+psql -c "CREATE ROLE kinetix_app LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD 'kinetix_app'"
+cp .env.example api/.env
+
 # API
 cd api
 uv sync
-uv run alembic upgrade head
+uv run alembic upgrade head        # runs as KINETIX_MIGRATION_DATABASE_URL (the owner)
 uv run python -m app.seed          # demo workspace: OWASP Juice Shop
 uv run uvicorn app.main:app --reload
 

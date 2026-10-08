@@ -14,6 +14,7 @@ boundary. It is designed on the assumption that both its users and its inputs ca
 | Threat | Control | Where |
 | --- | --- | --- |
 | Cross-tenant data access (IDOR/BOLA) | Membership-checked org context; Postgres RLS on every tenant table; uniform 404s | `deps.py`, initial migration, `tests/test_tenancy.py` |
+| RLS silently bypassed by a privileged DB user | The API connects as a restricted role (no superuser, no BYPASSRLS, owns nothing); migrations run as the owner; the API refuses to start in production if its connection could bypass RLS; tests run as a restricted role too | `app/dbguard.py`, `app_role_grants` migration, `infra/postgres/` |
 | Session theft | Opaque 256-bit tokens, only SHA-256 stored, `HttpOnly`, `SameSite=Lax`, server-side revocation, 12 h expiry | `routers/auth.py` |
 | CSRF | Double-submit token on every unsafe request, Origin check | `main.py` |
 | Credential stuffing | Argon2id, rate limiting per IP and email, timing-equal failures | `security/` |
@@ -35,6 +36,20 @@ boundary. It is designed on the assumption that both its users and its inputs ca
 | Hallucinated evidence | Every citation is matched against the exact lines sent; unmatched citations removed, unsupported claims marked, unsupported confident verdicts downgraded | `ai/service.py` |
 | Unreleased details sent to a third party | AI is off per workspace until an owner or admin enables it; nothing is sent without a click; each request's input hash is recorded in custody | `routers/ai.py` |
 | Out-of-scope research | Attestation required; expired authorization blocks targets and scans | `routers/projects.py` |
+
+## Database roles
+
+Postgres superusers and roles with `BYPASSRLS` skip row-level security even when it is
+forced. Kinetix therefore uses two roles:
+
+- **Owner** (`KINETIX_MIGRATION_DATABASE_URL`): owns the schema and runs migrations.
+- **App** (`KINETIX_DATABASE_URL`, default `kinetix_app`): created by the operator with
+  `CREATE ROLE kinetix_app LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD '...'`, and granted
+  data access only, by the `app_role_grants` migration. If the role is created after
+  migrating, run `alembic downgrade -1 && alembic upgrade head` as the owner to apply grants.
+
+Docker Compose creates the app role on first start (`infra/postgres/10-app-role.sh`). On a
+managed database such as Neon, create it in the console or with SQL before migrating.
 
 ## Known gaps
 

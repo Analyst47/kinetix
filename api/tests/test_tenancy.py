@@ -1,11 +1,14 @@
 """Tenant isolation: the API refuses cross-org access, and the database does too."""
 
+import pytest
 from sqlalchemy import select, text
+from sqlalchemy.exc import DBAPIError
 
-from app.db import SessionLocal, set_tenant
+from app import dbguard
+from app.db import SessionLocal, engine, set_tenant
 from app.models import Finding, Membership, Organization, User
 from app.models.enums import Role
-from tests.conftest import create_finding, create_project, make_client, register
+from tests.conftest import admin_engine, create_finding, create_project, make_client, register
 
 
 def test_non_member_gets_404_not_403(client):
@@ -120,3 +123,22 @@ def test_viewer_cannot_create_findings_and_reviewer_cannot_confirm(client):
     )
     assert r.status_code == 200
     assert r.json()["status"] == "false_positive"
+
+
+def test_app_role_cannot_bypass_isolation_or_alter_the_schema():
+    with engine.connect() as conn:
+        assert dbguard.rls_bypass_reason(conn) is None
+        with pytest.raises(DBAPIError):
+            conn.execute(text("ALTER TABLE audit_events DISABLE TRIGGER audit_events_no_update"))
+        conn.rollback()
+        with pytest.raises(DBAPIError):
+            conn.execute(text("ALTER TABLE findings NO FORCE ROW LEVEL SECURITY"))
+
+
+def test_startup_guard_refuses_a_superuser_connection_in_production():
+    with admin_engine.connect() as conn:
+        if dbguard.rls_bypass_reason(conn) is None:
+            pytest.skip("test admin connection isn't a superuser")
+        with pytest.raises(RuntimeError, match="Row-level security would not apply"):
+            dbguard.enforce(conn, production=True)
+        dbguard.enforce(conn, production=False)  # development only warns

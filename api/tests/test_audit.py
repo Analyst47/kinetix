@@ -4,10 +4,10 @@ import pytest
 from sqlalchemy import select, text
 from sqlalchemy.exc import DBAPIError
 
-from app.db import SessionLocal, engine, set_tenant
+from app.db import SessionLocal, set_tenant
 from app.models import Organization
 from app.services import audit
-from tests.conftest import create_finding, create_project, register
+from tests.conftest import admin_engine, create_finding, create_project, register
 
 
 def _org_id(slug: str):
@@ -48,7 +48,7 @@ def test_tampering_with_history_is_detected(client):
     create_finding(client, org)
     org_id = _org_id(org)
     # Simulate an attacker with database owner rights who disables the trigger.
-    with engine.begin() as conn:
+    with admin_engine.begin() as conn:
         conn.execute(text("SELECT set_config('app.org_id', :o, true)"), {"o": str(org_id)})
         conn.execute(text("ALTER TABLE audit_events DISABLE TRIGGER audit_events_no_update"))
         conn.execute(text('UPDATE audit_events SET data = \'{"title": "edited"}\' WHERE seq = 2'))

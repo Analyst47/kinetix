@@ -1,9 +1,13 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
+from app import dbguard
 from app.config import get_settings
 from app.db import engine
 from app.errors import ApiError, api_error_handler
@@ -33,9 +37,17 @@ SECURITY_HEADERS = {
 }
 
 
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    with engine.connect() as conn:
+        dbguard.enforce(conn, production=get_settings().is_production)
+    yield
+
+
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(
+        lifespan=lifespan,
         title="Kinetix API",
         version="0.1.0",
         description="Vulnerability research and responsible-disclosure platform.",

@@ -2,7 +2,10 @@
 name: kinetix
 
 x-api-env: &api-env
-  KINETIX_DATABASE_URL: postgresql+psycopg://kinetix:kinetix@postgres:5432/kinetix
+  # The API and worker connect as kinetix_app, which row-level security applies to.
+  # Migrations connect as the owner. Change both passwords outside local development.
+  KINETIX_DATABASE_URL: postgresql+psycopg://kinetix_app:${KINETIX_DB_APP_PASSWORD:-kinetix_app}@postgres:5432/kinetix
+  KINETIX_MIGRATION_DATABASE_URL: postgresql+psycopg://kinetix:${POSTGRES_PASSWORD:-kinetix}@postgres:5432/kinetix
   KINETIX_REDIS_URL: redis://redis:6379/0
   KINETIX_STORAGE_DIR: /data
   KINETIX_SCAN_MODE: celery
@@ -19,9 +22,12 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: kinetix
-      POSTGRES_PASSWORD: kinetix
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kinetix}
       POSTGRES_DB: kinetix
-    volumes: [pgdata:/var/lib/postgresql/data]
+      KINETIX_DB_APP_PASSWORD: ${KINETIX_DB_APP_PASSWORD:-kinetix_app}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U kinetix"]
       interval: 3s

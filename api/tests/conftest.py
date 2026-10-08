@@ -2,10 +2,34 @@ import os
 import tempfile
 from collections.abc import Iterator
 
-TEST_DB = os.environ.get(
+from sqlalchemy import create_engine, make_url, text
+
+# The test database URL is an owner/admin connection, used for setup and cleanup only. Tests
+# run the app as a restricted role, exactly as production does: superusers and BYPASSRLS roles
+# skip row-level security, so testing as one would hide isolation bugs.
+ADMIN_DB = os.environ.get(
     "KINETIX_TEST_DATABASE_URL", "postgresql+psycopg://kinetix:kinetix@localhost:5432/kinetix_test"
 )
+APP_ROLE = "kinetix_app_test"
+TEST_DB = (
+    make_url(ADMIN_DB)
+    .set(username=APP_ROLE, password=APP_ROLE)
+    .render_as_string(hide_password=False)
+)
+admin_engine = create_engine(ADMIN_DB)
+with admin_engine.begin() as _conn:
+    if not _conn.execute(
+        text("SELECT 1 FROM pg_roles WHERE rolname = :r"), {"r": APP_ROLE}
+    ).first():
+        _conn.execute(
+            text(
+                f"CREATE ROLE {APP_ROLE} LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE "
+                f"PASSWORD '{APP_ROLE}'"
+            )
+        )
 os.environ["KINETIX_DATABASE_URL"] = TEST_DB
+os.environ["KINETIX_MIGRATION_DATABASE_URL"] = ADMIN_DB
+os.environ["KINETIX_DB_APP_ROLE"] = APP_ROLE
 os.environ["KINETIX_STORAGE_DIR"] = tempfile.mkdtemp(prefix="kinetix-test-storage-")
 os.environ["KINETIX_SCAN_MODE"] = "inline"
 
@@ -13,10 +37,9 @@ import pytest  # noqa: E402
 from alembic import command  # noqa: E402
 from alembic.config import Config  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
-from sqlalchemy import text  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
-from app.db import SessionLocal, engine  # noqa: E402
+from app.db import SessionLocal  # noqa: E402
 from app.main import app  # noqa: E402
 from app.security.ratelimit import login_limiter, register_limiter  # noqa: E402
 
@@ -30,13 +53,13 @@ TABLES = (
 
 @pytest.fixture(scope="session", autouse=True)
 def migrated() -> None:
-    with engine.begin() as conn:
+    with admin_engine.begin() as conn:
         conn.execute(text("DROP SCHEMA public CASCADE; CREATE SCHEMA public;"))
     cfg = Config(os.path.join(os.path.dirname(__file__), "..", "alembic.ini"))
     cfg.set_main_option(
         "script_location", os.path.join(os.path.dirname(__file__), "..", "migrations")
     )
-    cfg.attributes["database_url"] = TEST_DB
+    cfg.attributes["database_url"] = ADMIN_DB
     command.upgrade(cfg, "head")
 
 
@@ -45,7 +68,7 @@ def clean() -> Iterator[None]:
     login_limiter.reset()
     register_limiter.reset()
     yield
-    with engine.begin() as conn:
+    with admin_engine.begin() as conn:
         conn.execute(text(f"TRUNCATE {TABLES} RESTART IDENTITY CASCADE"))
 
 

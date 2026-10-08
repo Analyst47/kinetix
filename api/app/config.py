@@ -14,7 +14,12 @@ class Settings(BaseSettings):
     # Encrypts MFA secrets at rest. Must be set to a long random value outside development.
     secret_key: str = "dev-only-insecure-secret-key-change-me"  # noqa: S105 - dev default, rejected elsewhere
     app_url: str = "http://localhost:3000"
-    database_url: str = "postgresql+psycopg://kinetix:kinetix@localhost:5432/kinetix"
+    # The API and worker connect as a restricted role that row-level security applies to.
+    database_url: str = "postgresql+psycopg://kinetix_app:kinetix_app@localhost:5432/kinetix"
+    # Migrations connect as the schema owner. Empty means database_url (single-role setups).
+    migration_database_url: str | None = None
+    # The role migrations grant table access to. It must not be a superuser or have BYPASSRLS.
+    db_app_role: str = "kinetix_app"
     redis_url: str = "redis://localhost:6379/0"
 
     # Where evidence and ingested archives are stored. Content-addressed by SHA-256.
