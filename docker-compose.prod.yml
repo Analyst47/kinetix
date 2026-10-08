@@ -1,0 +1,52 @@
+# Production overlay. Use with:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# Values come from .env (create it with scripts/setup-env.sh). See docs/DEPLOY.md.
+
+x-required: &prod-env
+  KINETIX_ENV: production
+  KINETIX_SECRET_KEY: ${KINETIX_SECRET_KEY:?run scripts/setup-env.sh to create .env}
+  KINETIX_APP_URL: ${KINETIX_APP_URL:?set KINETIX_APP_URL in .env, like https://kinetix.example.com}
+  # The public demo workspace (shared demo login) is off unless you turn it on.
+  KINETIX_DEMO: ${KINETIX_DEMO:-0}
+
+services:
+  postgres:
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      KINETIX_DB_APP_PASSWORD: ${KINETIX_DB_APP_PASSWORD:?set KINETIX_DB_APP_PASSWORD in .env}
+
+  redis:
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+
+  migrate:
+    environment: *prod-env
+
+  api:
+    restart: unless-stopped
+    environment: *prod-env
+
+  worker:
+    restart: unless-stopped
+    environment: *prod-env
+
+  web:
+    restart: unless-stopped
+    environment:
+      KINETIX_DEMO: ${KINETIX_DEMO:-0}
+
+  edge:
+    restart: unless-stopped
+    environment:
+      KINETIX_SITE_ADDRESS: ${KINETIX_SITE_ADDRESS:?set KINETIX_SITE_ADDRESS in .env, like kinetix.example.com}
+    # Direct to the internet: 80 for the HTTPS certificate challenge and redirects, 443 for
+    # HTTPS (TCP and UDP for HTTP/3). Behind Cloudflare Tunnel, the tunnel profile is used
+    # instead and these can stay closed in the firewall.
+    ports: !override
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+
+  cloudflared:
+    restart: unless-stopped

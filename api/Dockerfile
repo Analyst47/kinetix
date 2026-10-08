@@ -13,11 +13,19 @@ USER kinetix
 
 FROM base AS api
 EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
+# No --proxy-headers: the client address comes from app/security/clientip.py, which trusts
+# X-Forwarded-For only from KINETIX_TRUSTED_PROXIES.
+HEALTHCHECK --interval=5s --timeout=3s --retries=20 \
+  CMD ["python", "-c", "import urllib.request,sys; sys.exit(urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=2).status != 200)"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--no-server-header"]
 
-# The worker runs analyzers on untrusted source, so it gets Semgrep and nothing else extra.
+# The worker runs analyzers on untrusted source, so it gets git (for repository targets) and
+# Semgrep, and nothing else extra.
 FROM base AS worker
 USER root
-RUN uv pip install --python /app/.venv/bin/python semgrep==1.179.0
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends git ca-certificates \
+ && rm -rf /var/lib/apt/lists/* \
+ && uv pip install --python /app/.venv/bin/python semgrep==1.179.0
 USER kinetix
 CMD ["celery", "-A", "app.worker", "worker", "--loglevel=INFO", "--concurrency=2"]

@@ -67,3 +67,38 @@ jobs:
       - run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: "1"
+
+  # The whole stack, built from the Dockerfiles and started with Compose, tested through the
+  # public edge only, with live GitHub, OSV and security.txt lookups.
+  stack:
+    needs: [api, web]
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and start the stack
+        run: docker compose up --build -d
+      - name: Wait for the edge
+        run: |
+          for i in $(seq 1 120); do
+            curl -fsS http://localhost:3000/api/health && exit 0
+            sleep 5
+          done
+          exit 1
+      - name: Smoke test through the edge
+        run: python3 scripts/smoke.py http://localhost:3000 --api-direct http://localhost:8000
+      - name: Worker sandbox holds
+        run: |
+          if docker compose exec -T worker sh -c 'touch /app/pwned' 2>/dev/null; then
+            echo "worker root filesystem is writable"; exit 1
+          fi
+          test "$(docker compose exec -T worker id -u)" = 10001
+          test "$(docker compose exec -T worker sh -c 'grep CapEff /proc/self/status' | awk '{print $2}')" = 0000000000000000
+      - name: Production configuration renders
+        run: |
+          sh scripts/setup-env.sh kinetix.example.com
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml config -q
+          rm .env
+      - name: Logs
+        if: failure()
+        run: docker compose logs --no-color --tail 300

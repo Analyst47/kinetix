@@ -1,18 +1,18 @@
 # Kinetix edge: the only public entry point.
 #
 # - /api/* goes straight to the API; everything else goes to the web app.
-# - Caddy ignores any X-Forwarded-For a client sends and records the real client address,
-#   so the API's per-IP rate limits see real visitors (it trusts this proxy only).
+# - Upstreams receive exactly one X-Forwarded-For value: the client address Caddy decided
+#   on. The API trusts that header only from this edge (KINETIX_TRUSTED_PROXIES).
+# - Caddy trusts no upstream proxy by default (trust/none.caddy), so anything a client puts
+#   in X-Forwarded-For or CF-Connecting-IP is ignored. Behind Cloudflare Tunnel, set
+#   KINETIX_EDGE_TRUST=cloudflared to trust only the tunnel container.
 # - With KINETIX_SITE_ADDRESS set to your domain (e.g. kinetix.example.com), Caddy gets and
-#   renews HTTPS certificates automatically. The default, :80, is plain HTTP for local use.
-# - Caddy trusts no upstream proxy by default. Behind Cloudflare, add to the global block:
-#     servers {
-#         trusted_proxies cloudflare
-#         client_ip_headers CF-Connecting-IP
-#     }
-#   (the cloudflare module, or `trusted_proxies static <Cloudflare ranges>`).
+#   renews HTTPS certificates automatically. The default, :80, is plain HTTP.
 {
 	admin off
+	servers {
+		import trust/{$KINETIX_EDGE_TRUST:none}.caddy
+	}
 }
 
 {$KINETIX_SITE_ADDRESS::80} {
@@ -30,12 +30,14 @@
 			max_size 210MB
 		}
 		reverse_proxy {$KINETIX_API_UPSTREAM:api:8000} {
+			header_up X-Forwarded-For {client_ip}
 			header_up X-Forwarded-Proto {scheme}
 		}
 	}
 
 	handle {
 		reverse_proxy {$KINETIX_WEB_UPSTREAM:web:3000} {
+			header_up X-Forwarded-For {client_ip}
 			header_up X-Forwarded-Proto {scheme}
 		}
 	}

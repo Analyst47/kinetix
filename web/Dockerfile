@@ -20,4 +20,6 @@ COPY --from=build --chown=kinetix:kinetix /app/.next/static ./.next/static
 COPY --from=build --chown=kinetix:kinetix /app/public ./public
 USER kinetix
 EXPOSE 3000
+HEALTHCHECK --interval=5s --timeout=3s --retries=20 \
+  CMD ["node", "-e", "fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
 CMD ["node", "server.js"]

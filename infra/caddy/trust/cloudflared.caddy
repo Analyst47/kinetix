@@ -1,0 +1,4 @@
+# Behind Cloudflare Tunnel: only the cloudflared container (fixed address in Compose) is
+# trusted, and the visitor address comes from the header Cloudflare sets.
+trusted_proxies static 172.28.0.11/32
+client_ip_headers CF-Connecting-IP

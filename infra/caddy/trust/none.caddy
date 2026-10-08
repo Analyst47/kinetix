@@ -1,0 +1,2 @@
+# Default: the edge is directly on the internet and trusts no upstream proxy.
+# Any X-Forwarded-For a client sends is discarded.

@@ -1,10 +1,16 @@
 # Full stack. `docker compose up --build`, then open http://localhost:3000
+# Production: see docs/DEPLOY.md (adds docker-compose.prod.yml on top of this file).
 #
 # Only the edge (Caddy) is published. The API and web app are reachable only inside the
 # Compose network, so nobody can reach the API directly or spoof the client address.
 name: kinetix
 
 x-api-env: &api-env
+  KINETIX_ENV: ${KINETIX_ENV:-development}
+  KINETIX_SECRET_KEY: ${KINETIX_SECRET_KEY:-dev-only-insecure-secret-key-change-me}
+  KINETIX_APP_URL: ${KINETIX_APP_URL:-http://localhost:3000}
+  KINETIX_CORS_ORIGINS: '["${KINETIX_APP_URL:-http://localhost:3000}"]'
+  KINETIX_DEMO: ${KINETIX_DEMO:-1}
   # The API and worker connect as kinetix_app, which row-level security applies to.
   # Migrations connect as the owner. Change both passwords outside local development.
   KINETIX_DATABASE_URL: postgresql+psycopg://kinetix_app:${KINETIX_DB_APP_PASSWORD:-kinetix_app}@postgres:5432/kinetix
@@ -15,8 +21,7 @@ x-api-env: &api-env
   KINETIX_TRUSTED_PROXIES: '["172.28.0.10/32"]'
   KINETIX_STORAGE_DIR: /data
   KINETIX_SCAN_MODE: celery
-  KINETIX_CORS_ORIGINS: '["http://localhost:3000"]'
-  # AI assistance: none | anthropic | openai_compatible | mock. See README.
+  # AI assistance: none | gemini | anthropic | openai_compatible | mock. See README.
   KINETIX_AI_PROVIDER: ${KINETIX_AI_PROVIDER:-none}
   KINETIX_AI_API_KEY: ${KINETIX_AI_API_KEY:-}
   KINETIX_AI_MODEL: ${KINETIX_AI_MODEL:-}
@@ -54,7 +59,8 @@ services:
   migrate:
     build: { context: ./api, target: api }
     environment: *api-env
-    command: ["sh", "-c", "alembic upgrade head && python -m app.seed"]
+    # Migrate as the owner, then load the demo workspace only when the demo is on.
+    command: ["sh", "-c", "alembic upgrade head && if [ \"$$KINETIX_DEMO\" = 1 ]; then python -m app.seed; fi"]
     volumes: [storage:/data]
     depends_on:
       postgres: { condition: service_healthy }
@@ -88,22 +94,40 @@ services:
     build: { context: ./web }
     environment:
       KINETIX_API_URL: http://api:8000
-      KINETIX_DEMO: "1"
-    depends_on: [api]
+      KINETIX_DEMO: ${KINETIX_DEMO:-1}
+    depends_on:
+      api: { condition: service_healthy }
 
   edge:
     image: caddy:2.10-alpine
     environment:
-      # Set to your domain in production for automatic HTTPS; then publish 80 and 443.
+      # Your domain in production for automatic HTTPS (see docker-compose.prod.yml).
       KINETIX_SITE_ADDRESS: ${KINETIX_SITE_ADDRESS:-:80}
+      # none (directly on the internet) | cloudflared (behind Cloudflare Tunnel)
+      KINETIX_EDGE_TRUST: ${KINETIX_EDGE_TRUST:-none}
     volumes:
-      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./infra/caddy:/etc/caddy:ro
       - caddy-data:/data
     ports: ["3000:80"]
     networks:
       default:
         ipv4_address: 172.28.0.10
-    depends_on: [api, web]
+    depends_on:
+      api: { condition: service_healthy }
+      web: { condition: service_healthy }
+
+  # Optional: `docker compose --profile tunnel up` publishes the edge through Cloudflare
+  # Tunnel, so the machine needs no open ports (works on a home computer). See docs/DEPLOY.md.
+  cloudflared:
+    image: cloudflare/cloudflared:2025.10.0
+    profiles: [tunnel]
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    networks:
+      default:
+        ipv4_address: 172.28.0.11
+    depends_on: [edge]
 
 networks:
   default:
