@@ -158,6 +158,9 @@ export interface Target {
   version: string | null;
   commit: string | null;
   archive_sha256: string | null;
+  fetch_status: "pending" | "ready" | "failed";
+  fetch_error: string | null;
+  fetched_at: string | null;
   created_at: string;
 }
 

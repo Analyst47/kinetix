@@ -15,6 +15,11 @@ tamper-evident chain of custody.
 
 - **Authorization boundary.** A project can't exist without a recorded attestation, scope
   and optional expiry. Expired authorizations block new targets and scans.
+- **Repository targets.** Paste a public HTTPS Git URL and a branch, tag or commit. The
+  worker fetches exactly one commit and pins its SHA, so findings always point at exact
+  code. The remote is treated as hostile: one pinned public address, no redirects, hooks,
+  submodules, LFS or non-HTTPS protocols, symlinks written as plain files, every object
+  verified, and the same size limits as uploads.
 - **Hostile-input ingestion.** Source archives are validated before a byte is written:
   path traversal, absolute paths, symlinks, hardlinks, device files, zip bombs and
   `.git/hooks` are all rejected or skipped.

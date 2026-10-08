@@ -1,11 +1,11 @@
 "use client";
 
-import { Play, Upload } from "lucide-react";
+import { GitBranch, Play, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Dialog } from "@/components/dialog";
-import { Button, Field, inputClass } from "@/components/ui";
+import { Button, Field, FormAlert, inputClass } from "@/components/ui";
 import { ApiError, call } from "@/lib/client";
 
 export function AutoRefresh({ every = 2000 }: { every?: number }) {
@@ -35,7 +35,7 @@ export function StartScanButton({
     <div className="flex flex-col items-end gap-1">
       <Button
         disabled={disabled || pending}
-        title={disabled ? "Only uploaded snapshots can be scanned here." : undefined}
+        title={disabled ? "Waiting for the repository to be fetched." : undefined}
         onClick={async () => {
           setPending(true);
           setError(null);
@@ -127,6 +127,110 @@ export function UploadSource({ org, project }: { org: string; project: string })
               {error}
             </p>
           ) : null}
+        </form>
+      </Dialog>
+    </>
+  );
+}
+
+export function AddRepository({ org, project }: { org: string; project: string }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [url, setUrl] = useState("");
+  const [ref, setRef] = useState("");
+  const [scan, setScan] = useState(true);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function close() {
+    setOpen(false);
+    setUrl("");
+    setRef("");
+    setScan(true);
+    setError(null);
+  }
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setPending(true);
+    setError(null);
+    try {
+      await call("POST", `/orgs/${org}/projects/${project}/targets/git`, {
+        url: url.trim(),
+        ref: ref.trim() || null,
+        scan,
+      });
+      close();
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't add the repository.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <>
+      <Button onClick={() => setOpen(true)}>
+        <GitBranch aria-hidden />
+        Add repository
+      </Button>
+      <Dialog
+        open={open}
+        onClose={close}
+        title="Add a Git repository"
+        description="A public HTTPS repository you are authorized to analyze. Kinetix fetches one commit and pins it, so findings always point at exact code."
+        footer={
+          <>
+            <Button variant="ghost" onClick={close}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              type="submit"
+              form="add-repository"
+              disabled={pending || !url.startsWith("https://")}
+            >
+              {pending ? "Adding…" : scan ? "Fetch and scan" : "Fetch"}
+            </Button>
+          </>
+        }
+      >
+        <form id="add-repository" onSubmit={submit} className="flex flex-col gap-4" noValidate>
+          <Field label="Repository URL" htmlFor="repo-url">
+            <input
+              id="repo-url"
+              type="url"
+              autoFocus
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://github.com/juice-shop/juice-shop"
+              className={`${inputClass} mono`}
+            />
+          </Field>
+          <Field
+            label="Branch, tag or commit"
+            htmlFor="repo-ref"
+            hint="Leave empty for the default branch. A tag or full commit SHA makes the snapshot reproducible."
+          >
+            <input
+              id="repo-ref"
+              value={ref}
+              onChange={(e) => setRef(e.target.value)}
+              placeholder="v17.1.1"
+              className={`${inputClass} mono`}
+            />
+          </Field>
+          <label className="flex items-center gap-2 text-[13px]">
+            <input
+              type="checkbox"
+              className="accent-vg"
+              checked={scan}
+              onChange={(e) => setScan(e.target.checked)}
+            />
+            Scan it with every analyzer as soon as it&apos;s fetched
+          </label>
+          {error ? <FormAlert>{error}</FormAlert> : null}
         </form>
       </Dialog>
     </>

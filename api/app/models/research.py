@@ -77,6 +77,13 @@ class Target(Timestamped, Base):
     version: Mapped[str | None] = mapped_column(String(100))
     commit: Mapped[str | None] = mapped_column(String(64))
     archive_sha256: Mapped[str | None] = mapped_column(String(64))
+    # Repository targets are fetched by the worker: pending -> ready | failed. Archives are
+    # unpacked during upload, so they start ready.
+    fetch_status: Mapped[str] = mapped_column(
+        String(16), default="ready", server_default="ready", nullable=False
+    )
+    fetch_error: Mapped[str | None] = mapped_column(String(300))
+    fetched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class Scan(Timestamped, Base):

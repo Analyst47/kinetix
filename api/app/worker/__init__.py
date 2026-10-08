@@ -23,3 +23,21 @@ def run_scan_task(scan_id: str, org_id: str) -> str:
     with SessionLocal() as db:
         scan = run_scan(db, uuid.UUID(scan_id), uuid.UUID(org_id))
         return scan.status.value
+
+
+@celery_app.task(name="kinetix.fetch_target")
+def fetch_target_task(
+    target_id: str, org_id: str, scan_by: str | None, analyzers: list[str]
+) -> str:
+    from app.db import SessionLocal
+    from app.services.scans import run_fetch
+
+    with SessionLocal() as db:
+        target = run_fetch(
+            db,
+            uuid.UUID(target_id),
+            uuid.UUID(org_id),
+            uuid.UUID(scan_by) if scan_by else None,
+            analyzers,
+        )
+        return target.fetch_status

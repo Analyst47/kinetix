@@ -6,7 +6,7 @@ import { fullDate, relative, shortHash } from "@/lib/format";
 import { api } from "@/lib/server";
 import type { Scan, Target } from "@/lib/types";
 
-import { AutoRefresh, StartScanButton, UploadSource } from "./client";
+import { AddRepository, AutoRefresh, StartScanButton, UploadSource } from "./client";
 
 export const metadata: Metadata = { title: "Scans" };
 
@@ -36,7 +36,9 @@ export default async function ScansPage({ params }: { params: Promise<{ org: str
     api<Scan[]>(`${base}/scans`),
     api<Target[]>(`${base}/targets`),
   ]);
-  const active = scans.some((s) => s.status === "queued" || s.status === "running");
+  const active =
+    scans.some((s) => s.status === "queued" || s.status === "running") ||
+    targets.some((t) => t.fetch_status === "pending");
   const targetName = new Map(targets.map((t) => [t.id, t]));
 
   return (
@@ -46,15 +48,21 @@ export default async function ScansPage({ params }: { params: Promise<{ org: str
       <main className="flex w-full max-w-[1400px] flex-col gap-5 p-4 md:p-6">
         <PageHeader
           title="Scans"
-          description="Upload a source snapshot, then analyze it for vulnerable dependencies, secrets and risky code patterns."
-          actions={<UploadSource org={org} project={project} />}
+          description="Add a repository or upload a source snapshot, then analyze it for vulnerable dependencies, secrets and risky code patterns."
+          actions={
+            <>
+              <AddRepository org={org} project={project} />
+              <UploadSource org={org} project={project} />
+            </>
+          }
         />
 
         <Panel title="Targets">
           {targets.length === 0 ? (
             <EmptyState title="No targets yet">
-              Upload a .zip or .tar.gz of the source you are authorized to analyze. Archives are checked for
-              path traversal, links and zip bombs before anything is unpacked.
+              Add a public Git repository, or upload a .zip or .tar.gz of the source you are authorized to
+              analyze. Either way, the code is checked for path traversal, links and oversized content before
+              anything is stored.
             </EmptyState>
           ) : (
             <ul>
@@ -65,19 +73,34 @@ export default async function ScansPage({ params }: { params: Promise<{ org: str
                 >
                   <div className="flex min-w-0 flex-1 flex-col">
                     <span className="font-medium">
-                      {t.name} {t.version ? <span className="mono text-muted">v{t.version}</span> : null}
+                      {t.name}{" "}
+                      {t.kind === "archive" && t.version ? (
+                        <span className="mono text-muted">v{t.version}</span>
+                      ) : null}
                     </span>
                     <span className="mono text-muted truncate">
-                      {t.archive_sha256 ? `sha256:${shortHash(t.archive_sha256)}` : t.locator}
-                      {t.commit ? `  commit ${t.commit}` : ""}
+                      {t.archive_sha256
+                        ? `sha256:${shortHash(t.archive_sha256)}`
+                        : t.locator.replace(/^https:\/\//, "")}
+                      {t.kind === "repository" && t.version ? ` @ ${t.version}` : ""}
+                      {t.commit ? `  commit ${t.commit.slice(0, 12)}` : ""}
                     </span>
+                    {t.fetch_status === "failed" && t.fetch_error ? (
+                      <span className="text-crit text-xs">{t.fetch_error}</span>
+                    ) : null}
                   </div>
-                  <span className="text-muted text-xs">Added {relative(t.created_at).toLowerCase()}</span>
+                  <span className="text-muted text-xs">
+                    {t.fetch_status === "pending"
+                      ? "Fetching…"
+                      : t.fetch_status === "failed"
+                        ? "Fetch failed"
+                        : `Added ${relative(t.created_at).toLowerCase()}`}
+                  </span>
                   <StartScanButton
                     org={org}
                     project={project}
                     targetId={t.id}
-                    disabled={t.kind !== "archive"}
+                    disabled={t.fetch_status !== "ready"}
                   />
                 </li>
               ))}

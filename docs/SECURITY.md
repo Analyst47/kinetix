@@ -15,6 +15,7 @@ boundary. It is designed on the assumption that both its users and its inputs ca
 | --- | --- | --- |
 | Cross-tenant data access (IDOR/BOLA) | Membership-checked org context; Postgres RLS on every tenant table; uniform 404s | `deps.py`, initial migration, `tests/test_tenancy.py` |
 | Account takeover through password reset | 256-bit single-use tokens stored as SHA-256, 30-minute expiry, voided by any password change; token in the URL fragment (never sent to servers or Referer); identical responses and background sending so neither content nor timing reveals accounts; per-address silent cap and per-IP limit; MFA still required; all sessions revoked; notification email | `routers/passwords.py`, `tests/test_passwords.py` |
+| SSRF or code execution through a Git URL | HTTPS only, public hosts only; DNS resolved once, checked and pinned with `http.curloptResolve`; no redirects, credentials, custom ports or other protocols (`protocol.allow=never`); refs validated so they can't become options; system and user git config ignored; no hooks, submodules, LFS or fsmonitor; symlinks checked out as plain files; `fsckObjects`; depth 1 with time and low-speed limits; regular files copied under upload limits; runs in the sandboxed worker | `services/gitfetch.py`, `tests/test_git_targets.py` |
 | RLS silently bypassed by a privileged DB user | The API connects as a restricted role (no superuser, no BYPASSRLS, owns nothing); migrations run as the owner; the API refuses to start in production if its connection could bypass RLS; tests run as a restricted role too | `app/dbguard.py`, `app_role_grants` migration, `infra/postgres/` |
 | Session theft | Opaque 256-bit tokens, only SHA-256 stored, `HttpOnly`, `SameSite=Lax`, server-side revocation, 12 h expiry | `routers/auth.py` |
 | CSRF | Double-submit token on every unsafe request, Origin check | `main.py` |
@@ -57,7 +58,9 @@ managed database such as Neon, create it in the console or with SQL before migra
 These are tracked on the roadmap and are not yet in place:
 
 - Passkeys (WebAuthn). TOTP is in place.
-- Invitation links are copied by hand; there is no email delivery yet.
+- If the worker sends traffic through an HTTP proxy, the proxy resolves repository hosts
+  itself, so the DNS pin no longer applies. Block private address ranges at the network
+  level for the worker too (defense in depth).
 - Login rate limiting is per process; it moves to Redis for multi-instance deployments.
 - Analyzer jobs share a worker container rather than a per-job sandbox (gVisor or
   Firecracker is the plan before any reproduction environments ship).

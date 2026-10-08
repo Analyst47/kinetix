@@ -3,7 +3,7 @@ import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -13,17 +13,22 @@ from app.deps import OrgContext, load_project, require
 from app.errors import ApiError
 from app.models import Finding, Project, Target
 from app.models.enums import TargetKind
-from app.schemas import ATTESTATION_TEXT, ProjectIn, ProjectOut, ProjectSummary, TargetOut
-from app.security.permissions import Permission
-from app.services import audit, storage
+from app.scanners.pipeline import ANALYZERS
+from app.schemas import (
+    ATTESTATION_TEXT,
+    GitTargetIn,
+    ProjectIn,
+    ProjectOut,
+    ProjectSummary,
+    TargetOut,
+)
+from app.security.permissions import Permission, has_permission
+from app.services import audit, gitfetch, storage
 from app.services.archives import ArchiveRejected, extract
 from app.services.findings import OPEN
+from app.services.scans import dispatch_fetch, source_dir
 
 router = APIRouter(prefix="/orgs/{org_slug}/projects", tags=["projects"])
-
-
-def source_dir(target: Target) -> Path:
-    return get_settings().storage_dir / "sources" / str(target.id)
 
 
 @router.get("")
@@ -186,4 +191,48 @@ def upload_archive_target(
         },
     )
     db.commit()
+    return TargetOut.model_validate(target)
+
+
+@router.post("/{project_slug}/targets/git", status_code=202)
+def add_repository_target(
+    project_slug: str,
+    body: GitTargetIn,
+    background: BackgroundTasks,
+    ctx: OrgContext = Depends(require(Permission.TARGET_WRITE)),
+    db: Session = Depends(get_db),
+) -> TargetOut:
+    """Add a public Git repository. The worker fetches one commit, then (optionally) scans it."""
+    project = load_project(db, ctx, project_slug)
+    ensure_authorized(project)
+    try:
+        repo = gitfetch.parse_repo_url(body.url)
+        ref = gitfetch.validate_ref(body.ref)
+    except gitfetch.FetchRejected as exc:
+        raise ApiError(422, "invalid_repository", str(exc)) from exc
+    default_name = repo.path.rsplit("/", 1)[-1].removesuffix(".git") or repo.host
+    target = Target(
+        org_id=ctx.org.id,
+        project_id=project.id,
+        kind=TargetKind.REPOSITORY,
+        name=(body.name or "").strip() or default_name,
+        locator=repo.url,
+        version=ref,
+        fetch_status="pending",
+    )
+    db.add(target)
+    db.flush()
+    scan_after = body.scan and has_permission(ctx.role, Permission.SCAN_START)
+    audit.record(
+        db,
+        org_id=ctx.org.id,
+        actor=ctx.user,
+        action="target.added",
+        subject_type="target",
+        subject_id=str(target.id),
+        data={"name": target.name, "kind": "repository", "url": repo.url, "ref": ref},
+    )
+    db.commit()
+    db.refresh(target)
+    dispatch_fetch(background, target, ctx.user.id if scan_after else None, list(ANALYZERS))
     return TargetOut.model_validate(target)

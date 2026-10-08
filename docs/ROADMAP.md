@@ -23,13 +23,14 @@ The order favors a narrow product that works end to end over broad features that
   citation verification (Claude API, Gemini API, OpenAI-compatible/Ollama)
 - Restricted database role for the app, with a startup guard against RLS bypass
 - Password reset and change, security notification emails, emailed invitations (Resend)
+- Public Git repository targets, fetched by the worker as pinned single-commit snapshots
 
 ## Next
 
-1. **Git targets**: clone a repository at a commit, in the worker, without running hooks.
-2. **Disclosure deadline reminders** by email (the delivery path is in place).
-3. **Passkeys** (WebAuthn) alongside TOTP.
-4. **Advisory export**: CVE JSON 5 and OSV formats for a confirmed finding.
+1. **Disclosure deadline reminders** by email (the delivery path is in place).
+2. **Passkeys** (WebAuthn) alongside TOTP.
+3. **Advisory export**: CVE JSON 5 and OSV formats for a confirmed finding.
+4. **Private repositories** through a GitHub App installation (read-only, per repository).
 
 ## Later
 

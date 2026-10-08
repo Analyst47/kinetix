@@ -209,7 +209,19 @@ class TargetOut(Model):
     version: str | None
     commit: str | None
     archive_sha256: str | None
+    fetch_status: str
+    fetch_error: str | None
+    fetched_at: datetime | None
     created_at: datetime
+
+
+class GitTargetIn(BaseModel):
+    url: str = Field(min_length=10, max_length=400)
+    # A branch, tag or full commit SHA. Empty means the default branch.
+    ref: str | None = Field(default=None, max_length=200)
+    name: str | None = Field(default=None, max_length=200)
+    # Start a scan with every analyzer as soon as the fetch succeeds.
+    scan: bool = True
 
 
 class ScanOut(Model):

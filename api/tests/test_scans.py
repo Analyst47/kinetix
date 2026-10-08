@@ -8,7 +8,7 @@ import httpx
 from sqlalchemy import select
 
 from app.db import SessionLocal
-from app.models import Organization, Scan
+from app.models import Organization, Scan, Target, User
 from app.scanners.lockfiles import parse_npm_lock
 from app.scanners.osv import OsvClient, normalize
 from app.scanners.pipeline import run_scan
@@ -244,3 +244,41 @@ def test_reserved_project_slugs_are_rejected(client):
     org = register(client)
     r = client.post(f"/api/v1/orgs/{org}/projects", json={**PROJECT, "slug": "audit"})
     assert r.status_code == 422
+
+
+def test_unreachable_osv_fails_only_that_analyzer_with_a_clear_reason(client):
+    org = register(client)
+    create_project(client, org)
+    target = _upload(client, org, {"package-lock.json": json.dumps(LOCK)})
+
+    def down(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("blocked")
+
+    with SessionLocal() as db:
+        from app.db import set_tenant
+
+        org_id = db.scalar(select(Organization.id).where(Organization.slug == org))
+        set_tenant(db, org_id)
+        project_id = db.scalar(
+            select(Target.project_id).where(Target.id == uuid.UUID(target["id"]))
+        )
+        user_id = db.scalar(select(User.id))
+        scan = Scan(
+            org_id=org_id,
+            project_id=project_id,
+            target_id=uuid.UUID(target["id"]),
+            number=7,
+            status="queued",
+            analyzers=["dependencies", "secrets"],
+            stats={},
+            created_by_id=user_id,
+        )
+        db.add(scan)
+        db.commit()
+        osv = OsvClient(
+            httpx.Client(transport=httpx.MockTransport(down), base_url="https://osv.test")
+        )
+        done = run_scan(db, scan.id, org_id, osv=osv)
+        assert done.status.value == "succeeded"  # secrets still ran
+        assert "OSV vulnerability database" in done.error
+        assert done.error.startswith("Analyzer failed: dependencies (")

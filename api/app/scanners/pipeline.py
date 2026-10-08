@@ -10,6 +10,7 @@ import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 
+import httpx
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -55,17 +56,27 @@ def _upsert_advisory(db: Session, adv: NormalizedAdvisory) -> Advisory:
     return row
 
 
+class AnalyzerError(Exception):
+    """An analyzer couldn't run. The message is written for the researcher."""
+
+
 def analyze_dependencies(
     db: Session, scan: Scan, project: Project, root: Path, osv: OsvClient
 ) -> dict:
     packages = lockfiles.discover(root)
-    hits = osv.match(packages) if packages else {}
     cache: dict[str, NormalizedAdvisory] = {}
-    for ids in hits.values():
-        for adv_id in ids:
-            if adv_id not in cache:
-                cache[adv_id] = osv.fetch(adv_id)
-                _upsert_advisory(db, cache[adv_id])
+    try:
+        hits = osv.match(packages) if packages else {}
+        for ids in hits.values():
+            for adv_id in ids:
+                if adv_id not in cache:
+                    cache[adv_id] = osv.fetch(adv_id)
+                    _upsert_advisory(db, cache[adv_id])
+    except httpx.HTTPError as exc:
+        raise AnalyzerError(
+            "couldn't reach the OSV vulnerability database (api.osv.dev). "
+            "Check the worker's outbound network access, then scan again."
+        ) from exc
     db.flush()
 
     created = 0
@@ -236,6 +247,10 @@ def run_scan(
         try:
             with db.begin_nested():
                 stats[name] = steps[name]()
+        except AnalyzerError as exc:
+            log.warning("analyzer %s failed: %s", name, exc)
+            stats[name] = {"error": str(exc)[:300]}
+            failures.append(f"{name} ({exc})")
         except Exception as exc:  # one analyzer failing must not sink the scan
             log.exception("analyzer %s failed", name)
             stats[name] = {"error": str(exc)[:300]}
@@ -247,7 +262,15 @@ def run_scan(
         if failures and len(failures) == len(scan.analyzers)
         else ScanStatus.SUCCEEDED
     )
-    scan.error = f"Analyzers failed: {', '.join(failures)}" if failures else None
+    scan.error = (
+        (
+            f"Analyzer failed: {failures[0]}"
+            if len(failures) == 1
+            else f"Analyzers failed: {'; '.join(failures)}"
+        )
+        if failures
+        else None
+    )
     audit.record(
         db,
         org_id=org_id,
