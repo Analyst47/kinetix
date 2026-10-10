@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { ProjectDangerZone } from "@/components/delete-project";
 import { PageBar } from "@/components/shell-context";
 import { PageHeader, Panel } from "@/components/ui";
 import { AUTHORIZATION_LABEL, fullDate } from "@/lib/format";
@@ -60,6 +61,10 @@ export default async function ScopePage({ params }: { params: Promise<{ org: str
             {p.attestation_text}
           </blockquote>
         </Panel>
+        <ProjectDangerZone
+          org={org}
+          project={{ slug: p.slug, name: p.name, openFindings: p.open_findings }}
+        />
       </main>
     </>
   );

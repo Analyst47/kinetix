@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui";
 import { useUpgrade } from "@/components/usage";
 import { ApiError, call } from "@/lib/client";
+import { TRIAGE_NAME } from "@/lib/format";
 
 interface TriageResult {
   reviewed: number;
@@ -62,7 +63,7 @@ export function TriageButton({ org, project }: { org: string; project: string })
       const why =
         err instanceof ApiError
           ? err.message
-          : "Couldn't run AI triage. Check that AI is turned on for this workspace.";
+          : `Couldn't run ${TRIAGE_NAME}. Check that AI is turned on for this workspace.`;
       setNote(reviewed ? `Reviewed ${reviewed}. ${why}` : why);
     } finally {
       setBusy(false);
@@ -74,7 +75,7 @@ export function TriageButton({ org, project }: { org: string; project: string })
     <div className="flex flex-col items-end gap-1">
       <Button variant="primary" disabled={busy} onClick={run}>
         <Sparkles aria-hidden />
-        {busy ? "Triaging…" : "Triage with AI"}
+        {busy ? "Triaging…" : `Run ${TRIAGE_NAME}`}
       </Button>
       {note ? <span className="text-muted max-w-[42ch] text-right text-xs">{note}</span> : null}
     </div>
