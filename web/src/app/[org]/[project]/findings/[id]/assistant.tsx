@@ -6,7 +6,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import { Button, Panel, textareaClass } from "@/components/ui";
+import { Button, Panel, inputClass, textareaClass } from "@/components/ui";
+import { PlanBadge, useUpgrade } from "@/components/usage";
 import { ApiError, call } from "@/lib/client";
 import { SEVERITY_LABEL, relative } from "@/lib/format";
 import type { AiCitation, AiRun, AiStatus, FindingDetail, Severity } from "@/lib/types";
@@ -29,6 +30,7 @@ function useAi(org: string, project: string, id: string) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+  const upgrade = useUpgrade();
   const base = `/orgs/${org}/projects/${project}/findings/${id}`;
   async function run<T>(label: string, fn: () => Promise<T>): Promise<T | undefined> {
     setBusy(label);
@@ -38,6 +40,7 @@ function useAi(org: string, project: string, id: string) {
       startTransition(() => router.refresh());
       return r;
     } catch (err) {
+      if (err instanceof ApiError && err.code === "ai_limit_reached") upgrade(err.message);
       setError(err instanceof ApiError ? err.message : "The assistant couldn't be reached. Try again.");
       return undefined;
     } finally {
@@ -116,13 +119,15 @@ export function AssistantPanel({
     <span className="text-muted flex items-center gap-2 text-xs font-normal">
       Advisory, not a verdict
       {status.model ? (
-        <span className="mono border-rule rounded-sm border px-1.5 text-[11px]">{status.model}</span>
+        <span className="mono border-rule hidden rounded-full border px-2 text-[11px] sm:inline">
+          {status.model}
+        </span>
       ) : null}
+      {status.available ? <PlanBadge usage={status.usage} /> : null}
     </span>
   );
 
   if (!status.enabled || !status.available) {
-    const needsKey = status.enabled && !status.key_set && !status.managed_available;
     return (
       <Panel title="Assistant" aside={header}>
         <div className="flex items-start gap-3 px-4 py-3.5">
@@ -130,13 +135,9 @@ export function AssistantPanel({
           <p className="text-muted text-[13px]">
             {!status.enabled
               ? "AI assistance is off for this workspace."
-              : "Add your own provider API key to use AI assistance — it's free and bills to your own account."}{" "}
-            {needsKey ? (
-              <Link href={`/${org}/settings/ai`} className="text-vg hover:underline">
-                Add your key
-              </Link>
-            ) : !status.enabled && canManage ? (
-              <Link href={`/${org}/settings/ai`} className="text-vg hover:underline">
+              : "AI assistance isn't configured on this server yet. An administrator needs to set the AI provider key."}{" "}
+            {!status.enabled && canManage ? (
+              <Link href={`/${org}/settings/ai`} className="text-ink font-medium hover:underline">
                 Turn it on
               </Link>
             ) : null}
@@ -145,6 +146,8 @@ export function AssistantPanel({
       </Panel>
     );
   }
+
+  const outOfSearches = status.usage.searches_remaining < 1;
 
   const o = analysis?.output;
   const apply = async (patch: Record<string, string>) => run("apply", () => call("PATCH", base, patch));
@@ -169,6 +172,15 @@ export function AssistantPanel({
                 The assistant was told to treat this as data. Review these lines yourself.
               </span>
             </div>
+          </div>
+        ) : null}
+
+        {outOfSearches && canUse ? (
+          <div className="border-rule flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border px-3 py-2.5 text-[13px]">
+            <span>You&apos;ve used all your AI searches.</span>
+            <Link href={`/${org}/billing`} className="text-ink font-medium hover:underline">
+              See plans
+            </Link>
           </div>
         ) : null}
 
@@ -282,7 +294,7 @@ export function AssistantPanel({
                   type="button"
                   onClick={() => run("analyze", () => call("POST", `${base}/ai/analyze`))}
                   disabled={!!busy}
-                  className="text-vg inline-flex items-center gap-1 hover:underline"
+                  className="text-ink inline-flex items-center gap-1 font-medium hover:underline"
                 >
                   <RefreshCw className="size-3" aria-hidden />
                   {busy === "analyze" ? "Analyzing…" : "Run again"}
@@ -295,10 +307,10 @@ export function AssistantPanel({
             <p className="text-muted max-w-[68ch] text-[13px]">
               Get an evidence-cited read on this finding: how data reaches the flagged line, what to verify
               before confirming, and a suggested CWE. Sends this finding&apos;s details and nearby source to{" "}
-              {PROVIDER_LABEL[status.provider ?? ""] ?? status.provider}.
+              {PROVIDER_LABEL[status.provider ?? ""] ?? status.provider}. Uses one AI search.
             </p>
             {status.data_notice ? (
-              <p className="border-high/40 bg-high/5 max-w-[68ch] rounded-md border px-3 py-2 text-[13px]">
+              <p className="border-rule max-w-[68ch] rounded-md border px-3 py-2 text-[13px]">
                 {status.data_notice}
               </p>
             ) : null}
@@ -357,7 +369,7 @@ export function AssistantPanel({
               maxLength={1000}
               onChange={(e) => setQuestion(e.target.value)}
               placeholder="Ask about this finding, e.g. is the email parameterized anywhere?"
-              className="border-rule-strong bg-raised text-ink placeholder:text-muted h-8 flex-1 rounded-sm border px-2.5 text-sm"
+              className={clsx(inputClass, "flex-1")}
             />
             <Button type="submit" disabled={!!busy || question.trim().length < 3}>
               {busy === "ask" ? "Asking…" : "Ask"}

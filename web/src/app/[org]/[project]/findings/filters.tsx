@@ -56,7 +56,7 @@ export function FindingFilters() {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <label className="border-rule-strong bg-raised text-muted focus-within:outline-vg flex h-8 flex-[0_1_320px] items-center gap-2 rounded-sm border px-2.5 focus-within:outline-2">
+      <label className="border-rule-strong bg-raised text-muted focus-within:outline-brand flex h-8 flex-[0_1_320px] items-center gap-2 rounded-full border px-3 focus-within:outline-2">
         <Search className="size-4 shrink-0" aria-hidden />
         <input
           value={q}
@@ -116,7 +116,7 @@ function Select({
   onChange: (v: string) => void;
 }) {
   return (
-    <label className="border-rule-strong bg-raised hover:bg-paper focus-within:outline-vg relative inline-flex h-8 items-center rounded-md border focus-within:outline-2">
+    <label className="border-rule-strong bg-raised hover:bg-paper focus-within:outline-brand relative inline-flex h-8 items-center rounded-md border focus-within:outline-2">
       <span className="sr-only">{label}</span>
       <select
         value={value}

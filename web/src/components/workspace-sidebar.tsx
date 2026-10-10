@@ -1,13 +1,15 @@
 "use client";
 
-import { FolderKanban, KeyRound, ListTree, Sparkles, Users } from "lucide-react";
+import { CreditCard, FolderKanban, KeyRound, ListTree, Sparkles, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { Wordmark } from "@/components/logo";
 import { NavLink } from "@/components/nav-link";
+import { UsageMeter } from "@/components/usage";
+import type { Usage } from "@/lib/types";
 
-export function WorkspaceSidebar({ org, orgName }: { org: string; orgName: string }) {
+export function WorkspaceSidebar({ org, orgName, usage }: { org: string; orgName: string; usage: Usage }) {
   const pathname = usePathname();
   const items = [
     {
@@ -35,6 +37,12 @@ export function WorkspaceSidebar({ org, orgName }: { org: string; orgName: strin
       active: pathname.startsWith(`/${org}/settings/ai`),
     },
     {
+      href: `/${org}/billing`,
+      label: "Plan & usage",
+      icon: CreditCard,
+      active: pathname.startsWith(`/${org}/billing`),
+    },
+    {
       href: `/${org}/settings/security`,
       label: "Security",
       icon: KeyRound,
@@ -43,15 +51,12 @@ export function WorkspaceSidebar({ org, orgName }: { org: string; orgName: strin
   ];
   return (
     <div className="border-rule bg-sunken w-full shrink-0 border-b md:w-[256px] md:border-r md:border-b-0">
-      <aside className="flex flex-col gap-5 px-3.5 py-4 md:sticky md:top-0 md:h-dvh">
-        <Link
-          href="/app"
-          className="focus-visible:ring-vg/40 rounded-md px-1.5 py-1 focus-visible:ring-2 focus-visible:outline-none"
-        >
-          <Wordmark size={18} interactive />
+      <aside className="flex flex-col gap-5 px-3.5 py-4 md:sticky md:top-0 md:h-dvh md:overflow-y-auto">
+        <Link href="/app" className="rounded-md px-1.5 py-1">
+          <Wordmark size={17} />
         </Link>
-        <div className="border-rule bg-raised flex items-center gap-2.5 rounded-xl border px-3 py-2.5 shadow-sm">
-          <span className="bg-vg-soft text-vg grid size-8 shrink-0 place-items-center rounded-lg text-[13px] font-semibold">
+        <div className="border-rule bg-raised flex items-center gap-2.5 rounded-2xl border px-3 py-2.5">
+          <span className="bg-ink text-paper grid size-8 shrink-0 place-items-center rounded-full text-[13px] font-semibold">
             {orgName.slice(0, 1).toUpperCase()}
           </span>
           <span className="flex min-w-0 flex-col">
@@ -64,6 +69,9 @@ export function WorkspaceSidebar({ org, orgName }: { org: string; orgName: strin
             <NavLink key={href} href={href} label={label} icon={icon} active={active} />
           ))}
         </nav>
+        <div className="mt-auto">
+          <UsageMeter usage={usage} org={org} />
+        </div>
       </aside>
     </div>
   );

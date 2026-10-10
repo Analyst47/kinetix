@@ -13,7 +13,7 @@ export default function ResetPasswordPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-[22px] leading-7 font-semibold tracking-[-0.015em]">Choose a new password</h1>
+        <h1 className="display text-ink text-[clamp(32px,4vw,40px)]">Choose a new password</h1>
         <p className="text-muted">Every device signed in to your account will be signed out.</p>
       </div>
       <ResetForm />

@@ -96,7 +96,7 @@ function ConfidenceBadge({ confidence }: { confidence: "firm" | "tentative" }) {
       className={clsx(
         "inline-flex h-5 items-center rounded-sm border px-1.5 text-[11px] font-medium",
         confidence === "firm"
-          ? "border-vg/40 bg-vg-soft text-vg"
+          ? "border-brand/40 bg-brand-soft text-brand"
           : "border-rule bg-sunken text-muted",
       )}
     >
@@ -134,7 +134,7 @@ function Step({ answer, label }: { answer: "yes" | "no"; label: string }) {
       <span
         className={clsx(
           "grid size-5 shrink-0 place-items-center rounded-full",
-          bad ? "bg-crit-soft text-crit" : "bg-vg-soft text-vg",
+          bad ? "bg-crit-soft text-crit" : "bg-brand-soft text-brand",
         )}
       >
         {bad ? <Check className="size-3.5" /> : <X className="size-3.5" />}
@@ -162,7 +162,7 @@ function ValidationTab() {
       </div>
 
       <div className="border-rule bg-sunken/60 rounded-md border px-4 py-2">
-        <p className="text-muted mb-1 text-[11px] font-semibold tracking-wide uppercase">
+        <p className="eyebrow text-muted mb-1 text-[10.5px]">
           Source → sink reachability
         </p>
         <Step answer="yes" label="User input reaches the operation" />
@@ -171,18 +171,18 @@ function ValidationTab() {
       </div>
 
       <div className="border-rule rounded-md border px-4 py-3">
-        <p className="text-muted mb-1 text-[11px] font-semibold tracking-wide uppercase">
+        <p className="eyebrow text-muted mb-1 text-[10.5px]">
           Impact
         </p>
         <p className="text-ink text-[13px] leading-[20px]">
           A request such as{" "}
-          <code className="mono text-signal">?file=../../etc/passwd</code> is joined to the serve
+          <code className="mono text-ink underline decoration-rule-strong underline-offset-2">?file=../../etc/passwd</code> is joined to the serve
           root without normalization, allowing reads outside the intended directory.
         </p>
       </div>
 
       <p className="text-muted flex items-center gap-1.5 text-[12px]">
-        <ShieldCheck className="text-vg size-3.5" />
+        <ShieldCheck className="text-ink size-3.5" />
         Every cited line is verified against the exact code the assistant was shown.
       </p>
     </div>
@@ -209,7 +209,7 @@ function DisclosureTab() {
         {["CVE 5.1 JSON", "OSV", "PDF report", "Markdown"].map((x) => (
           <span
             key={x}
-            className="border-rule bg-raised text-muted inline-flex h-6 items-center rounded-sm border px-2 text-[11px] font-medium"
+            className="border-rule bg-raised text-muted inline-flex h-6 items-center rounded-full border px-2.5 font-mono text-[11px]"
           >
             {x}
           </span>
@@ -226,7 +226,7 @@ function DisclosureTab() {
 export function ProductDemo() {
   const [tab, setTab] = useState<TabKey>("findings");
   return (
-    <div className="border-rule bg-raised/80 w-full overflow-hidden rounded-xl border shadow-2xl shadow-black/40 backdrop-blur">
+    <div className="border-rule bg-raised w-full overflow-hidden rounded-2xl border">
       {/* Window chrome */}
       <div className="border-rule bg-sunken/70 flex items-center gap-2 border-b px-4 py-2.5">
         <div className="flex gap-1.5">
@@ -237,7 +237,7 @@ export function ProductDemo() {
         <span className="text-muted mono ml-2 truncate text-[11px]">
           kinetix · acme-web · assessment #7
         </span>
-        <span className="border-signal/30 bg-signal/10 text-signal ml-auto hidden rounded-sm border px-1.5 py-0.5 text-[10px] font-medium tracking-wide uppercase sm:inline">
+        <span className="border-rule-strong text-muted ml-auto hidden rounded-full border px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] uppercase sm:inline">
           Illustrative preview
         </span>
       </div>
@@ -258,7 +258,7 @@ export function ProductDemo() {
             className={clsx(
               "relative -mb-px px-3 py-2.5 text-[13px] font-medium transition-colors",
               tab === t.key
-                ? "text-ink border-signal border-b-2"
+                ? "text-ink border-ink border-b-2"
                 : "text-muted hover:text-ink border-b-2 border-transparent",
             )}
           >

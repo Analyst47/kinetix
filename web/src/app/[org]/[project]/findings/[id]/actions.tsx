@@ -181,7 +181,7 @@ function CloseDialog({
                 name="reason"
                 checked={status === o}
                 onChange={() => setStatus(o)}
-                className="size-4 accent-[var(--vg)]"
+                className="size-4 accent-[var(--brand)]"
               />
               {STATUS_LABEL[o]}
             </label>
@@ -275,7 +275,7 @@ export function CvssEditor({
               setEditing(true);
               void check(vector);
             }}
-            className="text-vg self-start text-xs hover:underline"
+            className="text-brand self-start text-xs hover:underline"
           >
             {finding.cvss_vector ? "Edit vector" : "Assess"}
           </button>
@@ -447,12 +447,12 @@ export function EvidenceUpload({
         setDrag(false);
         void upload(e.dataTransfer.files);
       }}
-      className={`m-4 flex flex-col items-start gap-2 rounded-md border border-dashed p-4 ${drag ? "border-vg bg-vg-soft" : "border-rule-strong"}`}
+      className={`m-4 flex flex-col items-start gap-2 rounded-md border border-dashed p-4 ${drag ? "border-brand bg-brand-soft" : "border-rule-strong"}`}
     >
       {picker}
       <p className="text-[13px]">
         Drop files here or{" "}
-        <button type="button" className="text-vg hover:underline" onClick={() => input.current?.click()}>
+        <button type="button" className="text-brand hover:underline" onClick={() => input.current?.click()}>
           choose files
         </button>
         . Each file is hashed with SHA-256 when it arrives and recorded in the chain of custody.
@@ -503,7 +503,9 @@ export function VerifyButton({
       ) : state === "bad" ? (
         <span className="text-crit">Hash mismatch</span>
       ) : (
-        <span className="text-vg hover:underline">{state === "checking" ? "Checking…" : "Verify hash"}</span>
+        <span className="text-brand hover:underline">
+          {state === "checking" ? "Checking…" : "Verify hash"}
+        </span>
       )}
     </button>
   );
@@ -523,7 +525,7 @@ export function TabLink({
       href={href}
       scroll={false}
       aria-current={active ? "page" : undefined}
-      className={`-mb-px inline-flex items-center gap-1.5 border-b-2 px-2.5 py-2 font-medium ${active ? "border-vg text-ink" : "text-muted hover:text-ink border-transparent"}`}
+      className={`-mb-px inline-flex items-center gap-1.5 border-b-2 px-2.5 py-2 font-medium ${active ? "border-brand text-ink" : "text-muted hover:text-ink border-transparent"}`}
     >
       {children}
     </Link>

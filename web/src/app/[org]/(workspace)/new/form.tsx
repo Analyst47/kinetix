@@ -113,7 +113,7 @@ export function NewProjectForm({ org }: { org: string }) {
                   key={t.value}
                   className={clsx(
                     "flex cursor-pointer gap-2.5 rounded-md border px-3 py-2.5",
-                    type === t.value ? "border-vg bg-vg-soft" : "border-rule hover:bg-paper",
+                    type === t.value ? "border-brand bg-brand-soft" : "border-rule hover:bg-paper",
                   )}
                 >
                   <input
@@ -122,7 +122,7 @@ export function NewProjectForm({ org }: { org: string }) {
                     value={t.value}
                     checked={type === t.value}
                     onChange={() => setType(t.value)}
-                    className="mt-0.5 size-4 accent-[var(--vg)]"
+                    className="mt-0.5 size-4 accent-[var(--brand)]"
                   />
                   <span className="flex flex-col">
                     <span className="font-medium">{t.label}</span>
@@ -189,7 +189,7 @@ export function NewProjectForm({ org }: { org: string }) {
               type="checkbox"
               checked={attest}
               onChange={(e) => setAttest(e.target.checked)}
-              className="mt-0.5 size-4 shrink-0 accent-[var(--vg)]"
+              className="mt-0.5 size-4 shrink-0 accent-[var(--brand)]"
             />
             <span className="text-[13px] leading-5">{ATTESTATION}</span>
           </label>

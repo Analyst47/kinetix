@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { KeyRound, LogOut, Moon, Search, Sun } from "lucide-react";
+import { CreditCard, KeyRound, LogOut, Moon, Search, Sun } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fragment, useEffect, useState, useSyncExternalStore } from "react";
@@ -49,7 +49,7 @@ export function TopBar({
   }
 
   return (
-    <header className="border-rule bg-raised/85 sticky top-0 z-20 flex h-14 items-center gap-3 border-b px-4 backdrop-blur-md md:px-6">
+    <header className="border-rule bg-paper/90 sticky top-0 z-20 flex h-14 items-center gap-3 border-b px-4 backdrop-blur-sm md:px-6">
       <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-2 text-[14px]">
         {crumbs.map((c, i) => (
           <Fragment key={`${c.label}-${i}`}>
@@ -81,7 +81,7 @@ export function TopBar({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="border-rule-strong bg-sunken/50 text-muted hover:bg-sunken hover:text-ink ml-auto hidden h-9 w-[320px] max-w-[40vw] items-center gap-2 rounded-lg border px-3 text-[13.5px] transition-colors sm:flex"
+        className="border-rule bg-raised text-muted hover:border-rule-strong hover:text-ink ml-auto hidden h-9 w-[320px] max-w-[40vw] items-center gap-2 rounded-full border px-3.5 text-[13.5px] transition-colors sm:flex"
       >
         <Search className="size-4" aria-hidden />
         <span className="flex-1 text-left">Search or jump to</span>
@@ -91,7 +91,7 @@ export function TopBar({
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Search"
-        className="hover:bg-rule text-muted hover:text-ink ml-auto inline-flex size-9 items-center justify-center rounded-lg transition-colors sm:hidden"
+        className="hover:bg-ink/[0.06] text-muted hover:text-ink ml-auto inline-flex size-9 items-center justify-center rounded-full transition-colors sm:hidden"
       >
         <Search className="size-[18px]" />
       </button>
@@ -105,14 +105,14 @@ export function TopBar({
           aria-haspopup="menu"
           aria-expanded={menu}
           aria-label="Account"
-          className="focus-visible:ring-vg/40 rounded-full transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:outline-none"
+          className="rounded-full"
         >
           <Avatar name={user.name} className="size-8 text-[12px]" />
         </button>
         {menu ? (
           <div
             role="menu"
-            className="border-rule bg-raised absolute right-0 mt-2 w-60 rounded-md border p-1 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.35)]"
+            className="border-rule bg-raised absolute right-0 mt-2 w-60 rounded-xl border p-1"
           >
             <div className="px-2.5 py-2">
               <div className="font-medium">{user.name}</div>
@@ -121,9 +121,18 @@ export function TopBar({
             <div className="bg-rule my-1 h-px" />
             <Link
               role="menuitem"
+              href={`/${org}/billing`}
+              onClick={() => setMenu(false)}
+              className="hover:bg-ink/[0.05] flex h-8 w-full items-center gap-2 rounded-lg px-2.5"
+            >
+              <CreditCard className="text-muted size-4" aria-hidden />
+              Plan & usage
+            </Link>
+            <Link
+              role="menuitem"
               href={`/${org}/settings/security`}
               onClick={() => setMenu(false)}
-              className="hover:bg-paper flex h-8 w-full items-center gap-2 rounded-sm px-2.5"
+              className="hover:bg-ink/[0.05] flex h-8 w-full items-center gap-2 rounded-lg px-2.5"
             >
               <KeyRound className="text-muted size-4" aria-hidden />
               Security
@@ -132,7 +141,7 @@ export function TopBar({
               type="button"
               role="menuitem"
               onClick={signOut}
-              className="hover:bg-paper flex h-8 w-full items-center gap-2 rounded-sm px-2.5 text-left"
+              className="hover:bg-ink/[0.05] flex h-8 w-full items-center gap-2 rounded-lg px-2.5 text-left"
             >
               <LogOut className="text-muted size-4" aria-hidden />
               Sign out
@@ -182,7 +191,7 @@ function ThemeToggle() {
       type="button"
       onClick={toggle}
       aria-label={dark ? "Use light theme" : "Use dark theme"}
-      className="text-muted hover:bg-rule hover:text-ink inline-flex size-9 items-center justify-center rounded-lg transition-colors"
+      className="text-muted hover:bg-ink/[0.06] hover:text-ink inline-flex size-9 items-center justify-center rounded-full transition-colors"
     >
       {dark ? <Sun className="size-[18px]" /> : <Moon className="size-[18px]" />}
     </button>

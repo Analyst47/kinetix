@@ -9,7 +9,7 @@ export default async function MarketingLayout({ children }: { children: ReactNod
   // Public pages: never redirect. We only use the session to decide the nav CTA.
   const me = await apiPublic<Me>("/auth/me");
   return (
-    <div className="mkt min-h-dvh">
+    <div className="night min-h-dvh">
       <MarketingNav signedIn={me !== null} />
       <main>{children}</main>
       <MarketingFooter />

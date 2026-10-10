@@ -256,7 +256,7 @@ export function InviteButton({ org, canInviteOwners }: { org: string; canInviteO
                     name="invite-role"
                     checked={role === r.value}
                     onChange={() => setRole(r.value)}
-                    className="size-4 accent-[var(--vg)]"
+                    className="size-4 accent-[var(--brand)]"
                   />
                   <span className="font-medium">{r.label}</span>
                   <span className="text-muted text-xs">{r.hint}</span>

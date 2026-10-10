@@ -155,7 +155,7 @@ export function StartDisclosure({
                       setContact(c);
                       setSource("security_txt");
                     }}
-                    className="size-4 accent-[var(--vg)]"
+                    className="size-4 accent-[var(--brand)]"
                   />
                   <span className="mono break-all">{c}</span>
                 </label>
@@ -280,7 +280,7 @@ export function DisclosureView({
                 href={d.policy_url}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="text-vg inline-flex items-center gap-1 text-xs hover:underline"
+                className="text-brand inline-flex items-center gap-1 text-xs hover:underline"
               >
                 Disclosure policy <ExternalLink className="size-3" aria-hidden />
               </a>
@@ -322,7 +322,7 @@ export function DisclosureView({
                       ? "bg-med"
                       : d.health === "complete"
                         ? "bg-ok"
-                        : "bg-vg",
+                        : "bg-brand",
                 )}
                 style={{ width: `${pct}%` }}
               />
@@ -351,7 +351,7 @@ export function DisclosureView({
                 className={clsx(
                   "h-1 rounded-full",
                   i < stageIndex && "bg-ink",
-                  i === stageIndex && "bg-vg",
+                  i === stageIndex && "bg-brand",
                   i > stageIndex && "bg-rule",
                 )}
               />
@@ -368,7 +368,7 @@ export function DisclosureView({
                   href={`https://www.cve.org/CVERecord?id=${d.cve_id}`}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="mono text-vg hover:underline"
+                  className="mono text-brand hover:underline"
                 >
                   {d.cve_id}
                 </a>
@@ -379,7 +379,7 @@ export function DisclosureView({
                 href={d.advisory_url}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="text-vg inline-flex items-center gap-1 hover:underline"
+                className="text-brand inline-flex items-center gap-1 hover:underline"
               >
                 Public advisory <ExternalLink className="size-3" aria-hidden />
               </a>
@@ -403,7 +403,7 @@ export function DisclosureView({
             <ol className="px-4 pt-3 pb-1">
               {[...d.events].reverse().map((e, i, arr) => (
                 <li key={e.id} className="relative pb-4 pl-[22px]">
-                  <span aria-hidden className="bg-vg absolute top-[6px] left-1 size-[9px] rounded-[2px]" />
+                  <span aria-hidden className="bg-brand absolute top-[6px] left-1 size-[9px] rounded-[2px]" />
                   {i < arr.length - 1 ? (
                     <span aria-hidden className="bg-rule-strong absolute top-[18px] bottom-0.5 left-2 w-px" />
                   ) : null}
@@ -439,7 +439,7 @@ export function DisclosureView({
 function ContactLink({ contact }: { contact: string }) {
   if (contact.startsWith("mailto:")) {
     return (
-      <a href={contact} className="mono text-vg text-[13px] break-all hover:underline">
+      <a href={contact} className="mono text-brand text-[13px] break-all hover:underline">
         {contact.slice(7)}
       </a>
     );
@@ -450,7 +450,7 @@ function ContactLink({ contact }: { contact: string }) {
         href={contact}
         target="_blank"
         rel="noreferrer noopener"
-        className="mono text-vg text-[13px] break-all hover:underline"
+        className="mono text-brand text-[13px] break-all hover:underline"
       >
         {contact}
       </a>

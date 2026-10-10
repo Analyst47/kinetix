@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: "Scans" };
 
 const STATUS: Record<Scan["status"], { label: string; cls: string }> = {
   queued: { label: "Queued", cls: "text-muted" },
-  running: { label: "Running", cls: "text-vg" },
+  running: { label: "Running", cls: "text-brand" },
   succeeded: { label: "Finished", cls: "text-ink" },
   failed: { label: "Failed", cls: "text-crit" },
 };

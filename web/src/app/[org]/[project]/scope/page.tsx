@@ -28,7 +28,7 @@ export default async function ScopePage({ params }: { params: Promise<{ org: str
                     href={p.authorization_reference}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="text-vg break-all hover:underline"
+                    className="text-brand break-all hover:underline"
                   >
                     {p.authorization_reference}
                   </a>

@@ -94,7 +94,7 @@ export function LoginForm({ demo, next }: { demo: boolean; next?: string }) {
         {error ? (
           <p
             role="alert"
-            className="border-crit/40 bg-crit-soft text-crit rounded-sm border px-3 py-2 text-[13px]"
+            className="border-crit/40 bg-crit-soft text-crit rounded-md border px-3 py-2 text-[13px]"
           >
             {error}
           </p>
@@ -114,7 +114,7 @@ export function LoginForm({ demo, next }: { demo: boolean; next?: string }) {
             setCode("");
             setError(null);
           }}
-          className="text-vg self-start text-[13px] hover:underline"
+          className="text-brand self-start text-[13px] hover:underline"
         >
           {useRecovery ? "Use your authenticator app instead" : "Use a recovery code"}
         </button>
@@ -146,13 +146,13 @@ export function LoginForm({ demo, next }: { demo: boolean; next?: string }) {
           className={inputClass}
         />
       </Field>
-      <Link href="/forgot-password" className="text-vg -mt-2 self-end text-[13px] hover:underline">
+      <Link href="/forgot-password" className="text-brand -mt-2 self-end text-[13px] hover:underline">
         Forgot password?
       </Link>
       {error ? (
         <p
           role="alert"
-          className="border-crit/40 bg-crit-soft text-crit rounded-sm border px-3 py-2 text-[13px]"
+          className="border-crit/40 bg-crit-soft text-crit rounded-md border px-3 py-2 text-[13px]"
         >
           {error}
         </p>

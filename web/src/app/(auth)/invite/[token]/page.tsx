@@ -34,7 +34,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
   if (!preview) {
     return (
       <div className="flex flex-col gap-3">
-        <h1 className="text-[22px] leading-7 font-semibold tracking-[-0.015em]">Invitation not valid</h1>
+        <h1 className="display text-ink text-[clamp(32px,4vw,40px)]">Invitation not valid</h1>
         <p className="text-muted">
           This link has expired, was replaced by a newer invitation, or has already been used. Ask the person
           who invited you to send a new one.
@@ -49,9 +49,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-[22px] leading-7 font-semibold tracking-[-0.015em]">
-          Join {preview.organization}
-        </h1>
+        <h1 className="display text-ink text-[clamp(32px,4vw,40px)]">Join {preview.organization}</h1>
         <p className="text-muted">
           {preview.invited_by} invited <span className="text-ink">{preview.email}</span> as a {preview.role}:{" "}
           {ROLE_DESCRIPTION[preview.role]}.
@@ -72,7 +70,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
       ) : matches ? (
         <AcceptInvitation token={token} />
       ) : (
-        <p className="border-crit/40 bg-crit-soft text-crit rounded-sm border px-3 py-2 text-[13px]">
+        <p className="border-crit/40 bg-crit-soft text-crit rounded-md border px-3 py-2 text-[13px]">
           You&apos;re signed in as {me.user.email}. Sign out and sign in as {preview.email} to accept.
         </p>
       )}

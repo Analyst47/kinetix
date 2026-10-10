@@ -36,7 +36,7 @@ export function RegisterForm({ next }: { next?: string }) {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="display text-ink text-[28px]">Create an account</h1>
+        <h1 className="display text-ink text-[clamp(32px,4vw,40px)]">Create an account</h1>
         <p className="text-muted">You&apos;ll set up your first research project next.</p>
       </div>
       <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
@@ -84,7 +84,7 @@ export function RegisterForm({ next }: { next?: string }) {
         {error ? (
           <p
             role="alert"
-            className="border-crit/40 bg-crit-soft text-crit rounded-sm border px-3 py-2 text-[13px]"
+            className="border-crit/40 bg-crit-soft text-crit rounded-md border px-3 py-2 text-[13px]"
           >
             {error}
           </p>
@@ -97,7 +97,7 @@ export function RegisterForm({ next }: { next?: string }) {
         Already have an account?{" "}
         <Link
           href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"}
-          className="text-vg hover:underline"
+          className="text-ink decoration-rule-strong hover:decoration-ink underline underline-offset-4"
         >
           Sign in
         </Link>
