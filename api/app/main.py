@@ -15,6 +15,7 @@ from app.routers import (
     ai,
     audit,
     auth,
+    billing,
     dependencies,
     disclosures,
     findings,
@@ -127,6 +128,7 @@ def create_app() -> FastAPI:
         audit,
         members,
         ai,
+        billing,
     ):
         app.include_router(module.router, prefix=prefix)
 

@@ -53,7 +53,10 @@ def _transient_error(status: int) -> ApiError:
 
 @dataclass
 class AnthropicProvider:
-    """Claude via the Messages API. A forced tool call makes the model return schema-shaped JSON."""
+    """Claude via the Messages API. The model returns its result through a single tool whose
+    input schema is the result schema. Current Claude models reject a forced tool_choice, so
+    the request uses "auto" and the system prompt says to call it; the caller validates the
+    input like any other model output, and a reply without the tool call is an error."""
 
     api_key: str
     model: str
@@ -62,8 +65,10 @@ class AnthropicProvider:
     client: httpx.Client | None = None
     name: str = "anthropic"
     data_notice: str | None = None
-    max_tokens: int = 2048
+    max_tokens: int = 4096
     max_attempts: int = 4
+    # Reasoning effort (low | medium | high); None sends no effort parameter.
+    effort: str | None = None
     last_usage: dict[str, int] | None = None
 
     def complete(
@@ -71,7 +76,7 @@ class AnthropicProvider:
     ) -> dict[str, Any]:
         self.last_usage = None
         client = self.client or httpx.Client(timeout=self.timeout)
-        body = {
+        body: dict[str, Any] = {
             "model": self.model,
             "max_tokens": self.max_tokens,
             "system": system,
@@ -79,12 +84,15 @@ class AnthropicProvider:
             "tools": [
                 {
                     "name": tool,
-                    "description": "Return your result in this exact structure.",
+                    "description": "Record your result in this exact structure. Call this "
+                    "tool exactly once; do not answer in plain text.",
                     "input_schema": schema,
                 }
             ],
-            "tool_choice": {"type": "tool", "name": tool},
+            "tool_choice": {"type": "auto"},
         }
+        if self.effort:
+            body["output_config"] = {"effort": self.effort}
         try:
             resp = None
             for attempt in range(self.max_attempts):
@@ -339,8 +347,7 @@ def build_provider(
     base_url: str | None = None,
     gemini_tier: str = "free",
 ) -> Provider | None:
-    """Construct a provider from explicit parameters. Used both for the server-configured
-    (managed) provider and for a user's bring-your-own-key, which supplies its own credentials."""
+    """Construct a provider from explicit parameters (the server-configured managed provider)."""
     s = get_settings()
     model = model or DEFAULT_MODELS.get(provider, "")
     if provider == "anthropic" and api_key:
@@ -351,6 +358,7 @@ def build_provider(
             timeout=s.ai_timeout_seconds,
             max_tokens=s.ai_max_output_tokens,
             max_attempts=max(1, s.ai_max_retries),
+            effort=(s.ai_effort or "").strip() or None,
         )
     if provider == "gemini" and api_key:
         return GeminiProvider(
@@ -372,7 +380,7 @@ def build_provider(
 
 
 def get_provider() -> Provider | None:
-    """The server-configured 'managed' provider (built-in, pay-as-you-go), if any."""
+    """The server-configured managed provider, if one is configured with usable credentials."""
     s = get_settings()
     return build_provider(
         s.ai_provider,

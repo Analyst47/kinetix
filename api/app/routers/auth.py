@@ -239,10 +239,6 @@ def logout(
 ) -> Response:
     principal.session.revoked_at = datetime.now(UTC)
     db.commit()
-    # Drop any bring-your-own AI key held for this session so it never outlives the login.
-    from app.ai import session_keys
-
-    session_keys.clear_key(principal.session.id)
     s = get_settings()
     response.delete_cookie(s.session_cookie, path="/")
     response.delete_cookie(s.csrf_cookie, path="/")

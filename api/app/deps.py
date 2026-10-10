@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
-from app.db import get_db, set_tenant
+from app.db import get_db, set_tenant, set_user
 from app.errors import ApiError, forbidden, not_found
 from app.models import AuthSession, Membership, Organization, Project, User
 from app.models.enums import Role
@@ -39,6 +39,8 @@ def current_principal(request: Request, db: Session = Depends(get_db)) -> Princi
         or not session.user.is_active
     ):
         raise ApiError(401, "unauthenticated", "Your session has ended. Sign in again.")
+    # Per-user tables (plan, AI usage) are only visible for the verified user.
+    set_user(db, session.user_id)
     if now - session.last_seen_at > _TOUCH_INTERVAL:
         session.last_seen_at = now
         db.commit()

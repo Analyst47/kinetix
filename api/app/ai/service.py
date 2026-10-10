@@ -172,18 +172,16 @@ def _run(
     schema: dict,
     tool: str,
     question: str | None = None,
-    meter: bool = False,
+    quota: dict | None = None,
 ) -> AiRun:
-    # Spend safeguard applies only to operator-billed (managed) calls; a user's own key
-    # bills them directly and isn't metered against the server budget.
-    if meter:
-        budget.check()
+    # Server-wide spend backstop, on top of each user's search quota.
+    budget.check()
     ctx = ctxmod.build(db, project, finding)
     user_prompt = f"{ctx.prompt}\n\n{task}"
     digest = hashlib.sha256((prompts.SYSTEM + "\n\n" + user_prompt).encode()).hexdigest()
     raw = provider.complete(system=prompts.SYSTEM, user=user_prompt, schema=schema, tool=tool)
     usage = getattr(provider, "last_usage", None)
-    if meter and isinstance(usage, dict):
+    if isinstance(usage, dict):
         budget.add(int(usage.get("input_tokens", 0)) + int(usage.get("output_tokens", 0)))
     if kind == "analysis":
         output = _validate_analysis(raw, ctx.lines)
@@ -237,6 +235,7 @@ def _run(
             **({"verdict": output["verdict"]} if kind == "analysis" else {}),
             **({"tokens": output["usage"]} if isinstance(usage, dict) else {}),
             **({"injection_signals": len(signals)} if signals else {}),
+            **({"quota": quota} if quota else {}),
         },
     )
     return run
@@ -248,12 +247,12 @@ def analyze(
     project: Project,
     finding: Finding,
     actor: User,
-    meter: bool = False,
+    quota: dict | None = None,
 ) -> AiRun:
     return _run(
         db, provider=provider, project=project, finding=finding, actor=actor, kind="analysis",
         task=prompts.ANALYZE_TASK, schema=prompts.ANALYSIS_SCHEMA, tool="record_analysis",
-        meter=meter,
+        quota=quota,
     )  # fmt: skip
 
 
@@ -264,12 +263,12 @@ def ask(
     finding: Finding,
     actor: User,
     question: str,
-    meter: bool = False,
+    quota: dict | None = None,
 ) -> AiRun:
     return _run(
         db, provider=provider, project=project, finding=finding, actor=actor, kind="question",
         task=prompts.ask_task(question), schema=prompts.ANSWER_SCHEMA, tool="record_answer",
-        question=question, meter=meter,
+        question=question, quota=quota,
     )  # fmt: skip
 
 
@@ -280,10 +279,10 @@ def draft(
     finding: Finding,
     actor: User,
     field: str,
-    meter: bool = False,
+    quota: dict | None = None,
 ) -> AiRun:
     return _run(
         db, provider=provider, project=project, finding=finding, actor=actor, kind=f"draft_{field}",
         task=prompts.DRAFT_TASKS[field], schema=prompts.DRAFT_SCHEMA, tool="record_draft",
-        meter=meter,
+        quota=quota,
     )  # fmt: skip

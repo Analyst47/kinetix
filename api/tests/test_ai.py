@@ -74,11 +74,8 @@ def _setup(client, monkeypatch, output: dict, enable: bool = True) -> tuple[str,
         },
     ).json()
     provider = FakeProvider(output)
+    # Every AI call runs on the server's own (managed) provider.
     monkeypatch.setattr(ai_router, "get_provider", lambda: provider)
-    # Exercise the pipeline through the built-in ("managed") provider path.
-    from app.config import get_settings
-
-    monkeypatch.setattr(get_settings(), "ai_managed_enabled", True)
     if enable:
         assert client.patch(f"/api/v1/orgs/{org}/ai", json={"enabled": True}).status_code == 200
     return org, f"{base}/{f['public_id']}", provider
@@ -122,45 +119,33 @@ def test_status_reflects_server_config_and_workspace_switch(client, monkeypatch)
         "provider": None,
         "model": None,
         "data_notice": None,
-        "byok_providers": ["anthropic", "gemini"],
-        "key_set": False,
-        "key_provider": None,
-        "key_model": None,
-        "managed_available": False,
+        "configured": False,
+        "usage": {
+            "plan": "free",
+            "plan_name": "Community",
+            "status": "active",
+            "ai_period": "lifetime",
+            "searches_used": 0,
+            "searches_limit": 10,
+            "searches_remaining": 10,
+            "resets_at": None,
+            "billing_enabled": False,
+        },
         "monthly_token_budget": None,
         "tokens_used_this_month": None,
     }
 
 
-def test_bring_your_own_key_is_session_scoped_and_never_stored(client, monkeypatch):
+def test_users_cannot_bring_their_own_key(client, monkeypatch):
     org, _url, _ = _setup(client, monkeypatch, GOOD)
-    # The fake managed provider carries no data notice.
-    assert client.get(f"/api/v1/orgs/{org}/ai").json()["data_notice"] is None
-
-    # A user supplies their own Gemini key: the free-tier notice is shown and the key is set
-    # for this session only.
+    status = client.get(f"/api/v1/orgs/{org}/ai").json()
+    assert status["available"] is True and status["configured"] is True
+    assert "key_set" not in status and "byok_providers" not in status
+    # The per-session key endpoints are gone; all AI runs on the server's key.
     key_url = f"/api/v1/orgs/{org}/ai/key"
-    r = client.put(key_url, json={"provider": "gemini", "api_key": "AIza-abc123"})
-    assert r.status_code == 200
-    body = r.json()
-    assert body["key_set"] is True
-    assert body["key_provider"] == "gemini"
-    assert body["data_notice"] == GEMINI_FREE_NOTICE
-
-    # The key itself is never echoed back or recorded in the audit log.
-    assert "AIza-abc123" not in r.text
-    event = next(
-        e for e in client.get(f"/api/v1/orgs/{org}/audit").json() if e["action"] == "ai.key_set"
-    )
-    assert event["data"]["provider"] == "gemini"
-    assert "AIza-abc123" not in str(event["data"])
-
-    # An unknown provider or an obviously-bad key is rejected.
-    bad = client.put(key_url, json={"provider": "x", "api_key": "abcdefgh"})
-    assert bad.status_code == 400
-
-    # Clearing it removes the key.
-    assert client.delete(f"/api/v1/orgs/{org}/ai/key").json()["key_set"] is False
+    put = client.put(key_url, json={"provider": "anthropic", "api_key": "sk-ant-x"})
+    assert put.status_code in (404, 405)
+    assert client.delete(key_url).status_code in (404, 405)
 
 
 def test_ai_is_off_until_a_workspace_admin_turns_it_on(client, monkeypatch):
@@ -173,12 +158,15 @@ def test_ai_is_off_until_a_workspace_admin_turns_it_on(client, monkeypatch):
     assert "ai.settings_changed" in actions
 
 
-def test_no_key_and_no_managed_provider_asks_for_a_key(client, monkeypatch):
-    _, url, _ = _setup(client, monkeypatch, GOOD)
-    # No managed provider configured and the user hasn't supplied a key.
+def test_unconfigured_server_reports_ai_not_configured_and_charges_nothing(client, monkeypatch):
+    _org, url, _ = _setup(client, monkeypatch, GOOD)
+    # No server key configured (or the managed switch is off).
     monkeypatch.setattr(ai_router, "get_provider", lambda: None)
     r = client.post(f"{url}/ai/analyze")
-    assert r.status_code == 400 and r.json()["error"]["code"] == "ai_no_key"
+    assert r.status_code == 503 and r.json()["error"]["code"] == "ai_not_configured"
+    monkeypatch.setattr(get_settings(), "ai_managed_enabled", False)
+    assert client.post(f"{url}/ai/analyze").json()["error"]["code"] == "ai_not_configured"
+    assert client.get("/api/v1/billing").json()["usage"]["searches_used"] == 0
 
 
 def test_citations_are_verified_against_the_lines_sent(client, monkeypatch):
@@ -342,7 +330,7 @@ def test_viewers_cannot_use_ai(client, monkeypatch):
 # ── Provider adapters ─────────────────────────────────────────────────────────
 
 
-def test_anthropic_adapter_forces_a_structured_tool_call():
+def test_anthropic_adapter_requests_a_structured_tool_call():
     seen = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -363,14 +351,32 @@ def test_anthropic_adapter_forces_a_structured_tool_call():
         api_key="sk-test",
         model="claude-sonnet-5-5",
         client=httpx.Client(transport=httpx.MockTransport(handler)),
+        effort="medium",
     )
     out = p.complete(system="sys", user="u", schema={"type": "object"}, tool="record_answer")
     assert out == {"answer": "ok"}
     assert seen["url"] == "https://api.anthropic.com/v1/messages"
     assert seen["headers"]["x-api-key"] == "sk-test"
     assert seen["headers"]["anthropic-version"] == "2023-06-01"
-    assert seen["body"]["tool_choice"] == {"type": "tool", "name": "record_answer"}
+    # Current Claude models reject a forced tool_choice; "auto" plus the instruction is used.
+    assert seen["body"]["tool_choice"] == {"type": "auto"}
+    assert [t["name"] for t in seen["body"]["tools"]] == ["record_answer"]
+    assert seen["body"]["output_config"] == {"effort": "medium"}
     assert seen["body"]["system"] == "sys"
+
+    # A reply that never calls the tool is an error, not an empty result.
+    plain = AnthropicProvider(
+        api_key="k",
+        model="m",
+        client=httpx.Client(
+            transport=httpx.MockTransport(
+                lambda r: httpx.Response(200, json={"content": [{"type": "text", "text": "x"}]})
+            )
+        ),
+    )
+    with pytest.raises(ApiError) as exc:
+        plain.complete(system="s", user="u", schema={}, tool="t")
+    assert exc.value.code == "ai_unavailable"
 
 
 def test_anthropic_adapter_errors_cleanly():

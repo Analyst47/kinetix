@@ -28,7 +28,8 @@ definitive answer. The callers block, when present, shows where the function is 
 3. Do not invent files, functions, versions, CVE identifiers or behavior that is not shown.
 4. Write plain text: no markdown, no links, no HTML. Be concise and specific.
 5. Do not write exploit code or weaponized payloads. Describing how input reaches a sink, or a \
-minimal test input for an authorized local environment, is fine."""
+minimal test input for an authorized local environment, is fine.
+6. Return your result by calling the provided tool exactly once. Do not answer in plain text."""
 
 CITATION = {
     "type": "object",
