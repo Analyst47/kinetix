@@ -56,10 +56,7 @@ export function Panel({
   className?: string;
 } & Omit<ComponentProps<"section">, "title">) {
   return (
-    <section
-      className={clsx("border-rule bg-raised rounded-xl border", className)}
-      {...rest}
-    >
+    <section className={clsx("border-rule bg-raised rounded-xl border", className)} {...rest}>
       {title ? (
         <header className="border-rule flex items-center gap-2 border-b px-5 py-3.5">
           <h2 className="text-[14.5px] leading-[22px] font-semibold tracking-[-0.01em]">{title}</h2>

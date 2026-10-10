@@ -60,10 +60,7 @@ export function Sidebar({
   return (
     <div className="border-rule bg-sunken w-full shrink-0 border-b md:w-[256px] md:border-r md:border-b-0">
       <aside className="flex flex-col gap-5 px-3.5 py-4 md:sticky md:top-0 md:h-dvh md:overflow-y-auto">
-        <Link
-          href="/app"
-          className="rounded-md px-1.5 py-1"
-        >
+        <Link href="/app" className="rounded-md px-1.5 py-1">
           <Wordmark size={17} />
         </Link>
 
@@ -75,7 +72,10 @@ export function Sidebar({
             <span className="truncate text-[14px] font-semibold">{project.name}</span>
             <span className="text-muted truncate text-xs">{orgName}</span>
           </span>
-          <ChevronsUpDown className="text-muted group-hover:text-ink size-4 shrink-0 transition-colors" aria-hidden />
+          <ChevronsUpDown
+            className="text-muted group-hover:text-ink size-4 shrink-0 transition-colors"
+            aria-hidden
+          />
         </Link>
 
         <nav aria-label="Project" className="flex flex-col gap-1">

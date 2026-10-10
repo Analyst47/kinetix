@@ -151,9 +151,7 @@ function ValidationTab() {
       <div className="flex items-start gap-3">
         <SeverityMark severity="high" />
         <div>
-          <p className="text-ink text-[13.5px] font-medium">
-            Unsanitized path joins into fs.readFile
-          </p>
+          <p className="text-ink text-[13.5px] font-medium">Unsanitized path joins into fs.readFile</p>
           <p className="text-muted mono mt-0.5">KX-1042 · src/routes/files.ts:58</p>
         </div>
         <span className="ml-auto">
@@ -162,22 +160,20 @@ function ValidationTab() {
       </div>
 
       <div className="border-rule bg-sunken/60 rounded-md border px-4 py-2">
-        <p className="eyebrow text-muted mb-1 text-[10.5px]">
-          Source → sink reachability
-        </p>
+        <p className="eyebrow text-muted mb-1 text-[10.5px]">Source → sink reachability</p>
         <Step answer="yes" label="User input reaches the operation" />
         <Step answer="yes" label="Input is attacker-controlled (req.query.name)" />
         <Step answer="no" label="An effective sanitizer guards the path" />
       </div>
 
       <div className="border-rule rounded-md border px-4 py-3">
-        <p className="eyebrow text-muted mb-1 text-[10.5px]">
-          Impact
-        </p>
+        <p className="eyebrow text-muted mb-1 text-[10.5px]">Impact</p>
         <p className="text-ink text-[13px] leading-[20px]">
           A request such as{" "}
-          <code className="mono text-ink underline decoration-rule-strong underline-offset-2">?file=../../etc/passwd</code> is joined to the serve
-          root without normalization, allowing reads outside the intended directory.
+          <code className="mono text-ink decoration-rule-strong underline underline-offset-2">
+            ?file=../../etc/passwd
+          </code>{" "}
+          is joined to the serve root without normalization, allowing reads outside the intended directory.
         </p>
       </div>
 
@@ -234,9 +230,7 @@ export function ProductDemo() {
           <span className="bg-rule-strong/60 size-2.5 rounded-full" />
           <span className="bg-rule-strong/60 size-2.5 rounded-full" />
         </div>
-        <span className="text-muted mono ml-2 truncate text-[11px]">
-          kinetix · acme-web · assessment #7
-        </span>
+        <span className="text-muted mono ml-2 truncate text-[11px]">kinetix · acme-web · assessment #7</span>
         <span className="border-rule-strong text-muted ml-auto hidden rounded-full border px-2 py-0.5 font-mono text-[10px] tracking-[0.12em] uppercase sm:inline">
           Illustrative preview
         </span>

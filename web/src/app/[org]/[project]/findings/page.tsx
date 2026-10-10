@@ -4,15 +4,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { PageBar } from "@/components/shell-context";
-import {
-  Avatar,
-  ButtonLink,
-  Chip,
-  EmptyState,
-  PageHeader,
-  SeverityMark,
-  StatusLabel,
-} from "@/components/ui";
+import { Avatar, ButtonLink, Chip, EmptyState, PageHeader, SeverityMark, StatusLabel } from "@/components/ui";
 import {
   AI_VERDICT_CLASS,
   AI_VERDICT_LABEL,

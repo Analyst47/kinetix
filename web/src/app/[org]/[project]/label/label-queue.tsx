@@ -103,8 +103,8 @@ export function LabelQueue({
         </span>
         <h2 className="display text-ink text-[22px]">Queue cleared</h2>
         <p className="text-muted max-w-[42ch]">
-          You&apos;ve labeled {labeled} finding{labeled === 1 ? "" : "s"} for the training corpus.
-          Export the dataset from the Findings page whenever you&apos;re ready.
+          You&apos;ve labeled {labeled} finding{labeled === 1 ? "" : "s"} for the training corpus. Export the
+          dataset from the Findings page whenever you&apos;re ready.
         </p>
         <ButtonLink href={`/${org}/${project}/findings`} variant="primary">
           Back to findings
@@ -185,10 +185,20 @@ export function LabelQueue({
                   <span
                     className={clsx(
                       "grid size-4 shrink-0 place-items-center rounded-full",
-                      ans === "yes" ? "bg-crit-soft text-crit" : ans === "no" ? "bg-brand-soft text-brand" : "bg-rule text-muted",
+                      ans === "yes"
+                        ? "bg-crit-soft text-crit"
+                        : ans === "no"
+                          ? "bg-brand-soft text-brand"
+                          : "bg-rule text-muted",
                     )}
                   >
-                    {ans === "yes" ? <Check className="size-2.5" /> : ans === "no" ? <X className="size-2.5" /> : "?"}
+                    {ans === "yes" ? (
+                      <Check className="size-2.5" />
+                    ) : ans === "no" ? (
+                      <X className="size-2.5" />
+                    ) : (
+                      "?"
+                    )}
                   </span>
                   <span className="text-ink">{label}</span>
                   <span className="text-muted mono ml-auto">{ans}</span>
@@ -209,10 +219,7 @@ export function LabelQueue({
             {excerpt.lines.map((ln) => (
               <div
                 key={ln.n}
-                className={clsx(
-                  "flex gap-3 px-3",
-                  ln.n === excerpt.highlight && "bg-crit-soft/60",
-                )}
+                className={clsx("flex gap-3 px-3", ln.n === excerpt.highlight && "bg-crit-soft/60")}
               >
                 <span className="text-muted/70 w-8 shrink-0 text-right select-none">{ln.n}</span>
                 <span className="text-ink whitespace-pre">{ln.text || " "}</span>
@@ -273,7 +280,7 @@ export function LabelQueue({
 
 function Shortcut({ children }: { children: string }) {
   return (
-    <kbd className="border-current/25 ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded border px-1 text-[10px] font-semibold opacity-70">
+    <kbd className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded border border-current/25 px-1 text-[10px] font-semibold opacity-70">
       {children}
     </kbd>
   );

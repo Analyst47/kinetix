@@ -59,7 +59,10 @@ export function TopBar({
               </span>
             ) : null}
             {c.href && i < crumbs.length - 1 ? (
-              <Link href={c.href} className={clsx("text-muted hover:text-ink truncate transition-colors", c.mono && "mono")}>
+              <Link
+                href={c.href}
+                className={clsx("text-muted hover:text-ink truncate transition-colors", c.mono && "mono")}
+              >
                 {c.label}
               </Link>
             ) : (
@@ -110,10 +113,7 @@ export function TopBar({
           <Avatar name={user.name} className="size-8 text-[12px]" />
         </button>
         {menu ? (
-          <div
-            role="menu"
-            className="border-rule bg-raised absolute right-0 mt-2 w-60 rounded-xl border p-1"
-          >
+          <div role="menu" className="border-rule bg-raised absolute right-0 mt-2 w-60 rounded-xl border p-1">
             <div className="px-2.5 py-2">
               <div className="font-medium">{user.name}</div>
               <div className="text-muted truncate text-xs">{user.email}</div>
