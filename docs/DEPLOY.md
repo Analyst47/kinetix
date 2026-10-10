@@ -119,17 +119,24 @@ KINETIX_AI_MODEL=claude-sonnet-5-5     # optional; omit for the default
 
 The key is read server-side only — never sent to the browser, logged, or committed — and there
 is no silent fallback: without a key, AI features report "not configured". Requests bill to your
-Anthropic account, so every user is metered: each AI search (one model call) counts against
+Anthropic account, so every user is metered: each Agentic Triage run (one model call) counts against
 their plan, with a one-time free allowance of `KINETIX_AI_FREE_SEARCHES` (default 10). When it
 runs out the app shows an Upgrade prompt; billing itself stays off until Stripe is wired in
 (see `docs/BILLING.md`). Model, cost and reliability controls:
 
 ```
-KINETIX_AI_EFFORT=medium                  # low | medium | high reasoning effort per search
+KINETIX_AI_EFFORT=medium                  # low | medium | high reasoning effort per run
 KINETIX_AI_MAX_OUTPUT_TOKENS=4096         # tokens generated per request (reasoning included)
 KINETIX_AI_MAX_RETRIES=4                  # backoff retries on 429/500/503/529
 KINETIX_AI_MONTHLY_TOKEN_BUDGET=20000000  # server-wide hard cap per UTC month; omit for none
 KINETIX_AI_ALLOWED_ORGS=["my-lab"]        # optional: restrict AI to these workspaces
+```
+
+Your own account shouldn't be metered: list it as an owner, and you plus everyone you invite to
+your workspaces get unlimited Agentic Triage (the monthly token budget still applies):
+
+```
+KINETIX_OWNER_EMAILS=you@example.com      # comma-separated for more than one
 ```
 
 To run without AI, set `KINETIX_AI_PROVIDER=none`. Gemini (`KINETIX_AI_PROVIDER=gemini`) and

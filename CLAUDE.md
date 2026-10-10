@@ -67,10 +67,12 @@ seeds the `demo` workspace (demo@kinetix.dev / kinetix-demo-2026).
 - **AI (current):** providers are Anthropic (default) / Gemini / OpenAI-compatible / Mock
   (`api/app/ai/providers.py`). All AI runs on the **server's own key** (managed mode,
   `KINETIX_AI_MANAGED_ENABLED`, on by default; Claude key from `ANTHROPIC_API_KEY`). There is no
-  bring-your-own-key. Usage is **metered per user**: each model call is one "search", charged by
+  bring-your-own-key. Usage is **metered per user**: each model call is one "Agentic Triage run" (user-facing name;
+  API fields still say `searches_*`), charged by
   `billing/entitlements.consume()` inside the request transaction (failed calls roll back);
   free = `KINETIX_AI_FREE_SEARCHES` (10, one-time), paid plans reset monthly; exhausted →
-  `402 ai_limit_reached` → Upgrade UI. Plan rows live in `user_plans` (RLS on `app.user_id`).
+  `402 ai_limit_reached` → Upgrade UI. Owner accounts (`KINETIX_OWNER_EMAILS`) and members of
+  workspaces they own are sponsored: unlimited, no hourly rate limit (`entitlements.sponsor_of`). Plan rows live in `user_plans` (RLS on `app.user_id`).
   The monthly token budget (`budget.py`) is a server-wide backstop. Stripe isn't wired yet —
   see `docs/BILLING.md`. Current Claude models reject a forced `tool_choice`; the adapter uses
   `auto` and the system prompt tells the model to call the result tool. The model answers input_controlled / reaches_sink / sanitized
