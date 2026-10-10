@@ -45,12 +45,12 @@ export function TrustChips({ className }: { className?: string }) {
               <button
                 type="button"
                 aria-describedby={id}
-                aria-pressed={on}
                 onMouseEnter={() => setActive(i)}
                 onMouseLeave={() => setActive(null)}
                 onFocus={() => setActive(i)}
                 onBlur={() => setActive(null)}
-                onClick={() => setActive(on ? null : i)}
+                // Hover and focus already select the chip, so a click (or tap) only ever shows it.
+                onClick={() => setActive(i)}
                 className={clsx(
                   "inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[12px] transition-[color,border-color,background-color] duration-200",
                   on ? "border-ink/70 bg-ink/[0.06] text-ink" : "border-rule text-muted hover:text-ink",

@@ -61,10 +61,7 @@ export default async function ScopePage({ params }: { params: Promise<{ org: str
             {p.attestation_text}
           </blockquote>
         </Panel>
-        <ProjectDangerZone
-          org={org}
-          project={{ slug: p.slug, name: p.name, openFindings: p.open_findings }}
-        />
+        <ProjectDangerZone org={org} project={{ slug: p.slug, name: p.name }} />
       </main>
     </>
   );

@@ -9,7 +9,7 @@ import { CommandPalette } from "@/components/command-palette";
 import { AccountMenu } from "@/components/shell/account-menu";
 import { KeyCombo, useModKey } from "@/components/shell/keys";
 import { GoHud, ShortcutsDialog, useShellKeys } from "@/components/shell/shortcuts";
-import { canCreateProjects } from "@/components/shell/switcher";
+import { canCreateProjects, canReadAudit } from "@/components/shell/switcher";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
 import { TriageChip } from "@/components/usage";
 import type { Role, Usage } from "@/lib/types";
@@ -175,6 +175,7 @@ export function TopBar({
           org={org}
           project={project}
           canCreate={canCreate}
+          canAudit={canReadAudit(role)}
           onShortcuts={openShortcuts}
         />
         <ShortcutsDialog open={shortcuts} onClose={() => setShortcuts(false)} project={project} />

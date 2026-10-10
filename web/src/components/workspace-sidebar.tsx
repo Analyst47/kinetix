@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { NavLink, NavSection } from "@/components/nav-link";
 import { SidebarFrame } from "@/components/shell/sidebar-frame";
-import { Switcher } from "@/components/shell/switcher";
+import { Switcher, canReadAudit } from "@/components/shell/switcher";
 import { UsageMeter } from "@/components/usage";
 import type { Role, Usage } from "@/lib/types";
 
@@ -33,7 +33,9 @@ export function WorkspaceSidebar({
       active: pathname === `/${org}` || pathname === `/${org}/new`,
     },
     { href: `/${org}/members`, label: "Members", icon: Users, shortcut: "m", active: at("/members") },
-    { href: `/${org}/audit`, label: "Audit log", icon: ListTree, active: at("/audit") },
+    ...(canReadAudit(role)
+      ? [{ href: `/${org}/audit`, label: "Audit log", icon: ListTree, active: at("/audit") }]
+      : []),
   ];
   const account = [
     {

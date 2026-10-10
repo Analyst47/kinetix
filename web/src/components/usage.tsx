@@ -7,8 +7,9 @@ import { createContext, useCallback, useContext, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
 import { Dialog } from "@/components/dialog";
+import { ShortDate } from "@/components/short-date";
 import { ButtonLink } from "@/components/ui";
-import { TRIAGE_NAME, shortDate, usageSummary } from "@/lib/format";
+import { TRIAGE_NAME, usageSummary } from "@/lib/format";
 import type { Usage } from "@/lib/types";
 
 const NODE: CSSProperties = { transformBox: "fill-box", transformOrigin: "center" };
@@ -184,7 +185,12 @@ export function UsageMeter({ usage, org }: { usage: Usage; org: string }) {
               </span>
               <span className="text-muted truncate text-[11.5px]">
                 {usage.ai_period === "lifetime" ? "free runs left" : "runs left this month"}
-                {usage.resets_at ? ` · resets ${shortDate(usage.resets_at)}` : ""}
+                {usage.resets_at ? (
+                  <>
+                    {" · resets "}
+                    <ShortDate iso={usage.resets_at} />
+                  </>
+                ) : null}
               </span>
             </>
           )}

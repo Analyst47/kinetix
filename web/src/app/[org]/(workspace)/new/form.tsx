@@ -123,6 +123,9 @@ export function NewProjectForm({ org, taken: existing }: { org: string; taken: s
   const [pending, setPending] = useState<Phase | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<Project | null>(null);
+  // The repository the project was created for: its scope and reference name it, so a retry
+  // adds exactly this link (the field is locked once the project exists).
+  const [createdRepo, setCreatedRepo] = useState<string | null>(null);
   const [repoError, setRepoError] = useState<string | null>(null);
 
   // ── Derived state ──────────────────────────────────────────────────────────
@@ -248,12 +251,11 @@ export function NewProjectForm({ org, taken: existing }: { org: string; taken: s
     router.push(`/${org}/${project.slug}/scans`);
   }
 
-  async function addRepository(project: Project) {
-    if (!repo) return;
+  async function addRepository(project: Project, repoUrl: string) {
     setPending("repo");
     setRepoError(null);
     try {
-      await call("POST", `/orgs/${org}/projects/${project.slug}/targets/git`, { url: repo.url, scan: true });
+      await call("POST", `/orgs/${org}/projects/${project.slug}/targets/git`, { url: repoUrl, scan: true });
     } catch (err) {
       setPending(null);
       setRepoError(err instanceof ApiError ? err.message : "Couldn't add the repository. Try again.");
@@ -266,7 +268,7 @@ export function NewProjectForm({ org, taken: existing }: { org: string; taken: s
     e.preventDefault();
     if (pending) return;
     if (created) {
-      if (repo) await addRepository(created);
+      if (createdRepo) await addRepository(created, createdRepo);
       return;
     }
     if (!allReady) return;
@@ -301,8 +303,10 @@ export function NewProjectForm({ org, taken: existing }: { org: string; taken: s
       return;
     }
     setCreated(project);
-    if (mode === "repo" && repo) await addRepository(project);
-    else openProject(project);
+    if (mode === "repo" && repo) {
+      setCreatedRepo(repo.url);
+      await addRepository(project, repo.url);
+    } else openProject(project);
   }
 
   function onFormKey(e: KeyboardEvent<HTMLFormElement>) {
@@ -348,7 +352,7 @@ export function NewProjectForm({ org, taken: existing }: { org: string; taken: s
     : mode === "repo"
       ? "Create project & start scan"
       : "Create project";
-  const submitDisabled = pending !== null || (created ? !repo : !allReady);
+  const submitDisabled = pending !== null || (created ? !createdRepo : !allReady);
   const stagger = (i: number) => ({ animationDelay: `${i * 70}ms` });
 
   return (
@@ -390,7 +394,7 @@ export function NewProjectForm({ org, taken: existing }: { org: string; taken: s
               touched={urlTouched}
               note={note}
               canPaste={canPaste}
-              disabled={!canCreate || pending !== null}
+              disabled={!canCreate || pending !== null || created !== null}
               inputRef={urlRef}
               onValue={changeUrl}
               onBlur={() => setUrlTouched(url.trim() !== "")}
@@ -870,7 +874,7 @@ export function NewProjectForm({ org, taken: existing }: { org: string; taken: s
               </p>
               <p className="text-crit mt-0.5 text-[13px]">{repoError}</p>
               <p className="text-muted mt-1 text-[13px]">
-                Fix the link above and try again, or{" "}
+                Try again, or{" "}
                 <Link
                   href={`/${org}/${created.slug}/scans`}
                   className="text-ink underline underline-offset-4"

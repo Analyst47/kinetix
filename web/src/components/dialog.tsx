@@ -12,6 +12,7 @@ export function Dialog({
   children,
   footer,
   width = 520,
+  dismissible = true,
 }: {
   open: boolean;
   onClose: () => void;
@@ -20,6 +21,8 @@ export function Dialog({
   children: ReactNode;
   footer?: ReactNode;
   width?: number;
+  /** False while work is in flight: Escape and the close button are held off until it settles. */
+  dismissible?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   // Several dialogs can share a page (the shell mounts two), so each needs its own title id.
@@ -35,6 +38,9 @@ export function Dialog({
     <dialog
       ref={ref}
       onClose={onClose}
+      onCancel={(e) => {
+        if (!dismissible) e.preventDefault();
+      }}
       aria-labelledby={titleId}
       style={{ width: `min(${width}px, calc(100vw - 32px))` }}
       className="border-rule bg-raised text-ink m-auto rounded-2xl border p-0 backdrop:bg-black/60"
@@ -49,8 +55,9 @@ export function Dialog({
         <button
           type="button"
           onClick={onClose}
+          disabled={!dismissible}
           aria-label="Close"
-          className="text-muted hover:bg-ink/[0.06] hover:text-ink -mr-1.5 ml-auto inline-flex size-8 items-center justify-center rounded-full"
+          className="text-muted hover:bg-ink/[0.06] hover:text-ink -mr-1.5 ml-auto inline-flex size-8 items-center justify-center rounded-full disabled:opacity-40"
         >
           <X className="size-4" />
         </button>

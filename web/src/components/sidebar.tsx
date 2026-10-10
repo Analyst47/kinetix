@@ -19,9 +19,10 @@ import { usePathname } from "next/navigation";
 
 import { NavLink, NavSection } from "@/components/nav-link";
 import { SidebarFrame } from "@/components/shell/sidebar-frame";
-import { Switcher } from "@/components/shell/switcher";
+import { ShortDate } from "@/components/short-date";
+import { Switcher, canReadAudit } from "@/components/shell/switcher";
 import { UsageMeter } from "@/components/usage";
-import { AUTHORIZATION_LABEL, shortDate } from "@/lib/format";
+import { AUTHORIZATION_LABEL } from "@/lib/format";
 import type { Role, Usage } from "@/lib/types";
 
 interface Props {
@@ -108,7 +109,7 @@ export function Sidebar({
         <NavSection>Workspace</NavSection>
         <NavLink href={`/${org}`} label="All projects" icon={FolderKanban} shortcut="p" />
         <NavLink href={`/${org}/members`} label="Members" icon={Users} shortcut="m" />
-        <NavLink href={`/${org}/audit`} label="Audit log" icon={ListTree} />
+        {canReadAudit(role) ? <NavLink href={`/${org}/audit`} label="Audit log" icon={ListTree} /> : null}
       </nav>
     </SidebarFrame>
   );
@@ -185,14 +186,14 @@ function AuthorizationCard({
           </div>
           <div className="text-muted flex items-center justify-between font-mono text-[10.5px] tabular-nums">
             <span>
-              {expired ? "Expired" : "Review by"} {shortDate(expires)}
+              {expired ? "Expired" : "Review by"} <ShortDate iso={expires} />
             </span>
             {days !== null && !expired ? <span className="text-ink/80">{days}d left</span> : null}
           </div>
         </div>
       ) : expires ? (
         <p className="text-muted font-mono text-[10.5px]">
-          {expired ? "Expired" : "Review by"} {shortDate(expires)}
+          {expired ? "Expired" : "Review by"} <ShortDate iso={expires} />
         </p>
       ) : null}
 

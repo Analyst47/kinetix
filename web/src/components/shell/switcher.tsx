@@ -32,6 +32,11 @@ export function canCreateProjects(role?: Role): boolean {
   return role === "owner" || role === "admin" || role === "researcher";
 }
 
+/** Roles the API lets read the audit log (audit:read). Unknown roles are shown it. */
+export function canReadAudit(role?: Role): boolean {
+  return role === undefined || role === "owner" || role === "admin" || role === "reviewer";
+}
+
 function initial(name: string): string {
   return (name.trim()[0] ?? "?").toUpperCase();
 }

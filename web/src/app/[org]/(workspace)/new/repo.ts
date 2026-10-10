@@ -152,8 +152,13 @@ function strictCheck(input: string): RepoCheck {
 function candidateFix(input: string): string | null {
   let s = input.trim();
   if (!s) return null;
-  const scp = /^(?:ssh:\/\/)?git@([^:/\s]+)[:/](.+)$/.exec(s);
-  if (scp) s = `https://${scp[1]}/${scp[2]}`;
+  // ssh://[user@]host[:port]/path: the port is the SSH port, so drop it and keep the real path.
+  const ssh = /^ssh:\/\/(?:[^@/\s]+@)?([^:/\s]+)(?::\d+)?\/(.+)$/i.exec(s);
+  // scp-style git@host:path (never git@host:2222/path, which would read a port as the owner).
+  const scp = ssh ? null : /^git@([^:/\s]+):(?!\d+\/)(.+)$/.exec(s);
+  if (ssh) s = `https://${ssh[1]}/${ssh[2]}`;
+  else if (scp) s = `https://${scp[1]}/${scp[2]}`;
+  else if (/^ssh:\/\/|^git@/i.test(s)) return null;
   else if (/^http:\/\//i.test(s)) s = `https://${s.slice(7)}`;
   else if (!s.includes("://")) {
     if (/^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+\/?$/.test(s)) {
@@ -164,8 +169,12 @@ function candidateFix(input: string): string | null {
   }
   const m = SPLIT_RE.exec(s);
   if (!m) return null;
-  let host = m[2]!.replace(/^.*@/, "").replace(/:\d*$/, "").toLowerCase();
-  if (host === "www.github.com") host = "github.com";
+  const authority = m[2]!.replace(/^.*@/, "");
+  // An unusual port can't be dropped without changing which server the link points at.
+  const port = /:(\d*)$/.exec(authority)?.[1];
+  if (port && port !== "443" && port !== "80") return null;
+  let host = authority.replace(/:\d*$/, "").toLowerCase();
+  if (host === "www.github.com" || host === "ssh.github.com") host = "github.com";
   let path = m[3]!.replace(/\/+$/, "");
   if (host === "github.com") {
     const segments = path.split("/").filter(Boolean);

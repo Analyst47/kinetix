@@ -27,7 +27,7 @@ interface Target {
 const REMOVED: { icon: typeof Bug; label: ReactNode }[] = [
   { icon: FileArchive, label: "Targets and their fetched source snapshots" },
   { icon: ScanLine, label: "Every scan and its results" },
-  { icon: Bug, label: "All findings, with their evidence files and disclosure timelines" },
+  { icon: Bug, label: "All findings, with their evidence records and disclosure timelines" },
   { icon: Sparkles, label: `${TRIAGE_NAME} runs on those findings` },
   { icon: Database, label: "The dependency inventory" },
 ];
@@ -61,6 +61,8 @@ export function DeleteProjectDialog({
   const formId = project ? `delete-project-${project.slug}` : "delete-project";
 
   function close() {
+    // A delete in flight finishes (and closes the dialog) on its own.
+    if (busy) return;
     setTyped("");
     setError(null);
     onClose();
@@ -87,7 +89,9 @@ export function DeleteProjectDialog({
     } catch (err) {
       setBusy(false);
       if (err instanceof ApiError && err.status === 403) {
-        setError("Only workspace owners and admins can delete projects.");
+        setError(
+          err.code === "demo_account" ? err.message : "Only workspace owners and admins can delete projects.",
+        );
       } else if (err instanceof ApiError && err.status === 404) {
         setError("This project no longer exists. It may already have been deleted.");
         router.refresh();
@@ -104,9 +108,12 @@ export function DeleteProjectDialog({
       title={project ? `Delete ${project.name}?` : "Delete project"}
       description="This permanently removes the project for everyone in the workspace. It can't be undone."
       width={540}
+      dismissible={!busy}
       footer={
         <>
-          <Button onClick={close}>Cancel</Button>
+          <Button onClick={close} disabled={busy}>
+            Cancel
+          </Button>
           <Button
             type="submit"
             form={formId}

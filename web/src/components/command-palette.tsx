@@ -76,6 +76,7 @@ export function CommandPalette({
   org,
   project,
   canCreate = true,
+  canAudit = true,
   onShortcuts,
 }: {
   open: boolean;
@@ -84,11 +85,20 @@ export function CommandPalette({
   project?: string;
   /** Whether "New project" is offered (the API lets owners, admins and researchers create). */
   canCreate?: boolean;
+  /** Whether "Audit log" is offered (the API lets owners, admins and reviewers read it). */
+  canAudit?: boolean;
   onShortcuts?: () => void;
 }) {
   if (!open) return null;
   return (
-    <Palette onClose={onClose} org={org} project={project} canCreate={canCreate} onShortcuts={onShortcuts} />
+    <Palette
+      onClose={onClose}
+      org={org}
+      project={project}
+      canCreate={canCreate}
+      canAudit={canAudit}
+      onShortcuts={onShortcuts}
+    />
   );
 }
 
@@ -97,12 +107,14 @@ function Palette({
   org,
   project,
   canCreate,
+  canAudit,
   onShortcuts,
 }: {
   onClose: () => void;
   org: string;
   project?: string;
   canCreate: boolean;
+  canAudit: boolean;
   onShortcuts?: () => void;
 }) {
   const router = useRouter();
@@ -282,14 +294,18 @@ function Palette({
         href: `/${org}/members`,
         keys: goKeys("m"),
       },
-      {
-        id: "audit",
-        label: "Audit log",
-        group: "Workspace",
-        icon: ListTree,
-        keywords: "history events",
-        href: `/${org}/audit`,
-      },
+      ...(canAudit
+        ? [
+            {
+              id: "audit",
+              label: "Audit log",
+              group: "Workspace" as const,
+              icon: ListTree,
+              keywords: "history events",
+              href: `/${org}/audit`,
+            },
+          ]
+        : []),
       {
         id: "security",
         label: "Security",
@@ -323,7 +339,7 @@ function Palette({
       const inGroup = scored.filter((x) => x.item.group === g).map((x) => x.item);
       return g === "Projects" ? inGroup.slice(0, 5) : inGroup;
     });
-  }, [org, project, query, projects, canCreate, onShortcuts]);
+  }, [org, project, query, projects, canCreate, canAudit, onShortcuts]);
 
   const items = groups;
   const current = Math.min(active, Math.max(0, items.length - 1));
@@ -365,6 +381,8 @@ function Palette({
             setActive(0);
           }}
           onKeyDown={(e) => {
+            // The Enter that commits an IME composition isn't a choice.
+            if (e.nativeEvent.isComposing || e.keyCode === 229) return;
             if (e.key === "ArrowDown") {
               e.preventDefault();
               setActive(items.length ? (current + 1) % items.length : 0);
