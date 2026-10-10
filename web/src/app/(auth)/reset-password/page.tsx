@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { AuthHeading } from "@/components/auth/heading";
+
 import { ResetForm } from "./form";
 
 export const metadata: Metadata = {
@@ -11,11 +13,12 @@ export const metadata: Metadata = {
 
 export default function ResetPasswordPage() {
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="display text-ink text-[clamp(32px,4vw,40px)]">Choose a new password</h1>
-        <p className="text-muted">Every device signed in to your account will be signed out.</p>
-      </div>
+    <div className="flex flex-col gap-7">
+      <AuthHeading
+        eyebrow="Account recovery"
+        title="Choose a new password."
+        lede="Every device signed in to your account will be signed out."
+      />
       <ResetForm />
     </div>
   );

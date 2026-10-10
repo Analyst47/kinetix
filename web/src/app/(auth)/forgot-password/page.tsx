@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+
+import { AuthHeading, AuthSwitch } from "@/components/auth/heading";
 
 import { ForgotForm } from "./form";
 
@@ -7,21 +8,14 @@ export const metadata: Metadata = { title: "Reset your password" };
 
 export default function ForgotPasswordPage() {
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="display text-ink text-[clamp(32px,4vw,40px)]">Reset your password</h1>
-        <p className="text-muted">We&apos;ll email you a link to choose a new one.</p>
-      </div>
+    <div className="flex flex-col gap-7">
+      <AuthHeading
+        eyebrow="Account recovery"
+        title="Reset your password."
+        lede="We'll email you a one-time link to choose a new one."
+      />
       <ForgotForm />
-      <p className="text-muted">
-        Remembered it?{" "}
-        <Link
-          href="/login"
-          className="text-ink decoration-rule-strong hover:decoration-ink underline underline-offset-4"
-        >
-          Sign in
-        </Link>
-      </p>
+      <AuthSwitch prompt="Remembered it?" href="/login" label="Sign in" />
     </div>
   );
 }
