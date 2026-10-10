@@ -21,3 +21,6 @@ var/
 !api/tests/fixtures/**
 
 .DS_Store
+
+# Redis dump (generated at runtime)
+dump.rdb
