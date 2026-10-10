@@ -13,7 +13,11 @@ import type { Usage } from "@/lib/types";
 
 /** Compact meter for the sidebar: plan, remaining searches, and the way to get more. */
 export function UsageMeter({ usage, org }: { usage: Usage; org: string }) {
-  const pct = usage.searches_limit ? (usage.searches_remaining / usage.searches_limit) * 100 : 0;
+  const pct = usage.unlimited
+    ? 100
+    : usage.searches_limit
+      ? ((usage.searches_remaining ?? 0) / usage.searches_limit) * 100
+      : 0;
   const out = usage.searches_remaining === 0;
   return (
     <Link
@@ -22,7 +26,7 @@ export function UsageMeter({ usage, org }: { usage: Usage; org: string }) {
     >
       <div className="flex items-center gap-2">
         <Sparkles className="text-muted size-3.5" aria-hidden />
-        <span className="text-[13px] font-semibold">AI searches</span>
+        <span className="text-[13px] font-semibold">Agentic Triage</span>
         <span className="text-muted border-rule ml-auto rounded-full border px-2 py-px font-mono text-[10px] tracking-[0.1em] uppercase">
           {usage.plan_name}
         </span>
@@ -31,18 +35,24 @@ export function UsageMeter({ usage, org }: { usage: Usage; org: string }) {
         className="bg-ink/[0.08] h-1.5 overflow-hidden rounded-full"
         role="meter"
         aria-valuemin={0}
-        aria-valuemax={usage.searches_limit}
-        aria-valuenow={usage.searches_remaining}
-        aria-label="AI searches remaining"
+        aria-valuemax={usage.searches_limit ?? undefined}
+        aria-valuenow={usage.searches_remaining ?? undefined}
+        aria-label="Agentic Triage runs remaining"
       >
         <div className="bg-ink h-full rounded-full transition-[width]" style={{ width: `${pct}%` }} />
       </div>
       <p className="text-muted text-xs">
-        <span className="text-ink font-medium">{usage.searches_remaining}</span> of {usage.searches_limit}{" "}
-        {usage.ai_period === "lifetime" ? "free left" : "left this month"}
+        {usage.unlimited ? (
+          <span className="text-ink font-medium">Unlimited</span>
+        ) : (
+          <>
+            <span className="text-ink font-medium">{usage.searches_remaining}</span> of {usage.searches_limit}{" "}
+            {usage.ai_period === "lifetime" ? "free left" : "left this month"}
+          </>
+        )}
         {usage.resets_at ? ` · resets ${shortDate(usage.resets_at)}` : ""}
       </p>
-      {out || usage.plan === "free" ? (
+      {!usage.unlimited && (out || usage.plan === "free") ? (
         <span className="text-ink inline-flex items-center gap-1 text-xs font-medium group-hover:underline">
           {out ? "Upgrade to keep using AI" : "Upgrade for more"} <ArrowUpRight className="size-3" />
         </span>
@@ -51,7 +61,7 @@ export function UsageMeter({ usage, org }: { usage: Usage; org: string }) {
   );
 }
 
-/** The state shown when a user has used all their AI searches. */
+/** The state shown when a user has used all their Agentic Triage runs. */
 export function UpgradeDialog({
   open,
   onClose,
@@ -67,7 +77,7 @@ export function UpgradeDialog({
     <Dialog
       open={open}
       onClose={onClose}
-      title="You're out of AI searches"
+      title="You're out of Agentic Triage runs"
       description={message ?? "Upgrade your plan to keep using AI assistance."}
       footer={
         <>
@@ -126,7 +136,7 @@ export function PlanBadge({ usage, className }: { usage: Usage; className?: stri
       title={usageSummary(usage)}
     >
       <Sparkles className="size-3" aria-hidden />
-      {usage.searches_remaining} left
+      {usage.unlimited ? "Unlimited" : `${usage.searches_remaining} left`}
     </span>
   );
 }

@@ -201,3 +201,89 @@ def test_claude_key_comes_from_anthropic_env_and_empty_vars_count_as_unset(monke
     assert s.ai_api_key == "sk-ant-test" and s.ai_model == "claude-sonnet-5-5"
     assert s.ai_monthly_token_budget is None
     assert s.ai_free_searches == 10 and s.billing_enabled is False
+
+
+def _join(org_slug: str, email: str, role) -> None:
+    from app.models import Membership, Organization
+
+    with SessionLocal() as db:
+        db.add(
+            Membership(
+                org_id=db.scalar(select(Organization.id).where(Organization.slug == org_slug)),
+                user_id=db.scalar(select(User.id).where(User.email == email)),
+                role=role,
+            )
+        )
+        db.commit()
+
+
+def test_owner_account_is_unlimited_and_not_rate_limited(client, monkeypatch):
+    # Configured in a different case than the account: matching ignores case.
+    monkeypatch.setattr(get_settings(), "owner_emails", ["fahim@example.com"])
+    monkeypatch.setattr(get_settings(), "ai_free_searches", 1)
+    org, url, provider = _setup(client, monkeypatch, GOOD)
+    usage = client.get("/api/v1/billing").json()["usage"]
+    assert usage["unlimited"] is True and usage["sponsor"] == "owner"
+    assert usage["plan"] == "owner" and usage["ai_period"] == "unlimited"
+    assert usage["searches_limit"] is None and usage["searches_remaining"] is None
+
+    ai_router._limiter.limit = 2  # far below what the owner will use
+    try:
+        for _ in range(4):
+            assert client.post(f"{url}/ai/analyze").status_code == 201
+    finally:
+        ai_router._limiter.limit = 40
+    assert len(provider.calls) == 4
+    # Nothing was charged, and each run is still audited as sponsored.
+    with SessionLocal() as db:
+        set_user(db, _user_id())
+        assert db.scalars(select(UserPlan)).all() == []
+    event = next(
+        e for e in client.get(f"/api/v1/orgs/{org}/audit").json() if e["action"] == "ai.analysis"
+    )
+    assert event["data"]["quota"] == {"plan": "owner", "unlimited": True, "sponsor": "owner"}
+
+
+def test_members_of_an_owners_workspace_are_unlimited_strangers_are_not(client, monkeypatch):
+    from app.models.enums import Role
+
+    monkeypatch.setattr(get_settings(), "owner_emails", ["FAHIM@example.com".lower()])
+    monkeypatch.setattr(get_settings(), "ai_free_searches", 1)
+    org, url, _ = _setup(client, monkeypatch, GOOD)
+
+    mate = make_client()
+    register(mate, email="mate@example.com", org="Mate")
+    _join(org, "mate@example.com", Role.RESEARCHER)
+    assert mate.get("/api/v1/billing").json()["usage"]["sponsor"] == "team"
+    for _ in range(3):
+        assert mate.post(f"{url}/ai/analyze").status_code == 201
+
+    # Someone who only owns their own workspace stays on the metered free plan, even when
+    # the owner is a member of *their* workspace (sponsorship flows from owned workspaces).
+    stranger = make_client()
+    other_org = register(stranger, email="stranger@example.com", org="Elsewhere")
+    _join(other_org, "fahim@example.com", Role.ADMIN)
+    usage = stranger.get("/api/v1/billing").json()["usage"]
+    assert usage["unlimited"] is False and usage["plan"] == "free"
+
+
+def test_owner_triage_is_not_capped_by_a_quota(client, monkeypatch):
+    monkeypatch.setattr(get_settings(), "owner_emails", ["fahim@example.com"])
+    monkeypatch.setattr(get_settings(), "ai_free_searches", 1)
+    org, _url, provider = _setup(client, monkeypatch, GOOD)
+    base = f"/api/v1/orgs/{org}/projects/juice-shop/findings"
+    for i in range(3):
+        r = client.post(
+            base,
+            json={
+                "title": f"Noise {i}",
+                "severity": "low",
+                "cwe": "CWE-79",
+                "file_path": "routes/login.ts",
+                "line": 4,
+            },
+        )
+        assert r.status_code == 201, r.text
+    body = client.post(f"/api/v1/orgs/{org}/projects/juice-shop/ai/triage?limit=10").json()
+    assert body["reviewed"] == 4 and body["remaining"] == 0 and body["stopped"] is None
+    assert len(provider.calls) == 4

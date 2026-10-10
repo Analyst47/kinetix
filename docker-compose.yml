@@ -40,6 +40,8 @@ x-api-env: &api-env
   KINETIX_AI_PRO_MONTHLY_SEARCHES: ${KINETIX_AI_PRO_MONTHLY_SEARCHES:-300}
   KINETIX_AI_TEAM_MONTHLY_SEARCHES: ${KINETIX_AI_TEAM_MONTHLY_SEARCHES:-2000}
   KINETIX_BILLING_ENABLED: ${KINETIX_BILLING_ENABLED:-false}
+  # Owner accounts (comma-separated emails): they and their workspaces' members are unlimited.
+  KINETIX_OWNER_EMAILS: ${KINETIX_OWNER_EMAILS:-}
   # Email: console (printed to logs) | resend. See README.
   KINETIX_EMAIL_BACKEND: ${KINETIX_EMAIL_BACKEND:-console}
   KINETIX_RESEND_API_KEY: ${KINETIX_RESEND_API_KEY:-}

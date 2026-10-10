@@ -206,3 +206,63 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/*
+ * Shared motion for the signed-in app. Every animation is decorative and the reduced-motion
+ * block above collapses it, so nothing depends on it running.
+ */
+@keyframes kx-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Draw an SVG stroke: set stroke-dasharray / stroke-dashoffset to the path length first. */
+@keyframes kx-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes kx-pulse-ring {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+@keyframes kx-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes kx-shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+.kx-fade-up {
+  animation: kx-fade-up 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.kx-pulse-ring {
+  animation: kx-pulse-ring 2.4s cubic-bezier(0.2, 0.7, 0.2, 1) infinite;
+}
+
+.kx-spin-slow {
+  animation: kx-spin 24s linear infinite;
+}

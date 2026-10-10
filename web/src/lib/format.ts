@@ -171,8 +171,16 @@ export function deadlineLabel(days: number | null, health: string): string {
   return `${days} day${days === 1 ? "" : "s"} left`;
 }
 
-/** "7 of 10 free AI searches left" / "212 of 300 AI searches left this month". */
+/** The product name for one AI model call (Analyze, Ask, Draft, or one finding in a triage pass). */
+export const TRIAGE_NAME = "Agentic Triage";
+
+/** "7 of 10 free triage runs left" / "212 of 300 triage runs left this month" / "Unlimited". */
 export function usageSummary(u: Usage): string {
+  if (u.unlimited || u.searches_limit === null || u.searches_remaining === null) {
+    return u.sponsor === "team"
+      ? "Unlimited triage runs, sponsored by your workspace owner"
+      : "Unlimited triage runs";
+  }
   const of = `${u.searches_remaining.toLocaleString("en-US")} of ${u.searches_limit.toLocaleString("en-US")}`;
-  return u.ai_period === "lifetime" ? `${of} free AI searches left` : `${of} AI searches left this month`;
+  return u.ai_period === "lifetime" ? `${of} free triage runs left` : `${of} triage runs left this month`;
 }

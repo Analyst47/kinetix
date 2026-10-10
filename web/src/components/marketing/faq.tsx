@@ -21,8 +21,8 @@ const FAQS: { q: string; a: string }[] = [
     a: "Every finding carries a confidence level: Firm for a taint-tracked source-to-sink path or a matched advisory, Tentative for a pattern match. The AI pass then answers whether input is attacker-controlled, reaches the sink, and is sanitized — citing exact lines. KinetixZero verifies each citation and derives the verdict itself, downgrading anything uncited.",
   },
   {
-    q: "What is an AI search, and what do I get for free?",
-    a: "One AI search is one model call: an Analyze, an Ask, a Draft, or one finding reviewed during a triage pass. Every account includes 10 free AI searches. Paid plans include a larger allowance that resets every month. A search that fails on our side isn't counted.",
+    q: "What is an Agentic Triage run, and what do I get for free?",
+    a: "One Agentic Triage run is one model call: an Analyze, an Ask, a Draft, or one finding reviewed during a triage pass. Every account includes 10 free runs. Paid plans include a larger allowance that resets every month. A run that fails on our side isn't counted. It is advisory triage of code you're authorized to analyze — it never attacks or tests a live system.",
   },
   {
     q: "Where does my code go when I use AI?",

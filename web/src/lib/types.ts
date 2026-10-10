@@ -241,14 +241,20 @@ export interface Plan {
   self_serve: boolean;
 }
 
+/** The signed-in user's Agentic Triage allowance. One run = one AI model call. */
 export interface Usage {
   plan: string;
   plan_name: string;
   status: string;
-  ai_period: "lifetime" | "month";
+  ai_period: "lifetime" | "month" | "unlimited";
   searches_used: number;
-  searches_limit: number;
-  searches_remaining: number;
+  /** Null when the user is unlimited. */
+  searches_limit: number | null;
+  /** Null when the user is unlimited. */
+  searches_remaining: number | null;
+  /** Owner accounts ("owner") and members of their workspaces ("team") have no quota. */
+  unlimited: boolean;
+  sponsor: "owner" | "team" | null;
   resets_at: string | null;
   billing_enabled: boolean;
 }

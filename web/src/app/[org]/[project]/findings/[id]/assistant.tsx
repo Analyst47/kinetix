@@ -147,7 +147,7 @@ export function AssistantPanel({
     );
   }
 
-  const outOfSearches = status.usage.searches_remaining < 1;
+  const outOfSearches = !status.usage.unlimited && (status.usage.searches_remaining ?? 0) < 1;
 
   const o = analysis?.output;
   const apply = async (patch: Record<string, string>) => run("apply", () => call("PATCH", base, patch));
@@ -177,7 +177,7 @@ export function AssistantPanel({
 
         {outOfSearches && canUse ? (
           <div className="border-rule flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border px-3 py-2.5 text-[13px]">
-            <span>You&apos;ve used all your AI searches.</span>
+            <span>You&apos;ve used all your Agentic Triage runs.</span>
             <Link href={`/${org}/billing`} className="text-ink font-medium hover:underline">
               See plans
             </Link>
@@ -307,7 +307,7 @@ export function AssistantPanel({
             <p className="text-muted max-w-[68ch] text-[13px]">
               Get an evidence-cited read on this finding: how data reaches the flagged line, what to verify
               before confirming, and a suggested CWE. Sends this finding&apos;s details and nearby source to{" "}
-              {PROVIDER_LABEL[status.provider ?? ""] ?? status.provider}. Uses one AI search.
+              {PROVIDER_LABEL[status.provider ?? ""] ?? status.provider}. Uses one Agentic Triage run.
             </p>
             {status.data_notice ? (
               <p className="border-rule max-w-[68ch] rounded-md border px-3 py-2 text-[13px]">

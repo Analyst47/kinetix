@@ -1,8 +1,10 @@
+import json
 from functools import lru_cache
 from pathlib import Path
+from typing import Annotated
 
-from pydantic import Field, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field, field_validator, model_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -91,6 +93,10 @@ class Settings(BaseSettings):
     ai_team_monthly_searches: int = 2000
     # Stays off until Stripe is wired in; the Upgrade flow shows "billing coming soon".
     billing_enabled: bool = False
+    # Owner accounts (by email): this server is theirs, so they and every member of a workspace
+    # they own get Agentic Triage with no quota and no hourly limit. The monthly token budget
+    # still applies as the server-wide backstop. Accepts a JSON list or comma-separated emails.
+    owner_emails: Annotated[list[str], NoDecode] = Field(default_factory=list)
 
     # Optional extra restriction: which workspaces may use the server's AI key (by slug).
     # Empty = every workspace may, with each user limited by their plan's quota.
@@ -110,6 +116,16 @@ class Settings(BaseSettings):
     scan_mode: str = "inline"
 
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
+
+    @field_validator("owner_emails", mode="before")
+    @classmethod
+    def _parse_emails(cls, value: object) -> object:
+        if isinstance(value, str):
+            text = value.strip()
+            value = json.loads(text) if text.startswith("[") else text.split(",")
+        if isinstance(value, list):
+            return [str(v).strip().lower() for v in value if str(v).strip()]
+        return value
 
     @property
     def is_production(self) -> bool:

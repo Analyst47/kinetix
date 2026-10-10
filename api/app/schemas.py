@@ -603,10 +603,15 @@ class UsageOut(BaseModel):
     plan: str
     plan_name: str
     status: str
+    # "lifetime" (one-time free allowance), "month" (resets each period) or "unlimited".
     ai_period: str
+    # Agentic Triage runs. Limit and remaining are null when the user is unlimited.
     searches_used: int
-    searches_limit: int
-    searches_remaining: int
+    searches_limit: int | None
+    searches_remaining: int | None
+    # Owner accounts ("owner") and members of their workspaces ("team") have no quota.
+    unlimited: bool = False
+    sponsor: str | None = None
     resets_at: datetime | None
     # False until Stripe is wired in: the Upgrade flow shows "billing coming soon".
     billing_enabled: bool
@@ -625,7 +630,7 @@ class AiStatusOut(BaseModel):
     data_notice: str | None = None
     # Whether the server has a working AI provider configured (and allows this workspace).
     configured: bool = False
-    # The signed-in user's plan and remaining AI searches.
+    # The signed-in user's plan and remaining Agentic Triage runs.
     usage: UsageOut
     # Server-wide spend backstop, when a budget is set (null = no cap). Shown to admins.
     monthly_token_budget: int | None = None

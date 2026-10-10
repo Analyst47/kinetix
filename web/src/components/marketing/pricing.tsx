@@ -50,7 +50,9 @@ const COPY: Record<
 
 function searches(p: Plan) {
   const n = p.ai_searches.toLocaleString("en-US");
-  return p.ai_period === "lifetime" ? `${n} AI searches included` : `${n} AI searches / month`;
+  return p.ai_period === "lifetime"
+    ? `${n} Agentic Triage runs included`
+    : `${n} Agentic Triage runs / month`;
 }
 
 export function Pricing({ plans }: { plans: Plan[] | null }) {
@@ -117,7 +119,7 @@ export function Pricing({ plans }: { plans: Plan[] | null }) {
               )}
             >
               <DotGlyph variant={1} className="size-3.5" />
-              {p.key === "team" ? "Custom AI search volume" : searches(p)}
+              {p.key === "team" ? "Custom Agentic Triage volume" : searches(p)}
             </div>
 
             <Link
