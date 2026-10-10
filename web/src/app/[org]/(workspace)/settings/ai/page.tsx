@@ -45,8 +45,8 @@ export default async function AiSettingsPage({ params }: { params: Promise<{ org
           <div className="flex flex-col gap-3 p-4">
             <p className="text-[13px]">
               Sending a finding&apos;s context to a model is a policy decision, so AI assistance stays off
-              until an owner or admin turns it on for this workspace. Each member&apos;s AI searches then
-              count against their own plan.
+              until an owner or admin turns it on for this workspace. Each member&apos;s Agentic Triage runs
+              then count against their own plan.
             </p>
             {canManage ? (
               <AiToggle org={org} enabled={status.enabled} />
@@ -59,7 +59,7 @@ export default async function AiSettingsPage({ params }: { params: Promise<{ org
         <Panel
           title={
             <span className="flex items-center gap-2">
-              <Sparkles className="text-muted size-4" /> Your AI searches
+              <Sparkles className="text-muted size-4" /> Your Agentic Triage
             </span>
           }
           aside={
@@ -72,7 +72,7 @@ export default async function AiSettingsPage({ params }: { params: Promise<{ org
             <p className="text-[13px]">
               <span className="font-semibold">{usageSummary(status.usage)}.</span>{" "}
               <span className="text-muted">
-                One search is one model call: an Analyze, Ask or Draft, or one finding in a triage pass.
+                One run is one model call: an Analyze, Ask or Draft, or one finding in a triage pass.
               </span>
             </p>
             <ButtonLink href={`/${org}/billing`} variant="secondary">

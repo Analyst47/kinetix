@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui";
 import { useUpgrade } from "@/components/usage";
 import { ApiError, call } from "@/lib/client";
+import { TRIAGE_NAME } from "@/lib/format";
 
 interface TriageResult {
   reviewed: number;
@@ -17,7 +18,7 @@ interface TriageResult {
 
 /**
  * Runs the AI triage pass over open findings, in batches, until done or a limit is hit. Each
- * finding reviewed uses one AI search; the server caps each batch at what the user has left.
+ * finding reviewed uses one Agentic Triage run; the server caps each batch at what the user has left.
  */
 export function TriageButton({ org, project }: { org: string; project: string }) {
   const router = useRouter();
@@ -41,7 +42,7 @@ export function TriageButton({ org, project }: { org: string; project: string })
         if (r.stopped) {
           const why =
             r.stopped === "limit"
-              ? "That used your last AI search — upgrade your plan to review the rest."
+              ? "That used your last Agentic Triage run — upgrade your plan to review the rest."
               : r.stopped === "quota"
                 ? "The provider's quota is used up — try again later."
                 : r.stopped === "overloaded"
@@ -62,7 +63,7 @@ export function TriageButton({ org, project }: { org: string; project: string })
       const why =
         err instanceof ApiError
           ? err.message
-          : "Couldn't run AI triage. Check that AI is turned on for this workspace.";
+          : `Couldn't run ${TRIAGE_NAME}. Check that AI is turned on for this workspace.`;
       setNote(reviewed ? `Reviewed ${reviewed}. ${why}` : why);
     } finally {
       setBusy(false);
@@ -74,7 +75,7 @@ export function TriageButton({ org, project }: { org: string; project: string })
     <div className="flex flex-col items-end gap-1">
       <Button variant="primary" disabled={busy} onClick={run}>
         <Sparkles aria-hidden />
-        {busy ? "Triaging…" : "Triage with AI"}
+        {busy ? "Triaging…" : `Run ${TRIAGE_NAME}`}
       </Button>
       {note ? <span className="text-muted max-w-[42ch] text-right text-xs">{note}</span> : null}
     </div>

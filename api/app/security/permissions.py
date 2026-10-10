@@ -8,6 +8,8 @@ from app.models.enums import Role
 class Permission(StrEnum):
     PROJECT_READ = "project:read"
     PROJECT_CREATE = "project:create"
+    # Deleting a project removes its targets, scans, findings and disclosures for good.
+    PROJECT_DELETE = "project:delete"
     TARGET_WRITE = "target:write"
     SCAN_START = "scan:start"
     FINDING_WRITE = "finding:write"
@@ -39,7 +41,13 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
     ),
     Role.RESEARCHER: frozenset(_RESEARCH),
     Role.ADMIN: frozenset(
-        _RESEARCH | {Permission.PROJECT_CREATE, Permission.AUDIT_READ, Permission.MEMBERS_MANAGE}
+        _RESEARCH
+        | {
+            Permission.PROJECT_CREATE,
+            Permission.PROJECT_DELETE,
+            Permission.AUDIT_READ,
+            Permission.MEMBERS_MANAGE,
+        }
     ),
     Role.OWNER: frozenset(Permission),
 }

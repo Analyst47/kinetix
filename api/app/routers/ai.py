@@ -85,11 +85,14 @@ def _resolve(ctx: OrgContext) -> Provider:
 
 
 def _require_ai(ctx: OrgContext, db: Session) -> tuple[Provider, entitlements.Usage]:
-    """Resolve the provider, then charge one search to the user. The charge rolls back with
-    the request if the AI call fails, so only completed searches count."""
+    """Resolve the provider, then charge one Agentic Triage run to the user. The charge rolls
+    back with the request if the AI call fails, so only completed runs count. Sponsored users
+    (owner accounts and their teams) are neither charged nor held to the hourly limit."""
     provider = _resolve(ctx)
-    _limiter.hit(str(ctx.user.id))
-    return provider, entitlements.consume(db, ctx.user.id)
+    charge = entitlements.consume(db, ctx.user.id)
+    if not charge.unlimited:
+        _limiter.hit(str(ctx.user.id))
+    return provider, charge
 
 
 _SEV_RANK = case(
@@ -137,14 +140,16 @@ def triage_findings(
 ) -> AiTriageOut:
     """Run AI analysis across a batch of open findings and record each verdict on the finding,
     so the researcher gets a vetted, ranked shortlist. Advisory only: nothing is confirmed or
-    changed. Each finding reviewed costs one AI search; the batch is capped at what the user
-    has left and stops cleanly at a rate limit, the quota, or the spend cap."""
+    changed. Each finding reviewed costs one Agentic Triage run; the batch is capped at what
+    the user has left and stops cleanly at a rate limit, the quota, or the spend cap.
+    Sponsored users aren't capped or rate limited."""
     provider = _resolve(ctx)
     project = load_project(db, ctx, project_slug)
     left = entitlements.usage(db, ctx.user.id)
-    if left.remaining < 1:
-        raise entitlements.limit_reached(left)
-    limit = min(limit, left.remaining)
+    if not left.unlimited:
+        if (left.remaining or 0) < 1:
+            raise entitlements.limit_reached(left)
+        limit = min(limit, left.remaining or 0)
 
     def _open():
         q = select(Finding).where(Finding.project_id == project.id, Finding.status.in_(fsvc.OPEN))
@@ -162,11 +167,12 @@ def triage_findings(
     reviewed = 0
     stopped: str | None = None
     for finding in batch:
-        try:
-            _limiter.hit(str(ctx.user.id))
-        except ApiError:
-            stopped = "rate_limited"
-            break
+        if not left.unlimited:
+            try:
+                _limiter.hit(str(ctx.user.id))
+            except ApiError:
+                stopped = "rate_limited"
+                break
         try:
             charge = entitlements.consume(db, ctx.user.id)
             service.analyze(db, provider, project, finding, ctx.user, quota=charge.audit())

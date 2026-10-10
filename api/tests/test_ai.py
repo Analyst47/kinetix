@@ -128,6 +128,8 @@ def test_status_reflects_server_config_and_workspace_switch(client, monkeypatch)
             "searches_used": 0,
             "searches_limit": 10,
             "searches_remaining": 10,
+            "unlimited": False,
+            "sponsor": None,
             "resets_at": None,
             "billing_enabled": False,
         },

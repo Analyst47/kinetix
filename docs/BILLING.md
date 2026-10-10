@@ -7,20 +7,29 @@ the quota logic. This document describes what exists today and the exact steps t
 
 | Piece | Where | What it does |
 | --- | --- | --- |
-| Plan catalog | `api/app/billing/plans.py` | Free ("Community"), Pro and Custom ("team") tiers: display prices, AI search quotas, period (`lifetime` or `month`), and empty `stripe_price_*` slots. Single source of truth for the pricing page, the app and the gate. |
+| Plan catalog | `api/app/billing/plans.py` | Free ("Community"), Pro and Custom ("team") tiers: display prices, Agentic Triage quotas, period (`lifetime` or `month`), and empty `stripe_price_*` slots. Single source of truth for the pricing page, the app and the gate. |
 | Per-user plan row | `user_plans` table (`api/app/models/billing.py`, migration `7e3f9b2c4d18`) | `plan`, `status`, `ai_searches_used`, `period_start`, `period_end`, `stripe_customer_id`, `stripe_subscription_id`. Isolated per user by row-level security on `app.user_id`. |
-| Quota gate | `api/app/billing/entitlements.py` | `consume()` charges one search inside the request's transaction (row-locked, so no overspend; rolled back if the AI call fails). `usage()` is the read-only view. `apply_subscription()` is the hook a Stripe webhook calls. |
+| Quota gate | `api/app/billing/entitlements.py` | `consume()` charges one Agentic Triage run inside the request's transaction (row-locked, so no overspend; rolled back if the AI call fails). `usage()` is the read-only view. `apply_subscription()` is the hook a Stripe webhook calls. |
 | API | `api/app/routers/billing.py` | `GET /api/v1/billing/plans` (public catalog), `GET /api/v1/billing` (the user's usage + catalog). AI endpoints return `402 ai_limit_reached` when the allowance is used up. |
 | UI | `web/src/components/usage.tsx`, `web/src/app/[org]/(workspace)/billing/page.tsx`, `web/src/components/marketing/pricing.tsx` | Sidebar meter, Upgrade dialog, Plan & usage page ("billing coming soon"), pricing section. |
 
-**What counts as a search:** one AI model call — an Analyze, an Ask, a Draft, or one finding
-reviewed by a triage pass (a triage batch is capped at the searches the user has left). A call
+**What counts as a run:** one AI model call — an Analyze, an Ask, a Draft, or one finding
+reviewed by a triage pass (a triage batch is capped at the runs the user has left). A call
 that fails (provider error, overload, the server spend cap) is not charged.
 
 **Rules:** the free allowance is one-time and never resets. A paid plan grants its quota only
 while `status` is `active` or `trialing`; otherwise the user falls back to the free allowance.
 Paid quotas reset when a new period starts — following `period_end` when Stripe has set it,
 else calendar months from `period_start`.
+
+**Owner accounts:** emails in `KINETIX_OWNER_EMAILS` are sponsored: they, and every member of a
+workspace one of them created (and still owns), are never charged or limited (no quota, no hourly
+AI rate limit, triage batches uncapped). Sponsorship follows `organizations.created_by_id`, not the
+owner role: other owners of a workspace can grant that role, so being made an owner of someone
+else's workspace sponsors nobody. Their runs are still audited
+(`quota: {plan: "owner", unlimited: true}`), and the server-wide monthly token budget still applies.
+Stripe never sees these accounts. Sign-up doesn't verify email, so register an owner address before
+listing it; the API logs a warning at startup while a listed address has no account.
 
 ### Configuration
 
@@ -29,6 +38,7 @@ else calendar months from `period_start`.
 | `KINETIX_AI_FREE_SEARCHES` | `10` | One-time free allowance per user |
 | `KINETIX_AI_PRO_MONTHLY_SEARCHES` | `300` | Pro allowance per billing period |
 | `KINETIX_AI_TEAM_MONTHLY_SEARCHES` | `2000` | Custom/team allowance per period |
+| `KINETIX_OWNER_EMAILS` | unset | Owner accounts (comma-separated); they and their workspaces' members are unlimited |
 | `KINETIX_BILLING_ENABLED` | `false` | Turns the Upgrade buttons from "Coming soon" into live actions |
 | `KINETIX_AI_MONTHLY_TOKEN_BUDGET` | unset | Server-wide token backstop, independent of plans |
 
@@ -36,8 +46,8 @@ else calendar months from `period_start`.
 
 `PRO_PRICE_MONTHLY_USD = 29` and `PRO_PRICE_YEARLY_USD = 290` in `plans.py` are placeholders
 (marked `TODO(billing)`). The margin math is in that file's docstring: with the default model
-(`claude-sonnet-5-5`, $2 / $10 per million input / output tokens) a search costs roughly
-$0.02–0.03 and about $0.05 in a bad case, so Pro's 300 searches cost ~$6–9 typical and ~$15 at
+(`claude-sonnet-5-5`, $2 / $10 per million input / output tokens) a run costs roughly
+$0.02–0.03 and about $0.05 in a bad case, so Pro's 300 runs cost ~$6–9 typical and ~$15 at
 worst against $29. Re-run the math if you change the model, effort, or quotas.
 
 ## Wiring Stripe

@@ -243,6 +243,39 @@ def test_failed_fetch_is_reported_and_blocks_scans(client, monkeypatch):
     assert r.status_code == 409 and r.json()["error"]["code"] == "target_not_ready"
 
 
+def test_a_fetch_that_outlives_its_project_leaves_no_source_tree(client, monkeypatch):
+    import uuid
+
+    from sqlalchemy import select
+
+    from app.config import get_settings
+    from app.db import SessionLocal
+    from app.models import Organization
+    from app.services.scans import run_fetch
+
+    _fake_remote(monkeypatch)
+    org = register(client)
+    create_project(client, org)
+    base = f"/api/v1/orgs/{org}/projects/juice-shop"
+    client.post(f"{base}/targets/git", json={"url": "https://github.com/a/b", "scan": False})
+    target_id = client.get(f"{base}/targets").json()[0]["id"]
+    tree = get_settings().storage_dir / "sources" / target_id
+
+    real_checkout = gitfetch.checkout
+
+    def checkout_while_the_project_is_deleted(remote, ref, workdir, *, extra_config):
+        commit = real_checkout(remote, ref, workdir, extra_config=extra_config)
+        assert client.delete(base, params={"confirm": "juice-shop"}).status_code == 204
+        return commit
+
+    monkeypatch.setattr(gitfetch, "checkout", checkout_while_the_project_is_deleted)
+    with SessionLocal() as db:
+        org_id = db.scalar(select(Organization.id).where(Organization.slug == org))
+        with pytest.raises(LookupError):
+            run_fetch(db, uuid.UUID(target_id), org_id)
+    assert not tree.exists()
+
+
 def test_invalid_repository_url_is_rejected_before_anything_is_created(client):
     org = register(client)
     create_project(client, org)

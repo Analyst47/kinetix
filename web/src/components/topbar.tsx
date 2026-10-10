@@ -1,14 +1,18 @@
 "use client";
 
 import clsx from "clsx";
-import { CreditCard, KeyRound, LogOut, Moon, Search, Sun } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Fragment, useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useState } from "react";
 
 import { CommandPalette } from "@/components/command-palette";
-import { Avatar, Kbd } from "@/components/ui";
-import { call } from "@/lib/client";
+import { AccountMenu } from "@/components/shell/account-menu";
+import { KeyCombo, useModKey } from "@/components/shell/keys";
+import { GoHud, ShortcutsDialog, useShellKeys } from "@/components/shell/shortcuts";
+import { canCreateProjects, canReadAudit } from "@/components/shell/switcher";
+import { ThemeToggle } from "@/components/shell/theme-toggle";
+import { TriageChip } from "@/components/usage";
+import type { Role, Usage } from "@/lib/types";
 
 export interface Crumb {
   label: string;
@@ -16,184 +20,168 @@ export interface Crumb {
   mono?: boolean;
 }
 
+/** A thin forward slash between crumbs. */
+function Slash() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden className="text-rule-strong size-4 shrink-0">
+      <path d="M10.2 2.8 5.8 13.2" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function Breadcrumbs({ crumbs }: { crumbs: Crumb[] }) {
+  const last = crumbs.length - 1;
+  return (
+    <nav aria-label="Breadcrumb" className="min-w-0">
+      <ol className="flex min-w-0 items-center text-[13.5px]">
+        {crumbs.map((c, i) => {
+          const current = i === last;
+          // On phones only the root and the current page show.
+          const middle = i > 0 && !current;
+          return (
+            <li
+              key={`${c.label}-${i}`}
+              className={clsx(
+                "flex min-w-0 items-center",
+                middle && "hidden sm:flex",
+                current ? "shrink" : "shrink-[2]",
+              )}
+            >
+              {i > 0 ? <Slash /> : null}
+              {c.href && !current ? (
+                <Link
+                  href={c.href}
+                  className={clsx(
+                    "text-muted hover:text-ink hover:bg-ink/[0.05] flex min-w-0 items-center gap-2 rounded-lg px-1.5 py-1 transition-colors",
+                    c.mono && "font-mono text-[12.5px]",
+                  )}
+                >
+                  {i === 0 ? (
+                    <span
+                      aria-hidden
+                      className="border-rule-strong bg-raised text-ink grid size-5 shrink-0 place-items-center rounded-md border font-mono text-[10px] font-semibold"
+                    >
+                      {(c.label.trim()[0] ?? "?").toUpperCase()}
+                    </span>
+                  ) : null}
+                  {/* On phones the root shows as its initial tile only, leaving room for the page. */}
+                  <span className={clsx("max-w-[22ch] truncate", i === 0 && "max-sm:sr-only")}>
+                    {c.label}
+                  </span>
+                </Link>
+              ) : (
+                <span
+                  aria-current={current ? "page" : undefined}
+                  className={clsx(
+                    "truncate px-1.5 py-1",
+                    current ? "text-ink kx-fade-up font-semibold tracking-[-0.01em]" : "text-muted",
+                    c.mono && "font-mono text-[12.5px]",
+                  )}
+                >
+                  {c.label}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+}
+
 export function TopBar({
   crumbs,
   user,
   org,
   project,
+  usage,
+  role,
 }: {
   crumbs: Crumb[];
   user: { name: string; email: string };
   org: string;
   project?: string;
+  usage?: Usage;
+  role?: Role;
 }) {
-  const [open, setOpen] = useState(false);
-  const [menu, setMenu] = useState(false);
-  const router = useRouter();
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setOpen((v) => !v);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
-  async function signOut() {
-    await call("POST", "/auth/logout").catch(() => undefined);
-    router.push("/login");
-    router.refresh();
-  }
+  const [palette, setPalette] = useState(false);
+  const [shortcuts, setShortcuts] = useState(false);
+  const mod = useModKey();
+  const togglePalette = useCallback(() => setPalette((v) => !v), []);
+  const openShortcuts = useCallback(() => setShortcuts(true), []);
+  const awaitingGo = useShellKeys({ org, project, onPalette: togglePalette, onShortcuts: openShortcuts });
+  const canCreate = role === undefined || canCreateProjects(role);
 
   return (
-    <header className="border-rule bg-paper/90 sticky top-0 z-20 flex h-14 items-center gap-3 border-b px-4 backdrop-blur-sm md:px-6">
-      <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-2 text-[14px]">
-        {crumbs.map((c, i) => (
-          <Fragment key={`${c.label}-${i}`}>
-            {i > 0 ? (
-              <span aria-hidden className="text-rule-strong">
-                /
-              </span>
-            ) : null}
-            {c.href && i < crumbs.length - 1 ? (
-              <Link
-                href={c.href}
-                className={clsx("text-muted hover:text-ink truncate transition-colors", c.mono && "mono")}
-              >
-                {c.label}
-              </Link>
-            ) : (
-              <span
-                aria-current={i === crumbs.length - 1 ? "page" : undefined}
-                className={clsx(
-                  "truncate",
-                  i === crumbs.length - 1 ? "font-semibold" : "text-muted",
-                  c.mono && "mono",
-                )}
-              >
-                {c.label}
-              </span>
-            )}
-          </Fragment>
-        ))}
-      </nav>
+    <>
+      <header className="border-rule bg-paper/95 supports-[backdrop-filter]:bg-paper/85 sticky top-0 z-30 border-b backdrop-blur-xl backdrop-saturate-150">
+        <div className="flex h-14 items-center gap-2 px-4 md:px-6">
+          <Breadcrumbs crumbs={crumbs} />
 
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="border-rule bg-raised text-muted hover:border-rule-strong hover:text-ink ml-auto hidden h-9 w-[320px] max-w-[40vw] items-center gap-2 rounded-full border px-3.5 text-[13.5px] transition-colors sm:flex"
-      >
-        <Search className="size-4" aria-hidden />
-        <span className="flex-1 text-left">Search or jump to</span>
-        <Kbd>⌘K</Kbd>
-      </button>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label="Search"
-        className="hover:bg-ink/[0.06] text-muted hover:text-ink ml-auto inline-flex size-9 items-center justify-center rounded-full transition-colors sm:hidden"
-      >
-        <Search className="size-[18px]" />
-      </button>
-
-      <ThemeToggle />
-
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setMenu((v) => !v)}
-          aria-haspopup="menu"
-          aria-expanded={menu}
-          aria-label="Account"
-          className="rounded-full"
-        >
-          <Avatar name={user.name} className="size-8 text-[12px]" />
-        </button>
-        {menu ? (
-          <div role="menu" className="border-rule bg-raised absolute right-0 mt-2 w-60 rounded-xl border p-1">
-            <div className="px-2.5 py-2">
-              <div className="font-medium">{user.name}</div>
-              <div className="text-muted truncate text-xs">{user.email}</div>
-            </div>
-            <div className="bg-rule my-1 h-px" />
-            <Link
-              role="menuitem"
-              href={`/${org}/billing`}
-              onClick={() => setMenu(false)}
-              className="hover:bg-ink/[0.05] flex h-8 w-full items-center gap-2 rounded-lg px-2.5"
-            >
-              <CreditCard className="text-muted size-4" aria-hidden />
-              Plan & usage
-            </Link>
-            <Link
-              role="menuitem"
-              href={`/${org}/settings/security`}
-              onClick={() => setMenu(false)}
-              className="hover:bg-ink/[0.05] flex h-8 w-full items-center gap-2 rounded-lg px-2.5"
-            >
-              <KeyRound className="text-muted size-4" aria-hidden />
-              Security
-            </Link>
+          <div className="ml-auto flex shrink-0 items-center gap-1.5">
             <button
               type="button"
-              role="menuitem"
-              onClick={signOut}
-              className="hover:bg-ink/[0.05] flex h-8 w-full items-center gap-2 rounded-lg px-2.5 text-left"
+              onClick={() => setPalette(true)}
+              aria-keyshortcuts="Meta+K Control+K"
+              className="group/search border-rule bg-raised text-muted hover:border-rule-strong hover:text-ink relative hidden h-9 w-[clamp(190px,24vw,320px)] items-center gap-2.5 overflow-hidden rounded-full border pr-1.5 pl-3.5 text-[13px] transition-colors sm:flex"
             >
-              <LogOut className="text-muted size-4" aria-hidden />
-              Sign out
+              <Search
+                className="size-[15px] shrink-0 transition-transform duration-300 group-hover/search:scale-110 group-hover/search:-rotate-12"
+                aria-hidden
+              />
+              <span className="flex-1 truncate text-left">Search or jump to…</span>
+              <KeyCombo keys={[mod, "K"]} className="shrink-0" />
             </button>
+            <button
+              type="button"
+              onClick={() => setPalette(true)}
+              aria-label="Search"
+              className="text-muted hover:bg-ink/[0.06] hover:text-ink inline-flex size-9 items-center justify-center rounded-full transition-colors sm:hidden"
+            >
+              <Search className="size-[18px]" aria-hidden />
+            </button>
+
+            {usage ? <TriageChip usage={usage} org={org} className="hidden lg:inline-flex" /> : null}
+
+            {canCreate ? (
+              <Link
+                href={`/${org}/new`}
+                aria-label="New project"
+                className="group/new bg-brand text-on-brand hidden h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium transition-opacity hover:opacity-90 md:inline-flex xl:px-3.5"
+              >
+                <Plus
+                  className="size-4 shrink-0 transition-transform duration-300 group-hover/new:rotate-90"
+                  aria-hidden
+                />
+                <span className="hidden xl:inline">New project</span>
+              </Link>
+            ) : null}
+
+            <span aria-hidden className="bg-rule mx-1 hidden h-5 w-px sm:block" />
+            <ThemeToggle />
+            <AccountMenu user={user} org={org} role={role} usage={usage} onShortcuts={openShortcuts} />
           </div>
-        ) : null}
-      </div>
+        </div>
 
-      <CommandPalette open={open} onClose={() => setOpen(false)} org={org} project={project} />
-    </header>
-  );
-}
+        {/* A single soft sweep along the bottom edge each time a page arrives. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 -bottom-px h-px animate-[kx-shimmer_1.6s_cubic-bezier(0.4,0,0.2,1)_both] bg-[linear-gradient(90deg,transparent,var(--ink),transparent)] bg-[length:40%_100%] bg-no-repeat opacity-25"
+        />
 
-function currentTheme(): "dark" | "light" {
-  const attr = document.documentElement.dataset.theme;
-  if (attr === "dark" || attr === "light") return attr;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
-
-function subscribeTheme(onChange: () => void) {
-  const media = window.matchMedia("(prefers-color-scheme: dark)");
-  const observer = new MutationObserver(onChange);
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-  media.addEventListener("change", onChange);
-  return () => {
-    observer.disconnect();
-    media.removeEventListener("change", onChange);
-  };
-}
-
-function ThemeToggle() {
-  const theme = useSyncExternalStore(subscribeTheme, currentTheme, () => null);
-  const dark = theme === "dark";
-
-  function toggle() {
-    const next = dark ? "light" : "dark";
-    document.documentElement.dataset.theme = next;
-    try {
-      localStorage.setItem("kx-theme", next);
-    } catch {
-      // Storage can be unavailable (private mode); the toggle still works for this page.
-    }
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={toggle}
-      aria-label={dark ? "Use light theme" : "Use dark theme"}
-      className="text-muted hover:bg-ink/[0.06] hover:text-ink inline-flex size-9 items-center justify-center rounded-full transition-colors"
-    >
-      {dark ? <Sun className="size-[18px]" /> : <Moon className="size-[18px]" />}
-    </button>
+        <CommandPalette
+          open={palette}
+          onClose={() => setPalette(false)}
+          org={org}
+          project={project}
+          canCreate={canCreate}
+          canAudit={canReadAudit(role)}
+          onShortcuts={openShortcuts}
+        />
+        <ShortcutsDialog open={shortcuts} onClose={() => setShortcuts(false)} project={project} />
+      </header>
+      {/* Outside the header: its backdrop filter would otherwise contain this fixed element. */}
+      {awaitingGo ? <GoHud org={org} project={project} /> : null}
+    </>
   );
 }

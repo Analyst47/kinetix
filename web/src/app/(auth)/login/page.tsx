@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+
+import { AuthHeading, AuthSwitch } from "@/components/auth/heading";
 
 import { LoginForm } from "./form";
 
@@ -11,21 +12,14 @@ export const dynamic = "force-dynamic";
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   const { next } = await searchParams;
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1.5">
-        <h1 className="display text-ink text-[clamp(32px,4vw,40px)]">Sign in</h1>
-        <p className="text-muted">Pick up your research where you left it.</p>
-      </div>
+    <div className="flex flex-col gap-7">
+      <AuthHeading eyebrow="Sign in" title="Welcome back." tail="Pick up the trace." />
       <LoginForm demo={process.env.KINETIX_DEMO === "1" && !next?.startsWith("/invite/")} next={next} />
-      <p className="text-muted">
-        New to KinetixZero?{" "}
-        <Link
-          href={next ? `/register?next=${encodeURIComponent(next)}` : "/register"}
-          className="text-ink decoration-rule-strong hover:decoration-ink underline underline-offset-4"
-        >
-          Create an account
-        </Link>
-      </p>
+      <AuthSwitch
+        prompt="New to KinetixZero?"
+        href={next ? `/register?next=${encodeURIComponent(next)}` : "/register"}
+        label="Create an account"
+      />
     </div>
   );
 }

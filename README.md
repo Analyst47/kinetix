@@ -57,7 +57,7 @@ tamper-evident chain of custody.
   advisory tracking. Recording vendor milestones moves the finding through Reported,
   Vendor acknowledged, Fix available and Public disclosure, so the two never disagree.
 - **AI assistance.** Evidence-cited triage, questions and drafting on a finding, served from
-  the server's own Claude key and metered per user (10 free AI searches, larger monthly
+  the server's own Claude key and metered per user as **Agentic Triage** runs (10 free, larger monthly
   allowances on paid plans). Gemini or a local Ollama model also work. The assistant only advises:
   analyzed code is fenced off as untrusted data, injection attempts are flagged, every
   citation is checked against the lines it was shown, and each request is recorded in the
@@ -141,7 +141,7 @@ KINETIX_AI_PROVIDER=mock               # development stub; no model is called
 
 Then a workspace owner or admin turns it on under **AI assistance** in the sidebar.
 
-**Metering.** Each AI "search" — one model call: an Analyze, Ask or Draft, or one finding
+**Metering.** Each Agentic Triage run — one model call: an Analyze, Ask or Draft, or one finding
 reviewed by a triage pass — is charged to the user who ran it. Every user gets a one-time free
 allowance (`KINETIX_AI_FREE_SEARCHES`, default 10); paid plans get a monthly allowance that
 resets each period. A failed call isn't charged. When the allowance runs out the app shows an
@@ -150,6 +150,13 @@ Upgrade prompt; everything except AI keeps working. Usage is shown in the sideba
 are defined in `api/app/billing/plans.py`; Stripe wiring is described in
 [docs/BILLING.md](docs/BILLING.md). `KINETIX_AI_MONTHLY_TOKEN_BUDGET` remains as a server-wide
 spend backstop.
+
+**Owner accounts.** List your own email(s) in `KINETIX_OWNER_EMAILS` (comma-separated). Those
+accounts, and every member of a workspace they created, get unlimited Agentic Triage: no quota and
+no hourly limit. Runs are still recorded in the audit log, and `KINETIX_AI_MONTHLY_TOKEN_BUDGET`
+still caps total spend for the whole server. Register an address before you list it: sign-up
+doesn't verify email, so whoever registers a listed address first gets owner access (the API logs
+a warning at startup while a listed address has no account).
 
 On Gemini's free tier, Google may use prompts and responses to improve its products, and
 human reviewers may read them ([Gemini API terms](https://ai.google.dev/gemini-api/terms)).

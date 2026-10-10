@@ -4,12 +4,14 @@ import { createContext, useContext } from "react";
 import type { ReactNode } from "react";
 
 import { TopBar, type Crumb } from "@/components/topbar";
-import type { Role } from "@/lib/types";
+import type { Role, Usage } from "@/lib/types";
 
 interface Shell {
   user: { name: string; email: string };
   org: { slug: string; name: string; role: Role };
   project?: { slug: string; name: string };
+  /** The signed-in user's Agentic Triage allowance, for the top-bar chip and account menu. */
+  usage?: Usage;
 }
 
 const ShellContext = createContext<Shell | null>(null);
@@ -26,9 +28,18 @@ export function useShell(): Shell {
 
 /** The page's top bar. Breadcrumbs start at the project (or workspace) automatically. */
 export function PageBar({ crumbs }: { crumbs: Crumb[] }) {
-  const { user, org, project } = useShell();
+  const { user, org, project, usage } = useShell();
   const root: Crumb[] = project
     ? [{ label: project.name, href: `/${org.slug}/${project.slug}/findings` }]
     : [{ label: org.name, href: `/${org.slug}` }];
-  return <TopBar crumbs={[...root, ...crumbs]} user={user} org={org.slug} project={project?.slug} />;
+  return (
+    <TopBar
+      crumbs={[...root, ...crumbs]}
+      user={user}
+      org={org.slug}
+      project={project?.slug}
+      usage={usage}
+      role={org.role}
+    />
+  );
 }

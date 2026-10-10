@@ -75,6 +75,11 @@ class Organization(Timestamped, Base):
     # Sending unreleased vulnerability details to a model provider is a policy decision,
     # so AI assistance is off until an owner or admin turns it on.
     ai_enabled: Mapped[bool] = mapped_column(default=False, server_default="false", nullable=False)
+    # Who created the workspace (its first owner). Owner-account sponsorship follows this, not the
+    # owner role, which other owners of a workspace can grant.
+    created_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
 
 
 class Membership(Timestamped, Base):

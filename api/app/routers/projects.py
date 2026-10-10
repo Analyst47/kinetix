@@ -4,15 +4,15 @@ import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Response, UploadFile
-from sqlalchemy import func, select
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Query, Response, UploadFile
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.db import get_db
-from app.deps import OrgContext, load_project, require
+from app.deps import OrgContext, is_demo_account, load_project, require
 from app.errors import ApiError
-from app.models import Finding, Project, Target
+from app.models import Finding, Project, Scan, Target
 from app.models.enums import TargetKind
 from app.scanners.pipeline import ANALYZERS
 from app.schemas import (
@@ -108,6 +108,66 @@ def get_project(
     db: Session = Depends(get_db),
 ) -> ProjectOut:
     return ProjectOut.model_validate(load_project(db, ctx, project_slug))
+
+
+@router.delete("/{project_slug}", status_code=204)
+def delete_project(
+    project_slug: str,
+    confirm: str = Query(description="The project's URL name, typed to confirm."),
+    ctx: OrgContext = Depends(require(Permission.PROJECT_DELETE)),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Delete a project and everything under it: targets, scans, findings (with their evidence
+    records, AI runs and disclosures) and dependencies, plus the fetched source trees on disk.
+    Content-addressed uploads (evidence files, source archives) may be shared and aren't
+    unlinked here. The audit log keeps a permanent record of the deletion. Owners and admins
+    only, and the caller must repeat the project's URL name."""
+    if is_demo_account(ctx.user):
+        raise ApiError(
+            403,
+            "demo_account",
+            "The shared demo account can't delete projects. Create your own account.",
+        )
+    project = load_project(db, ctx, project_slug)
+    if confirm != project.slug:
+        raise ApiError(
+            422, "confirm_mismatch", "Type the project's URL name exactly to confirm deletion."
+        )
+    counts = {
+        "findings": db.scalar(
+            select(func.count()).select_from(Finding).where(Finding.project_id == project.id)
+        )
+        or 0,
+        "scans": db.scalar(
+            select(func.count()).select_from(Scan).where(Scan.project_id == project.id)
+        )
+        or 0,
+    }
+    targets = list(db.scalars(select(Target).where(Target.project_id == project.id)))
+    sources = [source_dir(t) for t in targets]
+    # A finding elsewhere in the workspace may be marked a duplicate of one being deleted.
+    doomed = select(Finding.id).where(Finding.project_id == project.id)
+    db.execute(
+        update(Finding)
+        .where(Finding.org_id == ctx.org.id, Finding.duplicate_of_id.in_(doomed))
+        .values(duplicate_of_id=None)
+    )
+    audit.record(
+        db,
+        org_id=ctx.org.id,
+        actor=ctx.user,
+        action="project.deleted",
+        subject_type="project",
+        subject_id=project.slug,
+        data={"name": project.name, "targets": len(targets), **counts},
+    )
+    # Children go with it through ON DELETE CASCADE in the schema.
+    db.execute(delete(Project).where(Project.id == project.id, Project.org_id == ctx.org.id))
+    db.commit()
+    # Fetched source trees are disposable working copies; free the disk they used.
+    for path in sources:
+        shutil.rmtree(path, ignore_errors=True)
+    return Response(status_code=204)
 
 
 def ensure_authorized(project: Project) -> None:

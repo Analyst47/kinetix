@@ -55,7 +55,7 @@ const EXTRAS = [
   },
   {
     title: "Managed, metered AI",
-    body: "AI runs on KinetixZero's own Claude integration — no key to manage. Every account includes 10 free AI searches, and usage is visible in the app.",
+    body: "AI runs on KinetixZero's own Claude integration — no key to manage. Every account includes 10 free Agentic Triage runs, and usage is visible in the app.",
   },
 ];
 

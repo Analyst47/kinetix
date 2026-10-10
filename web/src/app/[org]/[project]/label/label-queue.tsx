@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { ButtonLink, SeverityMark } from "@/components/ui";
+import { isTypingTarget } from "@/components/shell/keys";
 import { ApiError, call } from "@/lib/client";
 import { AI_VERDICT_CLASS, AI_VERDICT_LABEL, CONFIDENCE_LABEL } from "@/lib/format";
 import type { Finding, SourceExcerpt } from "@/lib/types";
@@ -76,6 +77,10 @@ export function LabelQueue({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+      // Keys typed into a field, or meant for an open dialog (the command palette, the shortcuts
+      // list) or another handler, are never verdicts.
+      if (e.defaultPrevented || e.isComposing || e.repeat || isTypingTarget(e.target)) return;
+      if (document.querySelector("dialog[open]")) return;
       const k = e.key.toLowerCase();
       if (k === "r") {
         e.preventDefault();

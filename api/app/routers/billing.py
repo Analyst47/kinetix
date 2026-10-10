@@ -39,6 +39,8 @@ def usage_out(u: entitlements.Usage) -> UsageOut:
         searches_used=u.used,
         searches_limit=u.limit,
         searches_remaining=u.remaining,
+        unlimited=u.unlimited,
+        sponsor=u.sponsor,
         resets_at=u.resets_at,
         billing_enabled=entitlements.billing_enabled(),
     )
@@ -54,7 +56,8 @@ def list_plans() -> list[PlanOut]:
 def my_billing(
     principal: Principal = Depends(current_principal), db: Session = Depends(get_db)
 ) -> BillingOut:
-    """The signed-in user's plan, remaining AI searches, and the plans they could move to."""
+    """The signed-in user's plan, remaining Agentic Triage runs, and the plans they could move
+    to. Owner accounts and their teams see an unlimited sponsored plan."""
     return BillingOut(
         usage=usage_out(entitlements.usage(db, principal.user.id)),
         plans=[plan_out(p) for p in catalog().values()],

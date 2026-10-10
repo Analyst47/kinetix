@@ -32,6 +32,7 @@ export default async function ProjectLayout({
         user: { name: me.user.name, email: me.user.email },
         org: membership,
         project: { slug: project.slug, name: project.name },
+        usage: billing.usage,
       }}
     >
       <UpgradeProvider org={org}>
@@ -40,6 +41,8 @@ export default async function ProjectLayout({
             usage={billing.usage}
             org={org}
             orgName={membership.name}
+            role={membership.role}
+            organizations={me.organizations}
             project={project}
             openFindings={findings.status_counts.open ?? 0}
             vulnerableDependencies={deps.vulnerable}
@@ -47,6 +50,7 @@ export default async function ProjectLayout({
               disclosures.filter((d) => d.health === "overdue" || d.health === "due_soon").length
             }
             authorizationExpired={isExpired(project.authorization_expires_at)}
+            authorizationWindow={authorizationWindow(project.attested_at, project.authorization_expires_at)}
           />
           <div className="flex min-w-0 flex-1 flex-col">{children}</div>
         </div>
@@ -57,4 +61,22 @@ export default async function ProjectLayout({
 
 function isExpired(iso: string | null): boolean {
   return iso !== null && new Date(iso).getTime() < Date.now();
+}
+
+const DAY_MS = 86_400_000;
+
+/** Days until the authorization review date, and how much of the attested window has passed. */
+function authorizationWindow(
+  attestedAt: string,
+  expiresAt: string | null,
+): { daysLeft: number; elapsed: number } | null {
+  if (!expiresAt) return null;
+  const start = new Date(attestedAt).getTime();
+  const end = new Date(expiresAt).getTime();
+  const now = Date.now();
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+  return {
+    daysLeft: Math.ceil((end - now) / DAY_MS),
+    elapsed: Math.min(1, Math.max(0, (now - start) / (end - start))),
+  };
 }

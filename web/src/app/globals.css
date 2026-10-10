@@ -206,3 +206,166 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/*
+ * Shared motion for the signed-in app. Every animation is decorative and the reduced-motion
+ * block above collapses it, so nothing depends on it running.
+ */
+@keyframes kx-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Draw an SVG stroke: set stroke-dasharray / stroke-dashoffset to the path length first. */
+@keyframes kx-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes kx-pulse-ring {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+@keyframes kx-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes kx-shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+.kx-fade-up {
+  animation: kx-fade-up 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.kx-pulse-ring {
+  animation: kx-pulse-ring 2.4s cubic-bezier(0.2, 0.7, 0.2, 1) infinite;
+}
+
+.kx-spin-slow {
+  animation: kx-spin 24s linear infinite;
+}
+
+/*
+ * App shell — sidebar, top bar, logo, Agentic Triage meter and command palette.
+ * Monochrome motion only; the reduced-motion block above collapses all of it, so every
+ * keyframe below ends (or rests) in a state that reads correctly on its own.
+ */
+
+/* A node "lands": scale up past 1 and settle. Used by the animated logo and switcher tiles. */
+@keyframes kx-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.18);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* The logo's exit node: one soft ring, then a long rest, so it repeats only every few seconds. */
+@keyframes kx-logo-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  32% {
+    transform: scale(2.7);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.7);
+    opacity: 0;
+  }
+}
+
+/* The active nav notch grows in from its centre. */
+@keyframes kx-notch {
+  from {
+    transform: scaleY(0.2);
+    opacity: 0;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+/* Popovers and menus: a short drop from their anchor. */
+@keyframes kx-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* A calm wave travelling round the unlimited gauge's ticks (staggered by animation-delay). */
+@keyframes kx-tick-wave {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  12% {
+    opacity: 1;
+  }
+  30% {
+    opacity: 0.45;
+  }
+}
+
+/* A highlight flowing along a stroke drawn with pathLength="1". */
+@keyframes kx-dash-flow {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -1;
+  }
+}
+
+/* Theme toggle: the new theme is revealed by a growing circle (driven from shell/theme.ts). */
+:root.kx-theme-reveal::view-transition-old(root),
+:root.kx-theme-reveal::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* Bars fill from the left (pair with origin-left). */
+@keyframes kx-grow-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}

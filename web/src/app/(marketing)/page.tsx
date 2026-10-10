@@ -38,14 +38,14 @@ export default async function HomePage() {
           <SectionHeading
             eyebrow="Pricing"
             title="Start free. Scale your AI review when you need it."
-            lede="Every account runs the full workflow. Plans differ in how many AI searches you get each month."
+            lede="Every account runs the full workflow. Plans differ in how many Agentic Triage runs you get each month."
           />
           <div className="mt-12">
             <Pricing plans={plans} />
           </div>
           <p className="text-muted mt-6 text-[13px]">
-            Paid plans open soon — prices may change before billing launches. One AI search is one model call:
-            an Analyze, Ask, Draft, or one finding reviewed in a triage pass.
+            Paid plans open soon — prices may change before billing launches. One Agentic Triage run is one
+            model call: an Analyze, Ask, Draft, or one finding reviewed in a triage pass.
           </p>
         </Container>
       </Section>
@@ -302,7 +302,7 @@ function ClosingCta() {
     <section className="border-rule relative overflow-hidden border-t">
       <Sky />
       <Container className="relative flex flex-col items-center gap-7 py-28 text-center sm:py-36">
-        <Eyebrow boxed>10 free AI searches on every account</Eyebrow>
+        <Eyebrow boxed>10 free Agentic Triage runs on every account</Eyebrow>
         <h2 className="display text-ink max-w-[16ch] text-[clamp(38px,6vw,76px)]">
           Stop triaging noise. Start finding real paths.
         </h2>

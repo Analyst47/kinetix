@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { AuthHeading } from "@/components/auth/heading";
+import { InvitePass } from "@/components/auth/invite-pass";
 import { ButtonLink } from "@/components/ui";
 import { apiPublic } from "@/lib/server";
 import type { Me, Role } from "@/lib/types";
@@ -24,6 +26,13 @@ const ROLE_DESCRIPTION: Record<Role, string> = {
   viewer: "read-only access",
 };
 
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? "—"
+    : d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+}
+
 export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const [preview, me] = await Promise.all([
@@ -33,12 +42,15 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
 
   if (!preview) {
     return (
-      <div className="flex flex-col gap-3">
-        <h1 className="display text-ink text-[clamp(32px,4vw,40px)]">Invitation not valid</h1>
-        <p className="text-muted">
-          This link has expired, was replaced by a newer invitation, or has already been used. Ask the person
-          who invited you to send a new one.
-        </p>
+      <div className="flex flex-col gap-6">
+        <AuthHeading
+          eyebrow="Invitation"
+          title="This invitation isn't valid."
+          lede="The link has expired, was replaced by a newer invitation, or has already been used. Ask the person who invited you to send a new one."
+        />
+        <ButtonLink href="/login" className="h-11 w-full">
+          Go to sign in
+        </ButtonLink>
       </div>
     );
   }
@@ -48,22 +60,31 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="display text-ink text-[clamp(32px,4vw,40px)]">Join {preview.organization}</h1>
-        <p className="text-muted">
-          {preview.invited_by} invited <span className="text-ink">{preview.email}</span> as a {preview.role}:{" "}
-          {ROLE_DESCRIPTION[preview.role]}.
-        </p>
-      </div>
+      <AuthHeading eyebrow="Invitation" title={`Join ${preview.organization.replace(/\.$/, "")}.`} />
+      <InvitePass
+        inviter={preview.invited_by}
+        organization={preview.organization}
+        role={preview.role}
+        roleDescription={ROLE_DESCRIPTION[preview.role]}
+        email={preview.email}
+        expires={formatDate(preview.expires_at)}
+      />
       {!me ? (
-        <div className="flex flex-col gap-2">
-          <ButtonLink variant="primary" href={`/login?next=${encodeURIComponent(next)}`} className="w-full">
+        <div className="flex flex-col gap-2.5">
+          <ButtonLink
+            variant="primary"
+            href={`/login?next=${encodeURIComponent(next)}`}
+            className="h-11 w-full text-[14.5px] font-semibold"
+          >
             Sign in to accept
           </ButtonLink>
-          <ButtonLink href={`/register?next=${encodeURIComponent(next)}`} className="w-full">
+          <ButtonLink
+            href={`/register?next=${encodeURIComponent(next)}`}
+            className="h-11 w-full text-[14.5px]"
+          >
             Create an account
           </ButtonLink>
-          <p className="text-muted text-xs">
+          <p className="text-muted mt-1 text-xs">
             Use {preview.email}. The invitation only works for that address.
           </p>
         </div>

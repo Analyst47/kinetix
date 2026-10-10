@@ -1,6 +1,6 @@
-"""The AI quota gate: how many AI searches a user has, and charging one.
+"""The AI quota gate: how many Agentic Triage runs a user has, and charging one.
 
-Every AI model call costs one "search": an Analyze, Ask or Draft, or one finding reviewed by a
+Every AI model call costs one run: an Analyze, Ask or Draft, or one finding reviewed by a
 triage pass. ``consume`` is the only way to spend one. It locks the user's plan row for the rest
 of the request's transaction, so concurrent requests from the same user can't overspend, and
 because the charge lives in that same transaction, a request that fails (provider error, spend
@@ -8,24 +8,53 @@ cap) rolls back and the user is not charged.
 
 Stripe drops in through ``apply_subscription`` (called from a webhook) — nothing here needs to
 know how a plan was bought.
+
+Owner accounts (``KINETIX_OWNER_EMAILS``) run this server on their own key, so they — and every
+member of a workspace one of them owns — are sponsored: no quota and no hourly limit. Their runs
+are still audited, and the server-wide monthly token budget still applies.
 """
 
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import Connection, and_, func, select
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 
 from app.billing.plans import Plan, catalog, get_plan
 from app.config import get_settings
 from app.db import set_user
 from app.errors import ApiError
-from app.models import UserPlan
+from app.models import Membership, Organization, User, UserPlan
+from app.models.enums import Role
 
 # A paid plan grants its quota only while the subscription is in good standing.
 ACTIVE_STATUSES = frozenset({"active", "trialing"})
+
+# Not for sale: what sponsored users see in place of a plan.
+SPONSORED_PLANS = {
+    "owner": Plan(
+        key="owner",
+        name="Owner",
+        tagline="Your server, your key: unlimited Agentic Triage.",
+        price_monthly_usd=None,
+        price_yearly_usd=None,
+        ai_searches=0,
+        ai_period="unlimited",
+        self_serve=False,
+    ),
+    "team": Plan(
+        key="owner_team",
+        name="Owner's team",
+        tagline="Unlimited Agentic Triage, sponsored by your workspace owner.",
+        price_monthly_usd=None,
+        price_yearly_usd=None,
+        ai_searches=0,
+        ai_period="unlimited",
+        self_serve=False,
+    ),
+}
 
 
 @dataclass(frozen=True)
@@ -34,18 +63,74 @@ class Usage:
     status: str
     used: int
     resets_at: datetime | None
+    # "owner" or "team" when the user is sponsored (unlimited); None on a metered plan.
+    sponsor: str | None = None
 
     @property
-    def limit(self) -> int:
-        return self.plan.ai_searches
+    def unlimited(self) -> bool:
+        return self.sponsor is not None
 
     @property
-    def remaining(self) -> int:
-        return max(0, self.limit - self.used)
+    def limit(self) -> int | None:
+        return None if self.unlimited else self.plan.ai_searches
+
+    @property
+    def remaining(self) -> int | None:
+        return None if self.unlimited else max(0, self.plan.ai_searches - self.used)
 
     def audit(self) -> dict:
         """What an AI run records about the charge, for the audit trail."""
+        if self.unlimited:
+            return {"plan": self.plan.key, "unlimited": True, "sponsor": self.sponsor}
         return {"plan": self.plan.key, "searches_used": self.used, "searches_limit": self.limit}
+
+
+def sponsor_of(db: Session, user_id: uuid.UUID) -> str | None:
+    """ "owner" if this user is an owner account, "team" if they belong to a workspace an owner
+    account created and still owns, else None. Owner accounts are configured by email
+    (KINETIX_OWNER_EMAILS). Only the workspace's creator counts: the owner role alone isn't
+    enough, because any owner of someone else's workspace could grant it to an owner account."""
+    owners = get_settings().owner_emails
+    if not owners:
+        return None
+    email = db.scalar(select(User.email).where(User.id == user_id))
+    if email and email.lower() in owners:
+        return "owner"
+    creator = aliased(Membership)
+    sponsored = db.scalar(
+        select(Membership.org_id)
+        .join(Organization, Organization.id == Membership.org_id)
+        .join(User, User.id == Organization.created_by_id)
+        .join(
+            creator,
+            and_(
+                creator.org_id == Organization.id,
+                creator.user_id == Organization.created_by_id,
+                creator.role == Role.OWNER,
+            ),
+        )
+        .where(Membership.user_id == user_id, func.lower(User.email).in_(owners))
+        .limit(1)
+    )
+    return "team" if sponsored is not None else None
+
+
+def unclaimed_owner_emails(db: Session | Connection) -> list[str]:
+    """Owner emails that no account has registered yet. Registration doesn't verify addresses,
+    so whoever registers one of these first becomes an owner account: register them promptly."""
+    owners = get_settings().owner_emails
+    if not owners:
+        return []
+    found = set(
+        db.scalars(select(func.lower(User.email)).where(func.lower(User.email).in_(owners)))
+    )
+    return [email for email in owners if email not in found]
+
+
+def _sponsored(sponsor: str) -> Usage:
+    return Usage(
+        plan=SPONSORED_PLANS[sponsor], status="active", used=0, resets_at=None, sponsor=sponsor
+    )
 
 
 def _effective_plan(row: UserPlan | None) -> Plan:
@@ -87,21 +172,24 @@ def _usage(row: UserPlan | None, now: datetime) -> tuple[Usage, datetime | None]
 
 
 def usage(db: Session, user_id: uuid.UUID) -> Usage:
-    """Read-only view of the user's plan and remaining searches."""
+    """Read-only view of the user's plan and remaining Agentic Triage runs."""
+    sponsor = sponsor_of(db, user_id)
+    if sponsor:
+        return _sponsored(sponsor)
     return _usage(db.get(UserPlan, user_id), datetime.now(UTC))[0]
 
 
 def limit_reached(u: Usage) -> ApiError:
     if u.plan.ai_period == "lifetime":
         message = (
-            f"You've used all {u.limit} free AI searches. Upgrade your plan to keep using AI "
-            "assistance."
+            f"You've used all {u.limit} free Agentic Triage runs. Upgrade your plan to keep "
+            "using AI assistance."
         )
     else:
         when = u.resets_at.strftime("%b %-d") if u.resets_at else "next period"
         message = (
-            f"You've used this period's {u.limit} AI searches on the {u.plan.name} plan. "
-            f"They reset on {when}, or you can upgrade for more."
+            f"You've used this period's {u.limit} Agentic Triage runs on the {u.plan.name} "
+            f"plan. They reset on {when}, or you can upgrade for more."
         )
     return ApiError(
         402,
@@ -112,10 +200,14 @@ def limit_reached(u: Usage) -> ApiError:
 
 
 def consume(db: Session, user_id: uuid.UUID, n: int = 1) -> Usage:
-    """Charge ``n`` searches to the user, or raise ``ai_limit_reached`` without charging.
+    """Charge ``n`` runs to the user, or raise ``ai_limit_reached`` without charging.
+    Sponsored (owner / owner's team) users are never charged or limited.
 
     Commits nothing: the charge is part of the caller's transaction and is rolled back with
     it if the AI call fails."""
+    sponsor = sponsor_of(db, user_id)
+    if sponsor:
+        return _sponsored(sponsor)
     now = datetime.now(UTC)
     db.execute(
         insert(UserPlan)
@@ -134,7 +226,7 @@ def consume(db: Session, user_id: uuid.UUID, n: int = 1) -> Usage:
         if row.period_end is not None:
             row.period_end = current.resets_at
         row.ai_searches_used = 0
-    if current.used + n > current.limit:
+    if current.used + n > current.plan.ai_searches:
         raise limit_reached(current)
     row.ai_searches_used = current.used + n
     db.flush()
