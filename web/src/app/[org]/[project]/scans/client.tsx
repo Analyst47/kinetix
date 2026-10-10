@@ -224,7 +224,7 @@ export function AddRepository({ org, project }: { org: string; project: string }
           <label className="flex items-center gap-2 text-[13px]">
             <input
               type="checkbox"
-              className="accent-vg"
+              className="accent-brand"
               checked={scan}
               onChange={(e) => setScan(e.target.checked)}
             />

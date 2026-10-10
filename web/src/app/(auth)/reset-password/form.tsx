@@ -158,7 +158,7 @@ export function ResetForm() {
               setUseRecovery((v) => !v);
               setCode("");
             }}
-            className="text-vg self-start text-[13px] hover:underline"
+            className="text-brand self-start text-[13px] hover:underline"
           >
             {useRecovery ? "Use your authenticator app instead" : "Use a recovery code"}
           </button>
@@ -169,7 +169,10 @@ export function ResetForm() {
         {pending ? "Saving…" : "Set new password"}
       </Button>
       <p className="text-muted text-[13px]">
-        <Link href="/login" className="text-vg hover:underline">
+        <Link
+          href="/login"
+          className="text-ink decoration-rule-strong hover:decoration-ink underline underline-offset-4"
+        >
           Back to sign in
         </Link>
       </p>

@@ -1,4 +1,5 @@
 from app.models.audit import AuditEvent
+from app.models.billing import UserPlan
 from app.models.identity import (
     AuthSession,
     Invitation,
@@ -23,7 +24,8 @@ from app.models.research import (
     Target,
 )
 
-# Tables that carry org_id and are protected by row-level security.
+# Tables that carry org_id and are protected by row-level security. (user_plans is isolated
+# per user instead, on app.user_id; see its migration.)
 TENANT_TABLES = (
     "projects",
     "targets",
@@ -60,4 +62,5 @@ __all__ = [
     "Scan",
     "Target",
     "User",
+    "UserPlan",
 ]

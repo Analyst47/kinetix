@@ -7,15 +7,19 @@ import type { FindingStatus, Severity } from "@/lib/types";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 
+// Pill buttons: solid brand (white on the night surface and in dark mode, black in light) for
+// the primary action, a thin outline for secondary ones. No gradients, glows or shadows.
 const BUTTON_BASE =
-  "inline-flex h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-md border px-3 text-sm font-medium transition-all duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100 [&_svg]:size-4 [&_svg]:shrink-0";
+  "inline-flex h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 text-sm font-medium transition-colors duration-150 disabled:cursor-not-allowed [&_svg]:size-4 [&_svg]:shrink-0";
 
 const BUTTON_VARIANT: Record<Variant, string> = {
   primary:
-    "border-vg bg-vg text-on-vg shadow-sm hover:brightness-110 disabled:border-rule disabled:bg-sunken disabled:text-muted disabled:shadow-none disabled:hover:brightness-100",
-  secondary: "border-rule-strong bg-raised text-ink shadow-sm hover:bg-paper disabled:text-muted",
-  ghost: "border-transparent bg-transparent text-ink hover:bg-rule disabled:text-muted",
-  danger: "border-rule-strong bg-raised text-crit hover:bg-crit-soft",
+    "border-brand bg-brand text-on-brand hover:opacity-90 disabled:border-rule disabled:bg-sunken disabled:text-muted disabled:hover:opacity-100",
+  secondary:
+    "border-rule-strong bg-transparent text-ink hover:border-ink hover:bg-ink/[0.04] disabled:text-muted disabled:hover:border-rule-strong",
+  ghost: "border-transparent bg-transparent text-ink hover:bg-ink/[0.06] disabled:text-muted",
+  // Destructive actions stay monochrome until hovered, then show the error colour.
+  danger: "border-rule-strong bg-transparent text-ink hover:border-crit hover:text-crit",
 };
 
 export function buttonClass(variant: Variant = "secondary", className?: string) {
@@ -52,16 +56,10 @@ export function Panel({
   className?: string;
 } & Omit<ComponentProps<"section">, "title">) {
   return (
-    <section
-      className={clsx(
-        "border-rule bg-raised rounded-xl border shadow-sm shadow-black/[0.03]",
-        className,
-      )}
-      {...rest}
-    >
+    <section className={clsx("border-rule bg-raised rounded-xl border", className)} {...rest}>
       {title ? (
         <header className="border-rule flex items-center gap-2 border-b px-5 py-3.5">
-          <h2 className="text-[15px] leading-[22px] font-semibold">{title}</h2>
+          <h2 className="text-[14.5px] leading-[22px] font-semibold tracking-[-0.01em]">{title}</h2>
           {aside ? <div className="ml-auto flex items-center gap-2">{aside}</div> : null}
         </header>
       ) : null}
@@ -110,8 +108,7 @@ export function StatusLabel({ status }: { status: FindingStatus }) {
           "size-[9px] shrink-0 rounded-full",
           open && "border-muted border-[1.5px] border-dashed",
           closed && "border-muted border-[1.5px]",
-          !open && !closed && status === "confirmed" && "bg-ink",
-          !open && !closed && status !== "confirmed" && "bg-vg",
+          !open && !closed && "bg-ink",
         )}
       />
       {STATUS_LABEL[status]}
@@ -147,7 +144,7 @@ export function Chip({
     <span
       title={title}
       className={clsx(
-        "border-rule bg-raised text-ink inline-flex h-6 items-center gap-1.5 rounded-sm border px-2 text-xs font-medium whitespace-nowrap",
+        "border-rule bg-raised text-ink inline-flex h-6 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium whitespace-nowrap",
         className,
       )}
     >
@@ -176,7 +173,7 @@ export function PageHeader({
   return (
     <div className="flex flex-wrap items-end gap-3">
       <div className="mr-auto flex min-w-0 flex-col gap-1">
-        <h1 className="display text-ink text-[26px] leading-[1.12]">{title}</h1>
+        <h1 className="display text-ink text-[28px] leading-[1.1]">{title}</h1>
         {description ? <p className="text-muted text-[14.5px]">{description}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
@@ -233,14 +230,14 @@ export function Field({
 }
 
 export const inputClass =
-  "h-8 w-full rounded-sm border border-rule-strong bg-raised px-2.5 text-sm text-ink placeholder:text-muted focus-visible:outline-2 focus-visible:outline-offset-0";
+  "h-8 w-full rounded-md border border-rule-strong/70 bg-raised px-2.5 text-sm text-ink placeholder:text-muted transition-colors hover:border-rule-strong focus-visible:border-ink focus-visible:outline-none";
 
 export const textareaClass =
-  "w-full rounded-sm border border-rule-strong bg-raised px-2.5 py-2 text-sm text-ink placeholder:text-muted focus-visible:outline-2 focus-visible:outline-offset-0";
+  "w-full rounded-md border border-rule-strong/70 bg-raised px-2.5 py-2 text-sm text-ink placeholder:text-muted transition-colors hover:border-rule-strong focus-visible:border-ink focus-visible:outline-none";
 
 export function FormAlert({ children }: { children: ReactNode }) {
   return (
-    <p role="alert" className="border-crit/40 bg-crit-soft text-crit rounded-sm border px-3 py-2 text-[13px]">
+    <p role="alert" className="border-crit/40 bg-crit-soft text-crit rounded-md border px-3 py-2 text-[13px]">
       {children}
     </p>
   );

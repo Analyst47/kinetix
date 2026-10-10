@@ -13,7 +13,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1.5">
-        <h1 className="display text-ink text-[28px]">Sign in</h1>
+        <h1 className="display text-ink text-[clamp(32px,4vw,40px)]">Sign in</h1>
         <p className="text-muted">Pick up your research where you left it.</p>
       </div>
       <LoginForm demo={process.env.KINETIX_DEMO === "1" && !next?.startsWith("/invite/")} next={next} />
@@ -21,7 +21,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         New to KinetixZero?{" "}
         <Link
           href={next ? `/register?next=${encodeURIComponent(next)}` : "/register"}
-          className="text-vg hover:underline"
+          className="text-ink decoration-rule-strong hover:decoration-ink underline underline-offset-4"
         >
           Create an account
         </Link>

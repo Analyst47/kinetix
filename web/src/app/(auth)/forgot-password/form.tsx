@@ -30,7 +30,7 @@ export function ForgotForm() {
     return (
       <div className="border-rule bg-raised flex flex-col gap-2 rounded-md border p-4">
         <p className="flex items-center gap-2 font-semibold">
-          <MailCheck className="text-vg size-4" aria-hidden />
+          <MailCheck className="text-brand size-4" aria-hidden />
           Check your email
         </p>
         <p className="text-muted text-[13px]">
@@ -41,7 +41,7 @@ export function ForgotForm() {
         <button
           type="button"
           onClick={() => setSentTo(null)}
-          className="text-vg self-start text-[13px] hover:underline"
+          className="text-brand self-start text-[13px] hover:underline"
         >
           Use a different email
         </button>

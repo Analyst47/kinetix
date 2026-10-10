@@ -64,10 +64,10 @@ else
   set_env KINETIX_APP_URL "https://$DOMAIN"
 fi
 
-bold "2. AI assistance (optional)"
-echo "  1) Claude API  — paid, billed to your own Anthropic account (console.anthropic.com)"
+bold "2. AI assistance (runs on your server's key; each user gets a metered free allowance)"
+echo "  1) Claude API  — recommended, billed to your Anthropic account (console.anthropic.com)"
 echo "  2) Gemini API  — free key from aistudio.google.com/apikey"
-echo "  3) Skip"
+echo "  3) Skip — AI features report \"not configured\" until you add a key"
 read -r -p "Choose a provider [1/2/3]: " AICHOICE
 case "$AICHOICE" in
   1)
@@ -77,7 +77,8 @@ case "$AICHOICE" in
       set_env KINETIX_AI_API_KEY "$CLAUDE"
       read -r -p "Model [claude-sonnet-5-5]: " AIMODEL
       set_env KINETIX_AI_MODEL "${AIMODEL:-claude-sonnet-5-5}"
-      echo "Saved. Requests bill to your Anthropic account. Turn it on under AI assistance."
+      echo "Saved. Requests bill to your Anthropic account; each user's searches are metered."
+      echo "Workspace admins turn AI on under AI assistance."
     fi
     ;;
   2)
@@ -88,7 +89,10 @@ case "$AICHOICE" in
       echo "Saved. Turn it on in KinetixZero under AI assistance."
     fi
     ;;
-  *) echo "Skipped. You can add a key to .env later." ;;
+  *)
+    set_env KINETIX_AI_PROVIDER none
+    echo "Skipped. Set ANTHROPIC_API_KEY in .env later to turn AI on."
+    ;;
 esac
 
 bold "3. Email with Resend (optional, free key from resend.com)"

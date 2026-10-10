@@ -1,20 +1,18 @@
-import { ArrowRight, FileCheck2, ScanSearch, Sparkles, Target } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
 
-import { Container, Section, SectionHeading } from "@/components/marketing/ui";
+import { Container, DotGlyph, PageHero, Section } from "@/components/marketing/ui";
 import { ButtonLink } from "@/components/ui";
 
 export const metadata: Metadata = {
   title: "How it works",
   description:
-    "The KinetixZero execution model: define authorized scope, analyze code and dependencies, validate with an AI pass, and disclose responsibly.",
+    "The KinetixZero workflow: define authorized scope, analyze code and dependencies, validate with an AI pass, and disclose responsibly.",
 };
 
-const STEPS: { n: string; icon: ReactNode; title: string; body: string; detail: string[] }[] = [
+const STEPS: { n: string; title: string; body: string; detail: string[] }[] = [
   {
     n: "01",
-    icon: <Target className="size-5" />,
     title: "Define authorized scope",
     body: "Everything starts with permission. You create a project, choose an authorization type, and attest to it.",
     detail: [
@@ -25,9 +23,8 @@ const STEPS: { n: string; icon: ReactNode; title: string; body: string; detail: 
   },
   {
     n: "02",
-    icon: <ScanSearch className="size-5" />,
     title: "Analyze code & dependencies",
-    body: "Point KinetixZero at a Git repository or upload a source archive. It runs the analyzers and records a scan.",
+    body: "Point KinetixZero at a Git repository or upload a source archive. It runs the analyzers read-only and records a scan.",
     detail: [
       "SAST with taint tracking across JavaScript, TypeScript and Python.",
       "Dependency resolution matched against OSV advisories.",
@@ -36,9 +33,8 @@ const STEPS: { n: string; icon: ReactNode; title: string; body: string; detail: 
   },
   {
     n: "03",
-    icon: <Sparkles className="size-5" />,
     title: "Validate with the AI pass",
-    body: "Triage ranks the open findings. The optional AI layer assesses each one and shows cited evidence — you keep the verdict.",
+    body: "Triage ranks the open findings. The AI layer assesses each one and shows cited evidence — you keep the verdict.",
     detail: [
       "Reachability is broken into controlled / reaches-sink / sanitized.",
       "Citations are verified against the exact code the model was shown.",
@@ -47,7 +43,6 @@ const STEPS: { n: string; icon: ReactNode; title: string; body: string; detail: 
   },
   {
     n: "04",
-    icon: <FileCheck2 className="size-5" />,
     title: "Disclose responsibly",
     body: "Confirmed findings become a disclosure package, tracked to a deadline with a verifiable trail.",
     detail: [
@@ -61,57 +56,46 @@ const STEPS: { n: string; icon: ReactNode; title: string; body: string; detail: 
 export default function HowItWorksPage() {
   return (
     <>
-      <Section className="pb-8">
-        <Container className="flex flex-col items-center gap-6 text-center">
-          <SectionHeading
-            eyebrow="How it works"
-            title="Authorized scope in, filed disclosure out"
-            lede="KinetixZero mirrors how careful research actually runs — four stages, with a human in the loop at the decisions that matter."
-            align="center"
-            className="mx-auto"
-          />
-        </Container>
-      </Section>
+      <PageHero
+        eyebrow="How it works"
+        title="Authorized scope in, filed disclosure out"
+        lede="KinetixZero mirrors how careful research actually runs — four stages, with a human in the loop at the decisions that matter."
+      />
 
-      <Section className="pt-0">
+      <Section className="pt-0 sm:pt-0">
         <Container>
-          <div className="flex flex-col gap-4">
+          <ol className="border-rule border-t">
             {STEPS.map((s) => (
-              <div
+              <li
                 key={s.n}
-                className="border-rule bg-raised/60 grid gap-6 rounded-xl border p-6 sm:p-8 lg:grid-cols-[auto_0.8fr_1fr] lg:items-start"
+                className="border-rule grid gap-6 border-b py-10 lg:grid-cols-[120px_0.9fr_1fr] lg:items-start lg:gap-10"
               >
-                <div className="flex items-center gap-4 lg:flex-col lg:items-start">
-                  <span className="display text-signal/40 text-[34px] leading-none">{s.n}</span>
-                  <span className="border-rule bg-sunken text-signal grid size-11 place-items-center rounded-md border">
-                    {s.icon}
-                  </span>
-                </div>
+                <span className="display text-muted text-[44px] leading-none">{s.n}</span>
                 <div>
-                  <h3 className="text-ink text-[19px] font-semibold tracking-[-0.01em]">{s.title}</h3>
-                  <p className="text-muted mt-2 text-[14.5px] leading-[23px]">{s.body}</p>
+                  <h2 className="display text-ink text-[clamp(24px,2.6vw,32px)]">{s.title}</h2>
+                  <p className="text-muted mt-3 text-[15px] leading-[24px]">{s.body}</p>
                 </div>
-                <ul className="flex flex-col gap-2.5">
-                  {s.detail.map((d) => (
-                    <li key={d} className="text-ink flex gap-3 text-[13.5px] leading-[21px]">
-                      <FileCheck2 className="text-vg mt-0.5 size-4 shrink-0" />
+                <ul className="flex flex-col gap-3">
+                  {s.detail.map((d, i) => (
+                    <li key={d} className="text-ink/85 flex gap-3 text-[14.5px] leading-[22px]">
+                      <DotGlyph variant={(i % 4) as 0 | 1 | 2 | 3} className="text-muted mt-[4px] size-3.5" />
                       {d}
                     </li>
                   ))}
                 </ul>
-              </div>
+              </li>
             ))}
-          </div>
+          </ol>
         </Container>
       </Section>
 
-      <Section className="border-rule/60 border-t">
-        <Container className="flex flex-col items-center gap-5 text-center">
-          <h2 className="display text-ink text-[clamp(26px,3.6vw,40px)]">
+      <Section className="border-rule border-t">
+        <Container className="flex flex-col items-start gap-6">
+          <h2 className="display text-ink text-[clamp(30px,4.4vw,54px)]">
             See the workflow on your own repo
           </h2>
-          <ButtonLink href="/register" variant="primary" className="h-11 px-6 text-[15px]">
-            Request access <ArrowRight />
+          <ButtonLink href="/register" variant="primary" className="h-12 px-6 text-[15px]">
+            Get started free <ArrowRight />
           </ButtonLink>
         </Container>
       </Section>

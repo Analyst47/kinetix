@@ -229,17 +229,43 @@ export interface Disclosure {
   allowed_events: string[];
 }
 
+export interface Plan {
+  key: string;
+  name: string;
+  tagline: string;
+  price_monthly_usd: number | null;
+  price_yearly_usd: number | null;
+  ai_searches: number;
+  /** "lifetime": one-time allowance; "month": resets each billing period. */
+  ai_period: "lifetime" | "month";
+  self_serve: boolean;
+}
+
+export interface Usage {
+  plan: string;
+  plan_name: string;
+  status: string;
+  ai_period: "lifetime" | "month";
+  searches_used: number;
+  searches_limit: number;
+  searches_remaining: number;
+  resets_at: string | null;
+  billing_enabled: boolean;
+}
+
+export interface Billing {
+  usage: Usage;
+  plans: Plan[];
+}
+
 export interface AiStatus {
   available: boolean;
   enabled: boolean;
   provider: string | null;
   model: string | null;
   data_notice: string | null;
-  byok_providers: string[];
-  key_set: boolean;
-  key_provider: string | null;
-  key_model: string | null;
-  managed_available: boolean;
+  configured: boolean;
+  usage: Usage;
   monthly_token_budget: number | null;
   tokens_used_this_month: number | null;
 }

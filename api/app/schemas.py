@@ -587,29 +587,49 @@ class SecurityTxtOut(BaseModel):
 # ── AI ────────────────────────────────────────────────────────────────────────
 
 
+class PlanOut(BaseModel):
+    key: str
+    name: str
+    tagline: str
+    price_monthly_usd: int | None
+    price_yearly_usd: int | None
+    ai_searches: int
+    # "lifetime" (one-time allowance) or "month" (resets each billing period).
+    ai_period: str
+    self_serve: bool
+
+
+class UsageOut(BaseModel):
+    plan: str
+    plan_name: str
+    status: str
+    ai_period: str
+    searches_used: int
+    searches_limit: int
+    searches_remaining: int
+    resets_at: datetime | None
+    # False until Stripe is wired in: the Upgrade flow shows "billing coming soon".
+    billing_enabled: bool
+
+
+class BillingOut(BaseModel):
+    usage: UsageOut
+    plans: list[PlanOut]
+
+
 class AiStatusOut(BaseModel):
     available: bool
     enabled: bool
     provider: str | None
     model: str | None
     data_notice: str | None = None
-    # Bring-your-own-key: which providers a user may supply, and whether this user has set one
-    # for their current session (the key value is never returned).
-    byok_providers: list[str] = []
-    key_set: bool = False
-    key_provider: str | None = None
-    key_model: str | None = None
-    # Built-in ("managed") AI billed to the operator. False until they enable billing.
-    managed_available: bool = False
-    # Spend safeguard for managed usage, when a budget is set (null = no cap).
+    # Whether the server has a working AI provider configured (and allows this workspace).
+    configured: bool = False
+    # The signed-in user's plan and remaining AI searches.
+    usage: UsageOut
+    # Server-wide spend backstop, when a budget is set (null = no cap). Shown to admins.
     monthly_token_budget: int | None = None
     tokens_used_this_month: int | None = None
-
-
-class AiKeyIn(BaseModel):
-    provider: str
-    api_key: str = Field(min_length=8, max_length=400)
-    model: str | None = Field(default=None, max_length=120)
 
 
 class AiTriageOut(BaseModel):

@@ -81,7 +81,7 @@ export default async function DependenciesPage({
               aria-hidden
               className={clsx(
                 "inline-flex size-4 items-center justify-center rounded-[3px] border",
-                vulnerableOnly ? "border-vg bg-vg text-on-vg" : "border-rule-strong bg-raised",
+                vulnerableOnly ? "border-brand bg-brand text-on-brand" : "border-rule-strong bg-raised",
               )}
             >
               {vulnerableOnly ? <Check className="size-3" strokeWidth={3} /> : null}
@@ -117,7 +117,7 @@ export default async function DependenciesPage({
                         key={d.id}
                         className={clsx(
                           "border-rule border-b last:border-b-0",
-                          active ? "bg-vg-soft" : "hover:bg-paper",
+                          active ? "bg-brand-soft" : "hover:bg-paper",
                         )}
                       >
                         <td className="px-3 py-2">
@@ -191,7 +191,7 @@ export default async function DependenciesPage({
                       <span className="text-muted">Tracked as</span>
                       <Link
                         href={`/${org}/${project}/findings/${selected.finding_public_id}`}
-                        className="mono text-vg hover:underline"
+                        className="mono text-brand hover:underline"
                       >
                         {selected.finding_public_id}
                       </Link>
@@ -215,7 +215,7 @@ export default async function DependenciesPage({
                           }
                           target="_blank"
                           rel="noreferrer noopener"
-                          className="mono text-vg hover:underline"
+                          className="mono text-brand hover:underline"
                         >
                           {a.display_id}
                         </a>

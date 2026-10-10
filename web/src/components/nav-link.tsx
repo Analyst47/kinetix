@@ -26,22 +26,14 @@ export function NavLink({
       onClick={onClick}
       aria-current={active ? "page" : undefined}
       className={clsx(
-        "group/nav relative flex h-10 items-center gap-3 rounded-lg pr-3 pl-3.5 text-[14.5px] font-medium transition-all duration-150",
-        active
-          ? "bg-raised text-ink shadow-sm ring-1 ring-rule/70"
-          : "text-muted hover:bg-rule/50 hover:text-ink",
+        "group/nav relative flex h-9 items-center gap-3 rounded-full pr-3 pl-3.5 text-[14px] font-medium transition-colors duration-150",
+        active ? "bg-ink/[0.07] text-ink" : "text-muted hover:bg-ink/[0.04] hover:text-ink",
       )}
     >
-      {active ? (
-        <span
-          aria-hidden
-          className="bg-vg absolute top-1/2 left-0 h-5 w-[3px] -translate-y-1/2 rounded-full"
-        />
-      ) : null}
       <Icon
         className={clsx(
-          "size-[18px] shrink-0 transition-colors",
-          active ? "text-vg" : "text-muted group-hover/nav:text-ink",
+          "size-[17px] shrink-0 transition-colors",
+          active ? "text-ink" : "text-muted group-hover/nav:text-ink",
         )}
         aria-hidden
       />
@@ -50,7 +42,7 @@ export function NavLink({
         <span
           className={clsx(
             "ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold tabular-nums",
-            active ? "bg-vg-soft text-vg" : "bg-rule text-muted",
+            active ? "bg-ink text-paper" : "bg-ink/[0.07] text-muted",
           )}
         >
           {count}
@@ -63,7 +55,7 @@ export function NavLink({
 /** Small uppercase section label used above a nav group. */
 export function NavSection({ children }: { children: string }) {
   return (
-    <p className="text-muted/80 px-3.5 pt-1 pb-1 text-[11px] font-semibold tracking-[0.08em] uppercase">
+    <p className="text-muted/80 px-3.5 pt-1 pb-1 font-mono text-[10.5px] font-medium tracking-[0.14em] uppercase">
       {children}
     </p>
   );

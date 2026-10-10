@@ -1,4 +1,4 @@
-import type { FindingSource, FindingStatus, Severity } from "./types";
+import type { FindingSource, FindingStatus, Severity, Usage } from "./types";
 
 export const SEVERITY_ORDER: Severity[] = ["critical", "high", "medium", "low", "info"];
 
@@ -169,4 +169,10 @@ export function deadlineLabel(days: number | null, health: string): string {
   if (days < 0) return `${-days} day${days === -1 ? "" : "s"} overdue`;
   if (days === 0) return "Due today";
   return `${days} day${days === 1 ? "" : "s"} left`;
+}
+
+/** "7 of 10 free AI searches left" / "212 of 300 AI searches left this month". */
+export function usageSummary(u: Usage): string {
+  const of = `${u.searches_remaining.toLocaleString("en-US")} of ${u.searches_limit.toLocaleString("en-US")}`;
+  return u.ai_period === "lifetime" ? `${of} free AI searches left` : `${of} AI searches left this month`;
 }

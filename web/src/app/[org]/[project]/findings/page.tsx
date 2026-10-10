@@ -4,15 +4,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { PageBar } from "@/components/shell-context";
-import {
-  Avatar,
-  ButtonLink,
-  Chip,
-  EmptyState,
-  PageHeader,
-  SeverityMark,
-  StatusLabel,
-} from "@/components/ui";
+import { Avatar, ButtonLink, Chip, EmptyState, PageHeader, SeverityMark, StatusLabel } from "@/components/ui";
 import {
   AI_VERDICT_CLASS,
   AI_VERDICT_LABEL,
@@ -139,7 +131,7 @@ export default async function FindingsPage({
 
         <section
           aria-label="Severity breakdown"
-          className="border-rule bg-raised flex flex-wrap items-center gap-6 rounded-md border p-4"
+          className="border-rule bg-raised flex flex-wrap items-center gap-6 rounded-xl border p-4"
         >
           <div className="flex min-w-[280px] flex-[1_1_420px] flex-col gap-2.5">
             <div
@@ -159,14 +151,14 @@ export default async function FindingsPage({
               ))}
             </div>
           </div>
-          <nav aria-label="Status" className="bg-sunken flex flex-wrap gap-0.5 rounded-md p-0.5">
+          <nav aria-label="Status" className="bg-sunken flex flex-wrap gap-0.5 rounded-full p-0.5">
             {TABS.map((t) => (
               <Link
                 key={t.key}
                 href={tabHref(t.key)}
                 aria-current={status === t.key ? "page" : undefined}
                 className={clsx(
-                  "inline-flex h-7 items-center gap-1.5 rounded-sm px-2.5 text-[13px] font-medium",
+                  "inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium",
                   status === t.key
                     ? "bg-raised text-ink shadow-[0_0_0_1px_var(--rule)]"
                     : "text-muted hover:text-ink",
@@ -181,7 +173,7 @@ export default async function FindingsPage({
 
         <FindingFilters />
 
-        <section className="border-rule bg-raised overflow-x-auto rounded-md border">
+        <section className="border-rule bg-raised overflow-x-auto rounded-xl border">
           {data.items.length === 0 ? (
             <EmptyState title="No findings match these filters">
               Clear the filters, or start a scan from the Scans page to analyze a target.
@@ -227,7 +219,7 @@ export default async function FindingsPage({
                           <Chip>{SOURCE_LABEL[f.source]}</Chip>
                           {f.confidence === "firm" ? (
                             <Chip
-                              className="border-vg/30 bg-vg-soft text-vg"
+                              className="border-brand/30 bg-brand-soft text-brand"
                               title="A verified data-flow path, or a matched known-vulnerable dependency"
                             >
                               Firm

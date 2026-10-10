@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/ui";
+import { useUpgrade } from "@/components/usage";
 import { ApiError, call } from "@/lib/client";
 
 interface TriageResult {
@@ -14,9 +15,13 @@ interface TriageResult {
   verdicts: Record<string, number>;
 }
 
-/** Runs the AI triage pass over open findings, in batches, until done or a limit is hit. */
+/**
+ * Runs the AI triage pass over open findings, in batches, until done or a limit is hit. Each
+ * finding reviewed uses one AI search; the server caps each batch at what the user has left.
+ */
 export function TriageButton({ org, project }: { org: string; project: string }) {
   const router = useRouter();
+  const upgrade = useUpgrade();
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
 
@@ -35,14 +40,17 @@ export function TriageButton({ org, project }: { org: string; project: string })
         router.refresh();
         if (r.stopped) {
           const why =
-            r.stopped === "quota"
-              ? "The provider's quota is used up — try again later."
-              : r.stopped === "overloaded"
-                ? "The AI provider is overloaded right now — wait a minute or two and run it again."
-                : r.stopped === "budget"
-                  ? "The monthly AI token budget for this server is used up."
-                  : "Hit the hourly AI limit — run again later for the rest.";
+            r.stopped === "limit"
+              ? "That used your last AI search — upgrade your plan to review the rest."
+              : r.stopped === "quota"
+                ? "The provider's quota is used up — try again later."
+                : r.stopped === "overloaded"
+                  ? "The AI provider is overloaded right now — wait a minute or two and run it again."
+                  : r.stopped === "budget"
+                    ? "The monthly AI token budget for this server is used up."
+                    : "Hit the hourly AI limit — run again later for the rest.";
           setNote(`Reviewed ${reviewed}. ${why}`);
+          if (r.stopped === "limit") upgrade();
           return;
         }
         if (r.remaining === 0 || r.reviewed === 0) break;
@@ -50,11 +58,12 @@ export function TriageButton({ org, project }: { org: string; project: string })
       const real = totals.likely_vulnerable ?? 0;
       setNote(`Reviewed ${reviewed}. ${real} flagged likely real — filter by AI verdict to see them.`);
     } catch (err) {
-      setNote(
+      if (err instanceof ApiError && err.code === "ai_limit_reached") upgrade(err.message);
+      const why =
         err instanceof ApiError
           ? err.message
-          : "Couldn't run AI triage. Check that AI is turned on for this workspace.",
-      );
+          : "Couldn't run AI triage. Check that AI is turned on for this workspace.";
+      setNote(reviewed ? `Reviewed ${reviewed}. ${why}` : why);
     } finally {
       setBusy(false);
       router.refresh();

@@ -56,8 +56,9 @@ tamper-evident chain of custody.
   drafted notification, a deadline clock (90 days by default) with extensions, CVE and
   advisory tracking. Recording vendor milestones moves the finding through Reported,
   Vendor acknowledged, Fix available and Public disclosure, so the two never disagree.
-- **AI assistance (optional).** Evidence-cited triage, questions and drafting on a finding,
-  using the Claude API, the Gemini API, or a free local model through Ollama. The assistant only advises:
+- **AI assistance.** Evidence-cited triage, questions and drafting on a finding, served from
+  the server's own Claude key and metered per user (10 free AI searches, larger monthly
+  allowances on paid plans). Gemini or a local Ollama model also work. The assistant only advises:
   analyzed code is fenced off as untrusted data, injection attempts are flagged, every
   citation is checked against the lines it was shown, and each request is recorded in the
   chain of custody. Off until a workspace owner or admin turns it on.
@@ -123,38 +124,37 @@ OSV and security.txt lookups.
 
 ## AI assistance
 
-Set one provider on the API (environment variables, or `.env`):
+AI runs on **the server's own provider key** — users never paste a key. Set it on the API
+(environment variables, or `.env`); it is read server-side only and never reaches the browser:
 
 ```bash
-# Gemini API (has a free tier; key from https://aistudio.google.com/apikey)
-KINETIX_AI_PROVIDER=gemini
-KINETIX_AI_API_KEY=AIza...
-KINETIX_AI_MODEL=gemini-3.5-flash   # optional; this is the default
-KINETIX_AI_GEMINI_TIER=free         # set to "paid" once billing is on for the key's project
+# Claude API (default provider)
+ANTHROPIC_API_KEY=sk-ant-...           # or KINETIX_AI_API_KEY
+KINETIX_AI_MODEL=claude-sonnet-5-5     # optional; this is the default
+KINETIX_AI_EFFORT=medium               # optional; low | medium | high — lower is cheaper
 
-# Claude API (paid per use)
-KINETIX_AI_PROVIDER=anthropic
-KINETIX_AI_API_KEY=sk-ant-...
-KINETIX_AI_MODEL=claude-sonnet-5-5
-
-# Or a local model with Ollama (free; slower and less accurate)
-KINETIX_AI_PROVIDER=openai_compatible
-KINETIX_AI_BASE_URL=http://localhost:11434/v1
-KINETIX_AI_MODEL=qwen2.5-coder:7b
-
-# Or the development stub (no model is called)
-KINETIX_AI_PROVIDER=mock
+# Alternatives
+KINETIX_AI_PROVIDER=gemini             # KINETIX_AI_API_KEY=AIza..., KINETIX_AI_GEMINI_TIER=free|paid
+KINETIX_AI_PROVIDER=openai_compatible  # KINETIX_AI_BASE_URL=http://localhost:11434/v1, KINETIX_AI_MODEL=...
+KINETIX_AI_PROVIDER=mock               # development stub; no model is called
 ```
 
-Then turn it on for a workspace under **AI assistance** in the sidebar.
+Then a workspace owner or admin turns it on under **AI assistance** in the sidebar.
+
+**Metering.** Each AI "search" — one model call: an Analyze, Ask or Draft, or one finding
+reviewed by a triage pass — is charged to the user who ran it. Every user gets a one-time free
+allowance (`KINETIX_AI_FREE_SEARCHES`, default 10); paid plans get a monthly allowance that
+resets each period. A failed call isn't charged. When the allowance runs out the app shows an
+Upgrade prompt; everything except AI keeps working. Usage is shown in the sidebar and under
+**Plan & usage**, and every run records the charge in the audit log. Plans, prices and quotas
+are defined in `api/app/billing/plans.py`; Stripe wiring is described in
+[docs/BILLING.md](docs/BILLING.md). `KINETIX_AI_MONTHLY_TOKEN_BUDGET` remains as a server-wide
+spend backstop.
 
 On Gemini's free tier, Google may use prompts and responses to improve its products, and
 human reviewers may read them ([Gemini API terms](https://ai.google.dev/gemini-api/terms)).
-KinetixZero shows that notice to admins and researchers and requires an admin to accept it
-before AI can be turned on for a workspace. Don't use the free tier on confidential
-engagements or vulnerabilities you aren't free to share; use the paid tier or a local model.
-Free-tier quotas vary by model and project; check them in AI Studio. When a key runs out,
-KinetixZero returns a clear "quota used up" error instead of failing silently.
+KinetixZero shows that notice to admins and researchers. Don't use the free tier on
+confidential engagements; use Claude, Gemini's paid tier, or a local model.
 
 ## Email
 

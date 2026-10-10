@@ -54,7 +54,7 @@ TABLES = (
     "ai_runs, disclosure_events, disclosures, dependency_advisories, dependencies, advisories, "
     "evidence, findings, scans, targets, "
     "projects, audit_events, invitations, recovery_codes, mfa_challenges, memberships, "
-    "auth_sessions, password_resets, organizations, users"
+    "auth_sessions, password_resets, user_plans, organizations, users"
 )
 
 

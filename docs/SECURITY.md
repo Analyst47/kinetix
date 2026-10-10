@@ -41,6 +41,8 @@ boundary. It is designed on the assumption that both its users and its inputs ca
 | Prompt injection from analyzed code | Untrusted content fenced in nonce-delimited blocks; system rules forbid following it; injection-like lines flagged to the researcher; structured output only; model output can't change state | `ai/context.py`, `ai/prompts.py`, `ai/service.py` |
 | Hallucinated evidence | Every citation is matched against the exact lines sent; unmatched citations removed, unsupported claims marked, unsupported confident verdicts downgraded | `ai/service.py` |
 | Unreleased details sent to a third party | AI is off per workspace until an owner or admin enables it; nothing is sent without a click; each request's input hash is recorded in custody | `routers/ai.py` |
+| AI spend abuse / quota bypass | AI runs only on the server key; every model call is charged to the caller's plan row, locked for the transaction so concurrent requests can't overspend; failed calls roll back; a server-wide monthly token budget backstops it | `billing/entitlements.py`, `ai/budget.py` |
+| One user reading or changing another's plan | `user_plans` is isolated by row-level security on `app.user_id`, bound only after the session cookie is verified; the app role can't bypass it | `deps.py`, migration `7e3f9b2c4d18` |
 | Out-of-scope research | Attestation required; expired authorization blocks targets and scans | `routers/projects.py` |
 
 ## Database roles

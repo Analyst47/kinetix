@@ -1,4 +1,3 @@
-import os
 from functools import lru_cache
 from pathlib import Path
 
@@ -9,7 +8,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Runtime configuration, read from environment variables prefixed KINETIX_."""
 
-    model_config = SettingsConfigDict(env_prefix="KINETIX_", env_file=".env", extra="ignore")
+    # Empty values count as unset, so Compose can pass optional variables through as "".
+    model_config = SettingsConfigDict(
+        env_prefix="KINETIX_", env_file=".env", extra="ignore", env_ignore_empty=True
+    )
 
     env: str = "development"
     # Encrypts MFA secrets at rest. Must be set to a long random value outside development.
@@ -48,32 +50,50 @@ class Settings(BaseSettings):
 
     osv_api_url: str = "https://api.osv.dev/v1"
 
-    # AI assistance. "none" turns it off; "anthropic" uses the Claude API; "gemini" uses the
-    # Gemini API; "openai_compatible" works with any OpenAI-style endpoint, including a local
-    # Ollama server (free); "mock" returns canned output for local development and tests.
-    ai_provider: str = "none"
+    # AI assistance runs on the operator's own provider key ("managed"), read server-side only.
+    # "anthropic" uses the Claude API (key from KINETIX_AI_API_KEY or ANTHROPIC_API_KEY);
+    # "gemini" and "openai_compatible" (e.g. a local Ollama server) are alternatives; "mock"
+    # returns canned output for local development and tests; "none" turns AI off entirely.
+    ai_provider: str = "anthropic"
     ai_api_key: str | None = None
-    # The built-in ("managed") AI serves every workspace from the server's own key above and
-    # bills the operator. It stays OFF until billing is in place; users bring their own key.
-    ai_managed_enabled: bool = False
+    # The conventional Anthropic variables, read from the environment or .env, are accepted as
+    # fallbacks for the Claude key and model so existing setups work unchanged.
+    anthropic_api_key: str | None = Field(default=None, validation_alias="ANTHROPIC_API_KEY")
+    anthropic_model: str | None = Field(default=None, validation_alias="ANTHROPIC_MODEL")
+    # Master switch for serving AI from the server's key. On by default: usage is metered per
+    # user (see the plan quotas below) and capped by ai_monthly_token_budget as a backstop.
+    ai_managed_enabled: bool = True
     # Empty means the provider's default model.
     ai_model: str | None = None
     ai_base_url: str | None = None
+    # Claude reasoning effort (low | medium | high). Lower is cheaper per search. Empty sends
+    # no effort parameter, for older models that don't accept one.
+    ai_effort: str | None = "medium"
     # Gemini's free tier lets Google use prompts to improve its products, with human review.
     # Set to "paid" only when the key's project has billing enabled.
     ai_gemini_tier: str = "free"
     ai_timeout_seconds: float = 60.0
     ai_max_context_lines: int = 60
-    # Cap on tokens the model may generate per request.
-    ai_max_output_tokens: int = 2048
+    # Cap on tokens the model may generate per request (reasoning included).
+    ai_max_output_tokens: int = 4096
     # Transient-error retries (429/500/503/529) with exponential backoff, per request.
     ai_max_retries: int = 4
-    # Optional spend safeguard: refuse AI calls once this many total tokens (input + output)
+    # Server-wide spend backstop: refuse AI calls once this many total tokens (input + output)
     # have been used in the current UTC month. None disables the cap. Tracked in Redis.
     ai_monthly_token_budget: int | None = None
-    # Which workspaces may use the server's AI key (by workspace slug). Empty = every
-    # workspace may (single-tenant default). Set this on a public deployment so only your
-    # own workspaces can spend your API credits; all others see AI as unavailable.
+
+    # Per-user AI quotas. One "search" is one model call: an Analyze, Ask or Draft, or one
+    # finding reviewed by a triage pass. The free allowance is one-time (it doesn't reset);
+    # paid plans reset every billing period. Prices live with the plan catalog in
+    # app/billing/plans.py.
+    ai_free_searches: int = 10
+    ai_pro_monthly_searches: int = 300
+    ai_team_monthly_searches: int = 2000
+    # Stays off until Stripe is wired in; the Upgrade flow shows "billing coming soon".
+    billing_enabled: bool = False
+
+    # Optional extra restriction: which workspaces may use the server's AI key (by slug).
+    # Empty = every workspace may, with each user limited by their plan's quota.
     ai_allowed_orgs: list[str] = Field(default_factory=list)
 
     # Outgoing email: "console" prints messages (development), "resend" sends through Resend
@@ -104,12 +124,11 @@ class Settings(BaseSettings):
         if self.env == "production":
             # Never send session cookies over plain HTTP in production, whatever was configured.
             self.cookie_secure = True
-        # Accept the conventional ANTHROPIC_API_KEY as a fallback when using the Claude API,
-        # so operators can reuse their existing Anthropic environment variable unchanged.
+        # Accept the conventional ANTHROPIC_API_KEY / ANTHROPIC_MODEL when using the Claude API.
         if self.ai_provider == "anthropic" and not self.ai_api_key:
-            self.ai_api_key = os.environ.get("ANTHROPIC_API_KEY") or None
+            self.ai_api_key = self.anthropic_api_key or None
         if self.ai_provider == "anthropic" and not self.ai_model:
-            self.ai_model = os.environ.get("ANTHROPIC_MODEL") or None
+            self.ai_model = self.anthropic_model or None
         return self
 
 

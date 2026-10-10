@@ -97,14 +97,14 @@ export function LabelQueue({
 
   if (!current) {
     return (
-      <div className="border-rule bg-raised mx-auto flex max-w-lg flex-col items-center gap-4 rounded-2xl border p-10 text-center shadow-sm">
-        <span className="bg-vg-soft text-vg grid size-12 place-items-center rounded-full">
+      <div className="border-rule bg-raised mx-auto flex max-w-lg flex-col items-center gap-4 rounded-2xl border p-10 text-center">
+        <span className="bg-brand-soft text-brand grid size-12 place-items-center rounded-full">
           <PartyPopper className="size-6" />
         </span>
         <h2 className="display text-ink text-[22px]">Queue cleared</h2>
         <p className="text-muted max-w-[42ch]">
-          You&apos;ve labeled {labeled} finding{labeled === 1 ? "" : "s"} for the training corpus.
-          Export the dataset from the Findings page whenever you&apos;re ready.
+          You&apos;ve labeled {labeled} finding{labeled === 1 ? "" : "s"} for the training corpus. Export the
+          dataset from the Findings page whenever you&apos;re ready.
         </p>
         <ButtonLink href={`/${org}/${project}/findings`} variant="primary">
           Back to findings
@@ -120,7 +120,7 @@ export function LabelQueue({
       {/* Progress */}
       <div className="flex items-center gap-3">
         <div className="bg-sunken h-2 flex-1 overflow-hidden rounded-full">
-          <div className="bg-vg h-full rounded-full transition-all" style={{ width: `${pct}%` }} />
+          <div className="bg-brand h-full rounded-full transition-all" style={{ width: `${pct}%` }} />
         </div>
         <span className="text-muted text-[13px] tabular-nums">
           {labeled} / {total} labeled
@@ -128,13 +128,13 @@ export function LabelQueue({
       </div>
 
       {/* Finding card */}
-      <div className="border-rule bg-raised flex flex-col overflow-hidden rounded-2xl border shadow-sm">
+      <div className="border-rule bg-raised flex flex-col overflow-hidden rounded-2xl border">
         <div className="flex items-start gap-3 px-5 py-4">
           <SeverityMark severity={current.severity} />
           <div className="min-w-0 flex-1">
             <Link
               href={`/${org}/${project}/findings/${current.public_id}`}
-              className="hover:text-vg text-[15px] font-semibold"
+              className="hover:text-brand text-[15px] font-semibold"
             >
               {current.title}
             </Link>
@@ -148,7 +148,7 @@ export function LabelQueue({
               className={clsx(
                 "inline-flex h-5 items-center rounded-sm border px-1.5 text-[11px] font-medium",
                 current.confidence === "firm"
-                  ? "border-vg/40 bg-vg-soft text-vg"
+                  ? "border-brand/40 bg-brand-soft text-brand"
                   : "border-rule bg-sunken text-muted",
               )}
             >
@@ -185,10 +185,20 @@ export function LabelQueue({
                   <span
                     className={clsx(
                       "grid size-4 shrink-0 place-items-center rounded-full",
-                      ans === "yes" ? "bg-crit-soft text-crit" : ans === "no" ? "bg-vg-soft text-vg" : "bg-rule text-muted",
+                      ans === "yes"
+                        ? "bg-crit-soft text-crit"
+                        : ans === "no"
+                          ? "bg-brand-soft text-brand"
+                          : "bg-rule text-muted",
                     )}
                   >
-                    {ans === "yes" ? <Check className="size-2.5" /> : ans === "no" ? <X className="size-2.5" /> : "?"}
+                    {ans === "yes" ? (
+                      <Check className="size-2.5" />
+                    ) : ans === "no" ? (
+                      <X className="size-2.5" />
+                    ) : (
+                      "?"
+                    )}
                   </span>
                   <span className="text-ink">{label}</span>
                   <span className="text-muted mono ml-auto">{ans}</span>
@@ -209,10 +219,7 @@ export function LabelQueue({
             {excerpt.lines.map((ln) => (
               <div
                 key={ln.n}
-                className={clsx(
-                  "flex gap-3 px-3",
-                  ln.n === excerpt.highlight && "bg-crit-soft/60",
-                )}
+                className={clsx("flex gap-3 px-3", ln.n === excerpt.highlight && "bg-crit-soft/60")}
               >
                 <span className="text-muted/70 w-8 shrink-0 text-right select-none">{ln.n}</span>
                 <span className="text-ink whitespace-pre">{ln.text || " "}</span>
@@ -240,7 +247,7 @@ export function LabelQueue({
           type="button"
           disabled={busy}
           onClick={() => submit("not_vulnerable")}
-          className="border-vg/30 bg-vg-soft/50 text-vg hover:bg-vg-soft flex h-12 items-center justify-center gap-2 rounded-xl border text-[14px] font-semibold transition-colors disabled:opacity-60"
+          className="border-brand/30 bg-brand-soft/50 text-brand hover:bg-brand-soft flex h-12 items-center justify-center gap-2 rounded-xl border text-[14px] font-semibold transition-colors disabled:opacity-60"
         >
           <X className="size-4" /> False positive <Shortcut>F</Shortcut>
         </button>
@@ -273,7 +280,7 @@ export function LabelQueue({
 
 function Shortcut({ children }: { children: string }) {
   return (
-    <kbd className="border-current/25 ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded border px-1 text-[10px] font-semibold opacity-70">
+    <kbd className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded border border-current/25 px-1 text-[10px] font-semibold opacity-70">
       {children}
     </kbd>
   );

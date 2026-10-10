@@ -94,7 +94,7 @@ export function CommandPalette({
       onClose={onClose}
       onClick={(e) => e.target === dialogRef.current && onClose()}
       aria-label="Command palette"
-      className="border-rule bg-raised text-ink mx-auto mt-[12vh] w-[min(560px,calc(100vw-32px))] rounded-lg border p-0 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.45)] backdrop:bg-[rgba(10,12,16,0.45)]"
+      className="border-rule bg-raised text-ink mx-auto mt-[12vh] w-[min(560px,calc(100vw-32px))] rounded-2xl border p-0 backdrop:bg-black/60"
     >
       <div className="border-rule flex items-center gap-2.5 border-b px-4">
         <Search className="text-muted size-4" aria-hidden />
@@ -138,7 +138,7 @@ export function CommandPalette({
                 onClick={() => go(item)}
                 className={clsx(
                   "flex h-9 w-full items-center gap-2.5 rounded-md px-3 text-left",
-                  i === active && "bg-vg-soft",
+                  i === active && "bg-brand-soft",
                 )}
               >
                 <item.icon className="text-muted size-4" aria-hidden />

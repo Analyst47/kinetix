@@ -107,7 +107,7 @@ export default async function FindingPage({
               <StatusLabel status={finding.status} />
               {finding.confidence === "firm" ? (
                 <Chip
-                  className="border-vg/30 bg-vg-soft text-vg"
+                  className="border-brand/30 bg-brand-soft text-brand"
                   title="A verified data-flow path, or a matched known-vulnerable dependency"
                 >
                   Firm
@@ -160,7 +160,7 @@ export default async function FindingPage({
                   className={clsx(
                     "h-1 rounded-full",
                     i < stage && "bg-ink",
-                    i === stage && "bg-vg",
+                    i === stage && "bg-brand",
                     i > stage && "bg-rule",
                   )}
                 />
@@ -364,7 +364,7 @@ export default async function FindingPage({
                                   ? "evidence"
                                   : "overview",
                             )}
-                            className="text-vg hover:underline"
+                            className="text-brand hover:underline"
                           >
                             {r.key === "cvss" ? "Assess below" : r.key === "evidence" ? "Attach" : "Write"}
                           </Link>
@@ -412,7 +412,10 @@ export default async function FindingPage({
               <ol className="px-4 pt-3 pb-1">
                 {custody.events.slice(0, 6).map((e, i, arr) => (
                   <li key={e.seq} className="relative pb-3.5 pl-[22px]">
-                    <span aria-hidden className="bg-vg absolute top-[6px] left-1 size-[9px] rounded-[2px]" />
+                    <span
+                      aria-hidden
+                      className="bg-brand absolute top-[6px] left-1 size-[9px] rounded-[2px]"
+                    />
                     {i < arr.length - 1 ? (
                       <span
                         aria-hidden
@@ -435,7 +438,7 @@ export default async function FindingPage({
               <div className="border-rule flex items-center gap-2 border-t px-4 py-2.5">
                 <ChainBadge chain={custody.chain} />
                 {custody.events.length > 6 ? (
-                  <Link href={href("activity")} className="text-vg ml-auto text-xs hover:underline">
+                  <Link href={href("activity")} className="text-brand ml-auto text-xs hover:underline">
                     All {custody.events.length} entries
                   </Link>
                 ) : null}

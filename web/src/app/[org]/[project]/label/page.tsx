@@ -9,11 +9,7 @@ import { LabelQueue } from "./label-queue";
 
 export const metadata: Metadata = { title: "Label queue" };
 
-export default async function LabelPage({
-  params,
-}: {
-  params: Promise<{ org: string; project: string }>;
-}) {
+export default async function LabelPage({ params }: { params: Promise<{ org: string; project: string }> }) {
   const { org, project } = await params;
   const base = `/orgs/${org}/projects/${project}/findings`;
   const [unlabeled, labeled] = await Promise.all([
@@ -31,12 +27,7 @@ export default async function LabelPage({
           title="Label queue"
           description="Record a fast ground-truth verdict on each finding to build your training corpus. Use R (real), F (false positive) or S (skip)."
         />
-        <LabelQueue
-          org={org}
-          project={project}
-          items={unlabeled.items}
-          alreadyLabeled={labeled.total}
-        />
+        <LabelQueue org={org} project={project} items={unlabeled.items} alreadyLabeled={labeled.total} />
       </main>
     </>
   );

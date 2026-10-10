@@ -35,7 +35,7 @@ export function Dialog({
       onClose={onClose}
       aria-labelledby="dialog-title"
       style={{ width: `min(${width}px, calc(100vw - 32px))` }}
-      className="border-rule bg-raised text-ink m-auto rounded-lg border p-0 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.45)] backdrop:bg-[rgba(10,12,16,0.45)]"
+      className="border-rule bg-raised text-ink m-auto rounded-2xl border p-0 backdrop:bg-black/60"
     >
       <div className="border-rule flex items-start gap-3 border-b px-5 py-4">
         <div className="flex flex-col gap-0.5">
@@ -48,7 +48,7 @@ export function Dialog({
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="text-muted hover:bg-rule hover:text-ink -mr-1.5 ml-auto inline-flex size-8 items-center justify-center rounded-md"
+          className="text-muted hover:bg-ink/[0.06] hover:text-ink -mr-1.5 ml-auto inline-flex size-8 items-center justify-center rounded-full"
         >
           <X className="size-4" />
         </button>

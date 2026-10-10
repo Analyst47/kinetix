@@ -1,19 +1,19 @@
 import clsx from "clsx";
 
 /**
- * The Kinetix mark: an ascending path of three nodes — source → flow → sink — with the final
- * node lit in the signal accent. It is the product in one glyph: tracing the path an attacker
- * would take to the target. One colour-safe, scales cleanly, and matches the data-flow visuals
- * used across the site.
+ * The KinetixZero mark: a "zero" ring, and a traced path from a source node inside it out to a
+ * node that breaks through the ring. It is the product in one glyph — following untrusted input
+ * to the point where it escapes. Drawn in currentColor so it is white on the black public site
+ * and in dark mode, and black in the light app theme; `tile` renders the white-on-black app icon.
  */
 export function LogoMark({
   size = 22,
   className,
-  interactive,
+  tile,
 }: {
   size?: number;
   className?: string;
-  interactive?: boolean;
+  tile?: boolean;
 }) {
   return (
     <svg
@@ -22,29 +22,26 @@ export function LogoMark({
       viewBox="0 0 24 24"
       fill="none"
       aria-hidden="true"
-      className={className}
+      className={clsx("shrink-0", className)}
     >
-      <rect x="0.5" y="0.5" width="23" height="23" rx="6" fill="var(--vg)" />
-      <path
-        d="M6.6 17.4 L12 12 L17.4 6.6"
-        stroke="var(--on-vg)"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        opacity="0.9"
-      />
-      <circle cx="6.6" cy="17.4" r="2" fill="var(--on-vg)" />
-      <circle cx="12" cy="12" r="2" fill="var(--on-vg)" />
-      <circle
-        cx="17.4"
-        cy="6.6"
-        r="2.7"
-        fill="var(--signal)"
-        className={clsx(
-          interactive &&
-            "origin-center transition-transform duration-300 ease-out group-hover:translate-x-[0.6px] group-hover:-translate-y-[0.6px]",
-        )}
-      />
+      {tile ? <rect width="24" height="24" rx="6" fill="#000" /> : null}
+      <g
+        stroke={tile ? "#fff" : "currentColor"}
+        fill={tile ? "#fff" : "currentColor"}
+        transform={tile ? "translate(2.4 2.4) scale(0.8)" : undefined}
+      >
+        {/* The ring, open where the path breaks through it. */}
+        <path
+          d="M19.935 8.954 A8.5 8.5 0 1 1 15.046 4.065"
+          fill="none"
+          strokeWidth="1.9"
+          strokeLinecap="round"
+        />
+        {/* The traced path, source to exit. */}
+        <path d="M8.6 15.4 L18 6" fill="none" strokeWidth="1.9" strokeLinecap="round" />
+        <circle cx="8.6" cy="15.4" r="1.9" stroke="none" />
+        <circle cx="18" cy="6" r="2.6" stroke="none" />
+      </g>
     </svg>
   );
 }
@@ -53,21 +50,19 @@ export function Wordmark({
   size = 15,
   markSize,
   className,
-  interactive,
 }: {
   size?: number;
   markSize?: number;
   className?: string;
-  interactive?: boolean;
 }) {
   return (
-    <span className={clsx("group inline-flex items-center gap-2.5", className)}>
-      <LogoMark size={markSize ?? Math.round(size * 1.4)} interactive={interactive} />
+    <span className={clsx("inline-flex items-center gap-2.5", className)}>
+      <LogoMark size={markSize ?? Math.round(size * 1.45)} />
       <span
-        className="font-display font-semibold tracking-[-0.02em]"
+        className="font-display font-semibold tracking-[-0.03em]"
         style={{ fontSize: size, lineHeight: 1 }}
       >
-        Kinetix<span className="text-vg">Zero</span>
+        Kinetix<span className="text-muted">Zero</span>
       </span>
     </span>
   );

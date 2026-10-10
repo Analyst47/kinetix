@@ -29,8 +29,8 @@ to help validate findings with cited evidence, and produces responsible-disclosu
 - `api/` — FastAPI + SQLAlchemy 2 (sync) + psycopg 3 + Postgres 16 (**row-level security**)
   + Alembic + Celery/Redis.
   - Routers: `api/app/routers/`. Models: `api/app/models/`. Services: `api/app/services/`.
-  - AI: `api/app/ai/` (providers, service, prompts, context, budget, session_keys) and
-    `api/app/routers/ai.py`. Scanners: `api/app/scanners/` + `rules/` (Semgrep taint rules).
+  - AI: `api/app/ai/` (providers, service, prompts, context, budget) and
+    `api/app/routers/ai.py`. Plans & quotas: `api/app/billing/` + `api/app/routers/billing.py`. Scanners: `api/app/scanners/` + `rules/` (Semgrep taint rules).
   - Migrations: `api/migrations/versions/` — **required for any schema change**; they run
     automatically before the API starts on deploy. Remember RLS grants for new columns/tables.
 - `docs/` — DEPLOY.md, ARCHITECTURE.md, SECURITY.md. `scripts/` — setup/deploy/ops.
@@ -64,11 +64,16 @@ seeds the `demo` workspace (demo@kinetix.dev / kinetix-demo-2026).
   plus closed states. `confirmed` requires evidence/reproduction (see
   `api/app/services/findings.py`). Confidence = `firm` (taint-verified / matched CVE) vs
   `tentative`.
-- **AI (current):** providers are Anthropic / Gemini / OpenAI-compatible / Mock
-  (`api/app/ai/providers.py`). Default model is **bring-your-own-key** (session-scoped,
-  encrypted, never stored — `session_keys.py`); an optional **managed** provider
-  (`KINETIX_AI_MANAGED_ENABLED`) serves from the server's own key and is metered by a monthly
-  token budget (`budget.py`). The model answers input_controlled / reaches_sink / sanitized
+- **AI (current):** providers are Anthropic (default) / Gemini / OpenAI-compatible / Mock
+  (`api/app/ai/providers.py`). All AI runs on the **server's own key** (managed mode,
+  `KINETIX_AI_MANAGED_ENABLED`, on by default; Claude key from `ANTHROPIC_API_KEY`). There is no
+  bring-your-own-key. Usage is **metered per user**: each model call is one "search", charged by
+  `billing/entitlements.consume()` inside the request transaction (failed calls roll back);
+  free = `KINETIX_AI_FREE_SEARCHES` (10, one-time), paid plans reset monthly; exhausted →
+  `402 ai_limit_reached` → Upgrade UI. Plan rows live in `user_plans` (RLS on `app.user_id`).
+  The monthly token budget (`budget.py`) is a server-wide backstop. Stripe isn't wired yet —
+  see `docs/BILLING.md`. Current Claude models reject a forced `tool_choice`; the adapter uses
+  `auto` and the system prompt tells the model to call the result tool. The model answers input_controlled / reaches_sink / sanitized
   with cited lines and KinetixZero **derives** the verdict server-side; uncited claims are
   downgraded. Providers retry transient 429/500/503/529 with backoff.
 - **Scanners:** Semgrep taint rules (JS/TS + Python) → findings; dependency lockfiles → OSV;
@@ -80,9 +85,17 @@ seeds the `demo` workspace (demo@kinetix.dev / kinetix-demo-2026).
   separate from the disclosure status.
 
 ## Design system
-- Tokens are CSS variables in `globals.css`, redefined for dark mode and a pinned-dark
-  marketing surface. Severity/status colors are for **data only**. Display font for headings,
-  sans for body, mono for code/labels. Keep both light and dark themes working in the app.
+- **Monochrome.** Tokens are CSS variables in `globals.css` (`paper`, `raised`, `sunken`, `rule`,
+  `ink`, `muted`, `brand`…), redefined for dark mode and for the pinned true-black `.night`
+  surface (marketing + auth). `brand` is black in the light app and white on dark surfaces.
+  No neon accent, glows, gradients or grid backgrounds. Severity/status colors (`crit`, `high`,
+  `med`, `low`, `ok`) are for **data only** (badges, counts, charts, the radar) — never chrome.
+- Geist for headings/body, Geist Mono for code and uppercase `eyebrow` labels. Pill buttons:
+  solid `brand` primary, thin-outline secondary. Logo: `components/logo.tsx` (ring + traced
+  path); favicon `app/icon.svg`. Night-sky backdrop: `components/sky.tsx`.
+- Homepage centerpiece: `components/marketing/orbital-radar.tsx` (data in `orbital-data.ts`) —
+  pipeline view describes shipped behaviour; the infrastructure view is labelled illustrative.
+- Keep both light and dark themes working in the app.
 
 ## Deploy
 One Docker Compose stack behind a Caddy edge; only the edge is public. `sudo kinetix update`
