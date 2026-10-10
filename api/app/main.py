@@ -1,3 +1,4 @@
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -8,6 +9,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from app import dbguard
+from app.billing.entitlements import unclaimed_owner_emails
 from app.config import get_settings
 from app.db import engine
 from app.errors import ApiError, api_error_handler
@@ -26,6 +28,8 @@ from app.routers import (
 )
 from app.security.tokens import constant_time_equals
 
+log = logging.getLogger("kinetix")
+
 UNSAFE = {"POST", "PUT", "PATCH", "DELETE"}
 
 SECURITY_HEADERS = {
@@ -43,6 +47,14 @@ SECURITY_HEADERS = {
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     with engine.connect() as conn:
         dbguard.enforce(conn, production=get_settings().is_production)
+        unclaimed = unclaimed_owner_emails(conn)
+    if unclaimed:
+        # Count only: the addresses themselves stay out of the logs.
+        log.warning(
+            "%d address(es) in KINETIX_OWNER_EMAILS have no account yet. Register them now: "
+            "sign-up doesn't verify email, so whoever registers one first gets owner access.",
+            len(unclaimed),
+        )
     yield
 
 

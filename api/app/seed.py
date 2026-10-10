@@ -136,6 +136,7 @@ def seed() -> None:
         org = Organization(slug="demo", name="Fahim's lab", ai_enabled=True)
         db.add_all([user, org])
         db.flush()
+        org.created_by_id = user.id
         db.add(Membership(org_id=org.id, user_id=user.id, role=Role.OWNER))
         set_tenant(db, org.id)
 

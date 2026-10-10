@@ -86,6 +86,18 @@ def test_only_owners_and_admins_can_delete_and_never_across_workspaces(client):
     assert client.get(base).status_code == 200
 
 
+def test_the_shared_demo_account_cannot_delete_projects(client, monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "demo_account_email", "Demo@Example.com")
+    org = register(client, email="demo@example.com")
+    create_project(client, org)
+    base = f"/api/v1/orgs/{org}/projects/juice-shop"
+    r = client.delete(base, params={"confirm": "juice-shop"})
+    assert r.status_code == 403 and r.json()["error"]["code"] == "demo_account"
+    assert client.get(base).status_code == 200
+
+
 def test_billing_is_a_reserved_project_url_name(client):
     # /{org}/billing is the Plan & usage page, so a project can't take that URL name.
     org = register(client)

@@ -152,9 +152,11 @@ are defined in `api/app/billing/plans.py`; Stripe wiring is described in
 spend backstop.
 
 **Owner accounts.** List your own email(s) in `KINETIX_OWNER_EMAILS` (comma-separated). Those
-accounts, and every member of a workspace they own, get unlimited Agentic Triage: no quota and no
-hourly limit. Runs are still recorded in the audit log, and `KINETIX_AI_MONTHLY_TOKEN_BUDGET` still
-caps total spend for the whole server.
+accounts, and every member of a workspace they created, get unlimited Agentic Triage: no quota and
+no hourly limit. Runs are still recorded in the audit log, and `KINETIX_AI_MONTHLY_TOKEN_BUDGET`
+still caps total spend for the whole server. Register an address before you list it: sign-up
+doesn't verify email, so whoever registers a listed address first gets owner access (the API logs
+a warning at startup while a listed address has no account).
 
 On Gemini's free tier, Google may use prompts and responses to improve its products, and
 human reviewers may read them ([Gemini API terms](https://ai.google.dev/gemini-api/terms)).

@@ -133,7 +133,9 @@ KINETIX_AI_ALLOWED_ORGS=["my-lab"]        # optional: restrict AI to these works
 ```
 
 Your own account shouldn't be metered: list it as an owner, and you plus everyone you invite to
-your workspaces get unlimited Agentic Triage (the monthly token budget still applies):
+the workspaces you created get unlimited Agentic Triage (the monthly token budget still applies).
+Register the account first: sign-up doesn't verify email, so a listed address nobody has
+registered yet could be claimed by someone else (the API logs a warning while that's the case).
 
 ```
 KINETIX_OWNER_EMAILS=you@example.com      # comma-separated for more than one

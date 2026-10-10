@@ -139,6 +139,7 @@ def register(
     org = Organization(slug=slug, name=body.organization_name)
     db.add_all([user, org])
     db.flush()
+    org.created_by_id = user.id
     db.add(Membership(org_id=org.id, user_id=user.id, role=Role.OWNER))
     _start_session(db, user, request, response)
     try:

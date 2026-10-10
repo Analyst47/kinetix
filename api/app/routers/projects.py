@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.db import get_db
-from app.deps import OrgContext, load_project, require
+from app.deps import OrgContext, is_demo_account, load_project, require
 from app.errors import ApiError
 from app.models import Finding, Project, Scan, Target
 from app.models.enums import TargetKind
@@ -117,9 +117,17 @@ def delete_project(
     ctx: OrgContext = Depends(require(Permission.PROJECT_DELETE)),
     db: Session = Depends(get_db),
 ) -> Response:
-    """Delete a project and everything under it: targets, scans, findings (with their evidence,
-    AI runs and disclosures) and dependencies. The audit log keeps a permanent record of the
-    deletion. Owners and admins only, and the caller must repeat the project's URL name."""
+    """Delete a project and everything under it: targets, scans, findings (with their evidence
+    records, AI runs and disclosures) and dependencies, plus the fetched source trees on disk.
+    Content-addressed uploads (evidence files, source archives) may be shared and aren't
+    unlinked here. The audit log keeps a permanent record of the deletion. Owners and admins
+    only, and the caller must repeat the project's URL name."""
+    if is_demo_account(ctx.user):
+        raise ApiError(
+            403,
+            "demo_account",
+            "The shared demo account can't delete projects. Create your own account.",
+        )
     project = load_project(db, ctx, project_slug)
     if confirm != project.slug:
         raise ApiError(

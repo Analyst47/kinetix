@@ -18,7 +18,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import Connection, and_, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session, aliased
 
@@ -26,7 +26,7 @@ from app.billing.plans import Plan, catalog, get_plan
 from app.config import get_settings
 from app.db import set_user
 from app.errors import ApiError
-from app.models import Membership, User, UserPlan
+from app.models import Membership, Organization, User, UserPlan
 from app.models.enums import Role
 
 # A paid plan grants its quota only while the subscription is in good standing.
@@ -87,26 +87,44 @@ class Usage:
 
 def sponsor_of(db: Session, user_id: uuid.UUID) -> str | None:
     """ "owner" if this user is an owner account, "team" if they belong to a workspace an owner
-    account owns, else None. Owner accounts are configured by email (KINETIX_OWNER_EMAILS)."""
+    account created and still owns, else None. Owner accounts are configured by email
+    (KINETIX_OWNER_EMAILS). Only the workspace's creator counts: the owner role alone isn't
+    enough, because any owner of someone else's workspace could grant it to an owner account."""
     owners = get_settings().owner_emails
     if not owners:
         return None
     email = db.scalar(select(User.email).where(User.id == user_id))
     if email and email.lower() in owners:
         return "owner"
-    mine, theirs = aliased(Membership), aliased(Membership)
+    creator = aliased(Membership)
     sponsored = db.scalar(
-        select(theirs.org_id)
-        .join(mine, mine.org_id == theirs.org_id)
-        .join(User, User.id == theirs.user_id)
-        .where(
-            mine.user_id == user_id,
-            theirs.role == Role.OWNER,
-            func.lower(User.email).in_(owners),
+        select(Membership.org_id)
+        .join(Organization, Organization.id == Membership.org_id)
+        .join(User, User.id == Organization.created_by_id)
+        .join(
+            creator,
+            and_(
+                creator.org_id == Organization.id,
+                creator.user_id == Organization.created_by_id,
+                creator.role == Role.OWNER,
+            ),
         )
+        .where(Membership.user_id == user_id, func.lower(User.email).in_(owners))
         .limit(1)
     )
     return "team" if sponsored is not None else None
+
+
+def unclaimed_owner_emails(db: Session | Connection) -> list[str]:
+    """Owner emails that no account has registered yet. Registration doesn't verify addresses,
+    so whoever registers one of these first becomes an owner account: register them promptly."""
+    owners = get_settings().owner_emails
+    if not owners:
+        return []
+    found = set(
+        db.scalars(select(func.lower(User.email)).where(func.lower(User.email).in_(owners)))
+    )
+    return [email for email in owners if email not in found]
 
 
 def _sponsored(sponsor: str) -> Usage:

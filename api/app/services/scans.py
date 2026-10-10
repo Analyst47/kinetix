@@ -1,6 +1,7 @@
 """Creating scans and repository fetches, and handing them to the worker (or running inline)."""
 
 import logging
+import shutil
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
@@ -63,13 +64,22 @@ def run_fetch(
     target = db.get(Target, target_id)
     if target is None:
         raise LookupError("target not found")
+    dest = source_dir(target)
+    fetched, error = None, None
     try:
-        fetched = gitfetch.fetch_into(target.locator, target.version, source_dir(target))
+        fetched = gitfetch.fetch_into(target.locator, target.version, dest)
     except (gitfetch.FetchRejected, gitfetch.FetchFailed) as exc:
-        target.fetch_status, target.fetch_error = "failed", str(exc)[:300]
+        error = str(exc)[:300]
     except Exception:
         log.exception("repository fetch failed")
-        target.fetch_status, target.fetch_error = "failed", "Unexpected error while fetching."
+        error = "Unexpected error while fetching."
+    # The project may have been deleted while the fetch ran. Its delete already cleared the
+    # sources it knew of, so remove the tree this fetch just put in place rather than orphan it.
+    if db.scalar(select(Target.id).where(Target.id == target_id)) is None:
+        shutil.rmtree(dest, ignore_errors=True)
+        raise LookupError("target was deleted during the fetch")
+    if fetched is None:
+        target.fetch_status, target.fetch_error = "failed", error
     else:
         target.fetch_status, target.fetch_error = "ready", None
         target.commit = fetched.commit
@@ -86,7 +96,7 @@ def run_fetch(
             "url": target.locator,
             "ref": target.version,
             "commit": target.commit,
-            "files": fetched.report.files if target.fetch_status == "ready" else None,
+            "files": fetched.report.files if fetched else None,
             "error": target.fetch_error,
         },
     )

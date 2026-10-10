@@ -23,10 +23,13 @@ Paid quotas reset when a new period starts — following `period_end` when Strip
 else calendar months from `period_start`.
 
 **Owner accounts:** emails in `KINETIX_OWNER_EMAILS` are sponsored: they, and every member of a
-workspace one of them owns, are never charged or limited (no quota, no hourly AI rate limit, triage
-batches uncapped). Sponsorship flows only from workspaces the owner account *owns*. Their runs are
-still audited (`quota: {plan: "owner", unlimited: true}`), and the server-wide monthly token budget
-still applies. Stripe never sees these accounts.
+workspace one of them created (and still owns), are never charged or limited (no quota, no hourly
+AI rate limit, triage batches uncapped). Sponsorship follows `organizations.created_by_id`, not the
+owner role: other owners of a workspace can grant that role, so being made an owner of someone
+else's workspace sponsors nobody. Their runs are still audited
+(`quota: {plan: "owner", unlimited: true}`), and the server-wide monthly token budget still applies.
+Stripe never sees these accounts. Sign-up doesn't verify email, so register an owner address before
+listing it; the API logs a warning at startup while a listed address has no account.
 
 ### Configuration
 

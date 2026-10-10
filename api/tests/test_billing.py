@@ -217,6 +217,20 @@ def _join(org_slug: str, email: str, role) -> None:
         db.commit()
 
 
+def _set_role(org_slug: str, email: str, role) -> None:
+    from app.models import Membership, Organization
+
+    with SessionLocal() as db:
+        m = db.scalar(
+            select(Membership)
+            .join(Organization, Organization.id == Membership.org_id)
+            .join(User, User.id == Membership.user_id)
+            .where(Organization.slug == org_slug, User.email == email)
+        )
+        m.role = role
+        db.commit()
+
+
 def test_owner_account_is_unlimited_and_not_rate_limited(client, monkeypatch):
     # Configured in a different case than the account: matching ignores case.
     monkeypatch.setattr(get_settings(), "owner_emails", ["fahim@example.com"])
@@ -265,6 +279,28 @@ def test_members_of_an_owners_workspace_are_unlimited_strangers_are_not(client, 
     _join(other_org, "fahim@example.com", Role.ADMIN)
     usage = stranger.get("/api/v1/billing").json()["usage"]
     assert usage["unlimited"] is False and usage["plan"] == "free"
+
+    # Nor can the stranger buy sponsorship by promoting the owner account to owner there: only
+    # workspaces the owner account created count.
+    promoted = stranger.patch(
+        f"/api/v1/orgs/{other_org}/members/{_user_id()}", json={"role": "owner"}
+    )
+    assert promoted.status_code == 200, promoted.text
+    usage = stranger.get("/api/v1/billing").json()["usage"]
+    assert usage["unlimited"] is False and usage["plan"] == "free"
+
+    # And if the owner account is demoted in its own workspace, its members stop being sponsored.
+    _set_role(org, "fahim@example.com", Role.ADMIN)
+    assert mate.get("/api/v1/billing").json()["usage"]["sponsor"] is None
+
+
+def test_owner_emails_without_an_account_are_reported(client, monkeypatch):
+    monkeypatch.setattr(
+        get_settings(), "owner_emails", ["fahim@example.com", "not-yet@example.com"]
+    )
+    register(client, email="fahim@example.com")
+    with SessionLocal() as db:
+        assert entitlements.unclaimed_owner_emails(db) == ["not-yet@example.com"]
 
 
 def test_owner_triage_is_not_capped_by_a_quota(client, monkeypatch):

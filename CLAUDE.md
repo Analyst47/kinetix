@@ -72,7 +72,7 @@ seeds the `demo` workspace (demo@kinetix.dev / kinetix-demo-2026).
   `billing/entitlements.consume()` inside the request transaction (failed calls roll back);
   free = `KINETIX_AI_FREE_SEARCHES` (10, one-time), paid plans reset monthly; exhausted →
   `402 ai_limit_reached` → Upgrade UI. Owner accounts (`KINETIX_OWNER_EMAILS`) and members of
-  workspaces they own are sponsored: unlimited, no hourly rate limit (`entitlements.sponsor_of`). Plan rows live in `user_plans` (RLS on `app.user_id`).
+  workspaces they created (`organizations.created_by_id`) are sponsored: unlimited, no hourly rate limit (`entitlements.sponsor_of`). Plan rows live in `user_plans` (RLS on `app.user_id`).
   The monthly token budget (`budget.py`) is a server-wide backstop. Stripe isn't wired yet —
   see `docs/BILLING.md`. Current Claude models reject a forced `tool_choice`; the adapter uses
   `auto` and the system prompt tells the model to call the result tool. The model answers input_controlled / reaches_sink / sanitized
