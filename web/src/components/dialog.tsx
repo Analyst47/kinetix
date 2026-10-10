@@ -1,7 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import type { ReactNode } from "react";
 
 export function Dialog({
@@ -22,6 +22,8 @@ export function Dialog({
   width?: number;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  // Several dialogs can share a page (the shell mounts two), so each needs its own title id.
+  const titleId = useId();
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
@@ -33,13 +35,13 @@ export function Dialog({
     <dialog
       ref={ref}
       onClose={onClose}
-      aria-labelledby="dialog-title"
+      aria-labelledby={titleId}
       style={{ width: `min(${width}px, calc(100vw - 32px))` }}
       className="border-rule bg-raised text-ink m-auto rounded-2xl border p-0 backdrop:bg-black/60"
     >
       <div className="border-rule flex items-start gap-3 border-b px-5 py-4">
         <div className="flex flex-col gap-0.5">
-          <h2 id="dialog-title" className="text-[15px] leading-[22px] font-semibold">
+          <h2 id={titleId} className="text-[15px] leading-[22px] font-semibold">
             {title}
           </h2>
           {description ? <p className="text-muted text-[13px]">{description}</p> : null}

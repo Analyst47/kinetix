@@ -19,10 +19,22 @@ export default async function WorkspaceLayout({
   const membership = me.organizations.find((o) => o.slug === org);
   if (!membership) notFound();
   return (
-    <ShellProvider value={{ user: { name: me.user.name, email: me.user.email }, org: membership }}>
+    <ShellProvider
+      value={{
+        user: { name: me.user.name, email: me.user.email },
+        org: membership,
+        usage: billing.usage,
+      }}
+    >
       <UpgradeProvider org={org}>
         <div className="flex min-h-dvh flex-col md:flex-row">
-          <WorkspaceSidebar org={org} orgName={membership.name} usage={billing.usage} />
+          <WorkspaceSidebar
+            org={org}
+            orgName={membership.name}
+            usage={billing.usage}
+            role={membership.role}
+            organizations={me.organizations}
+          />
           <div className="flex min-w-0 flex-1 flex-col">{children}</div>
         </div>
       </UpgradeProvider>
