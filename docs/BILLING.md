@@ -46,7 +46,8 @@ listing it; the API logs a warning at startup while a listed address has no acco
 
 `PRO_PRICE_MONTHLY_USD = 29` and `PRO_PRICE_YEARLY_USD = 290` in `plans.py` are placeholders
 (marked `TODO(billing)`). The margin math is in that file's docstring: with the default model
-(`claude-sonnet-5-5`, $2 / $10 per million input / output tokens) a run costs roughly
+(`claude-haiku-5-5`, $0.10 / $0.50 per million input / output tokens) a run costs roughly
+$0.001–0.002 (under $1 a month for Pro's 300 runs). On `claude-sonnet-5-5` ($2 / $10) a run is
 $0.02–0.03 and about $0.05 in a bad case, so Pro's 300 runs cost ~$6–9 typical and ~$15 at
 worst against $29. Re-run the math if you change the model, effort, or quotas.
 

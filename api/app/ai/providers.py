@@ -333,7 +333,8 @@ class MockProvider:
 
 
 DEFAULT_MODELS = {
-    "anthropic": "claude-sonnet-5-5",
+    # Cheapest current Claude ($0.10 / $0.50 per million tokens); one triage run is ~$0.001-0.003.
+    "anthropic": "claude-haiku-5-5",
     # Free-tier eligible, fast, and good at reading code.
     "gemini": "gemini-3.5-flash",
 }

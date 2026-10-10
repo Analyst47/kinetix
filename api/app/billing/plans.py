@@ -7,12 +7,12 @@ TODO(billing): finalize prices, then create matching Stripe Products/Prices and 
 in ``stripe_price_*``. Once Stripe is live its Price objects are authoritative for what is
 charged; keep these display amounts in sync with them.
 
-Margin check behind the placeholders (default model claude-sonnet-5-5 at $2 / $10 per million
-input / output tokens): one search sends roughly 4-6k input tokens and returns ~1-2k output
-tokens including reasoning, so it costs about $0.02-0.03, and ~$0.05 in a bad case. Pro's 300
-searches a month therefore cost ~$6-9 typical and ~$15 at worst against a $29 price — a 2x+
-margin even when every search is expensive, before payment fees. The free allowance (10 one-time
-searches) costs well under $0.50 per signup. Re-run this math if you change the model.
+Margin check behind the placeholders (default model claude-haiku-5-5 at $0.10 / $0.50 per
+million input / output tokens): one search sends roughly 4-6k input tokens and returns ~1-2k
+output tokens including reasoning (at most 4,096), so it costs about $0.001-0.002, and ~$0.003
+in a bad case. Pro's 300 searches a month cost under $1 against a $29 price. With
+claude-sonnet-5-5 ($2 / $10) the same run is ~$0.02-0.03 (~$0.05 worst), ~$6-15 a month for
+Pro. Re-run this math if you change the model.
 """
 
 from dataclasses import dataclass

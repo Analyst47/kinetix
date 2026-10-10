@@ -114,7 +114,7 @@ never supply one. Create a key at https://console.anthropic.com and set it in `.
 
 ```
 ANTHROPIC_API_KEY=sk-ant-...           # or KINETIX_AI_API_KEY
-KINETIX_AI_MODEL=claude-sonnet-5-5     # optional; omit for the default
+KINETIX_AI_MODEL=claude-haiku-5-5      # optional; omit for the default (claude-sonnet-5-5 reasons better, ~20x the cost)
 ```
 
 The key is read server-side only — never sent to the browser, logged, or committed — and there

@@ -75,8 +75,8 @@ case "$AICHOICE" in
     if [ -n "$CLAUDE" ]; then
       set_env KINETIX_AI_PROVIDER anthropic
       set_env KINETIX_AI_API_KEY "$CLAUDE"
-      read -r -p "Model [claude-sonnet-5-5]: " AIMODEL
-      set_env KINETIX_AI_MODEL "${AIMODEL:-claude-sonnet-5-5}"
+      read -r -p "Model [claude-haiku-5-5]: " AIMODEL
+      set_env KINETIX_AI_MODEL "${AIMODEL:-claude-haiku-5-5}"
       echo "Saved. Requests bill to your Anthropic account; each user's searches are metered."
       echo "Workspace admins turn AI on under AI assistance."
     fi

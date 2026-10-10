@@ -130,7 +130,7 @@ AI runs on **the server's own provider key** — users never paste a key. Set it
 ```bash
 # Claude API (default provider)
 ANTHROPIC_API_KEY=sk-ant-...           # or KINETIX_AI_API_KEY
-KINETIX_AI_MODEL=claude-sonnet-5-5     # optional; this is the default
+KINETIX_AI_MODEL=claude-haiku-5-5      # optional; this is the default (claude-sonnet-5-5 reasons better, ~20x the cost)
 KINETIX_AI_EFFORT=medium               # optional; low | medium | high — lower is cheaper
 
 # Alternatives
