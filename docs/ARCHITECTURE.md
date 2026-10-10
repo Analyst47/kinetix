@@ -57,7 +57,7 @@ recorded in the scan's stats and rolled back alone.
 - **Secrets.** Regex rules run over text files under 2 MB. Only a redacted preview is kept.
   Matches under test or fixture paths are downgraded to Info.
 - **SAST.** Semgrep runs on a private copy of the source with the target's own ignore files
-  removed and Kinetix's rules only, so a repository can't hide code or change the rules.
+  removed and KinetixZero's rules only, so a repository can't hide code or change the rules.
 
 ## Data model
 

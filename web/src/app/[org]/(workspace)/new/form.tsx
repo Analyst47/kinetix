@@ -173,7 +173,7 @@ export function NewProjectForm({ org }: { org: string }) {
           <Field
             label="Review by"
             htmlFor="p-exp"
-            hint="After this date, Kinetix blocks new scans until you renew."
+            hint="After this date, KinetixZero blocks new scans until you renew."
           >
             <input
               id="p-exp"

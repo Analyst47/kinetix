@@ -28,7 +28,7 @@ export function RegisterForm({ next }: { next?: string }) {
       router.push(next ? safeNext(next) : `/${me.organizations[0]!.slug}/new`);
       router.refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't reach Kinetix. Try again.");
+      setError(err instanceof ApiError ? err.message : "Couldn't reach KinetixZero. Try again.");
       setPending(false);
     }
   }

@@ -21,6 +21,7 @@ from app.schemas import (
     EvidenceVerifyOut,
     FindingDetail,
     FindingIn,
+    FindingLabelIn,
     FindingOut,
     FindingPage,
     FindingPatch,
@@ -81,6 +82,7 @@ def list_findings(
     severity: list[Severity] = Query(default=[]),
     source: FindingSource | None = None,
     ai_verdict: str | None = Query(default=None, max_length=24),
+    labeled: str | None = Query(default=None, pattern="^(yes|no)$"),
     q: str | None = Query(default=None, max_length=200),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
@@ -93,6 +95,10 @@ def list_findings(
         base = base.where(Finding.source == source)
     if ai_verdict:
         base = base.where(Finding.ai_verdict == ai_verdict)
+    if labeled == "yes":
+        base = base.where(Finding.ground_truth.isnot(None))
+    elif labeled == "no":
+        base = base.where(Finding.ground_truth.is_(None))
     if q:
         like = f"%{q.replace('%', r'\%').replace('_', r'\_')}%"
         base = base.where(
@@ -234,6 +240,39 @@ def transition_finding(
         actor=ctx.user,
         note=body.note,
         duplicate_of=body.duplicate_of,
+    )
+    db.commit()
+    db.refresh(finding)
+    return _detail(db, ctx, finding)
+
+
+@router.post("/{public_id}/label")
+def label_finding(
+    project_slug: str,
+    public_id: str,
+    body: FindingLabelIn,
+    ctx: OrgContext = Depends(require(Permission.PROJECT_READ)),
+    db: Session = Depends(get_db),
+) -> FindingDetail:
+    """Record a human ground-truth label (vulnerable / not_vulnerable) for the training corpus.
+    Independent of the disclosure workflow: it's the researcher's verdict for the dataset, set
+    quickly from the labeling queue. null clears it."""
+    from datetime import UTC, datetime
+
+    if not has_permission(ctx.role, Permission.FINDING_CLOSE):
+        raise forbidden("Your role can't label findings.")
+    project = load_project(db, ctx, project_slug)
+    finding = svc.get_finding(db, project, public_id)
+    finding.ground_truth = body.label
+    finding.ground_truth_at = datetime.now(UTC) if body.label else None
+    audit.record(
+        db,
+        org_id=finding.org_id,
+        actor=ctx.user,
+        action="finding.labeled",
+        subject_type="finding",
+        subject_id=finding.public_id,
+        data={"label": body.label},
     )
     db.commit()
     db.refresh(finding)

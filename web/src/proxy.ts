@@ -6,7 +6,7 @@ import { type NextRequest, NextResponse } from "next/server";
  * Scripts run only if they carry this request's nonce ('strict-dynamic' lets those scripts
  * load the chunks they need), so an injected <script> or event handler never executes even
  * if some text slipped through escaping. Everything else is locked to this origin: the
- * browser only ever talks to Kinetix itself, and the API is proxied under /api.
+ * browser only ever talks to KinetixZero itself, and the API is proxied under /api.
  */
 export function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.getRandomValues(new Uint8Array(18))).toString("base64");

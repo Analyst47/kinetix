@@ -1,10 +1,10 @@
 #!/bin/sh
-# Kinetix one-command install, for a computer with Docker, published through Cloudflare
+# KinetixZero one-command install, for a computer with Docker, published through Cloudflare
 # Tunnel (no open ports, no router changes). Paste into Terminal:
 #
 #   curl -fsSL https://raw.githubusercontent.com/Analyst47/kinetix/main/scripts/quickstart.sh | sh
 #
-# Run it again any time to update Kinetix; your settings and data are kept.
+# Run it again any time to update KinetixZero; your settings and data are kept.
 # Add or change the email and AI keys later with:
 #
 #   sh ~/kinetix/scripts/quickstart.sh --keys
@@ -70,7 +70,7 @@ docker info > /dev/null 2>&1 || fail "Docker isn't running. Open Docker Desktop,
 docker compose version > /dev/null 2>&1 || fail "Docker Compose is missing. Update Docker Desktop, then run this again."
 
 if [ "${1:-}" = "--keys" ]; then
-  [ -f "$DIR/.env" ] || fail "Kinetix isn't installed yet. Run the install command first."
+  [ -f "$DIR/.env" ] || fail "KinetixZero isn't installed yet. Run the install command first."
   ask_keys
   say "Restarting with the new keys..."
   compose up -d
@@ -79,14 +79,14 @@ if [ "${1:-}" = "--keys" ]; then
 fi
 
 # ── 2. Code ──────────────────────────────────────────────────────────────────
-say "Getting the latest Kinetix into $DIR ..."
+say "Getting the latest KinetixZero into $DIR ..."
 mkdir -p "$DIR"
 if [ -n "${KINETIX_SRC:-}" ]; then
   (cd "$KINETIX_SRC" && tar --exclude ./.env --exclude ./backups --exclude ./.git \
     --exclude node_modules --exclude .venv --exclude .next -cf - .) | (cd "$DIR" && tar -xf -)
 else
   _tgz="$(mktemp)"
-  curl -fsSL "$REPO_TARBALL" -o "$_tgz" || fail "Couldn't download Kinetix. Check your internet connection."
+  curl -fsSL "$REPO_TARBALL" -o "$_tgz" || fail "Couldn't download KinetixZero. Check your internet connection."
   # The archive has one top-level folder; strip it. .env and backups/ are never in it.
   tar -xzf "$_tgz" -C "$DIR" --strip-components 1
   rm -f "$_tgz"
@@ -96,7 +96,7 @@ fi
 if [ ! -f "$DIR/.env" ]; then
   domain="${KINETIX_DOMAIN:-}"
   if [ -z "$domain" ]; then
-    say "Your domain for Kinetix (for example kinetix.example.com or example.com):"
+    say "Your domain for KinetixZero (for example kinetix.example.com or example.com):"
     ask "> " domain
   fi
   domain="$(printf '%s' "$domain" | tr '[:upper:]' '[:lower:]' | sed -e 's#^https*://##' -e 's#/.*$##')"
@@ -114,7 +114,7 @@ if [ ! -f "$DIR/.env" ]; then
 
   umask 077
   cat > "$DIR/.env" <<ENV
-# Kinetix settings. Private: this file holds your secrets. Created by quickstart.sh.
+# KinetixZero settings. Private: this file holds your secrets. Created by quickstart.sh.
 KINETIX_APP_URL=https://$domain
 KINETIX_SITE_ADDRESS=:80
 KINETIX_EDGE_TRUST=cloudflared
@@ -127,7 +127,7 @@ KINETIX_DB_APP_PASSWORD=$(rand 48 40)
 KINETIX_DEMO=0
 KINETIX_EMAIL_BACKEND=resend
 KINETIX_RESEND_API_KEY=
-KINETIX_EMAIL_FROM=Kinetix <security@$domain>
+KINETIX_EMAIL_FROM=KinetixZero <security@$domain>
 KINETIX_AI_PROVIDER=none
 KINETIX_AI_API_KEY=
 KINETIX_AI_GEMINI_TIER=free
@@ -140,19 +140,19 @@ else
 fi
 
 # ── 4. Start ─────────────────────────────────────────────────────────────────
-say "Building and starting Kinetix. The first time takes about 5 to 10 minutes..."
+say "Building and starting KinetixZero. The first time takes about 5 to 10 minutes..."
 compose up -d --build --remove-orphans
 
-say "Waiting for Kinetix to be ready..."
+say "Waiting for KinetixZero to be ready..."
 i=0
 until compose exec -T edge wget -qO- http://127.0.0.1/api/health 2> /dev/null | grep -q '"ok"'; do
   i=$((i + 1))
-  [ "$i" -gt 120 ] && fail "Kinetix didn't come up. See what went wrong with: cd $DIR && docker compose logs --tail 50"
+  [ "$i" -gt 120 ] && fail "KinetixZero didn't come up. See what went wrong with: cd $DIR && docker compose logs --tail 50"
   sleep 5
 done
 
 url="$(grep '^KINETIX_APP_URL=' "$DIR/.env" | cut -d= -f2-)"
-say "Kinetix is running."
+say "KinetixZero is running."
 cat <<DONE
   Open:      $url/register   (create your account, then turn on two-step verification)
   Update:    run the same install command again

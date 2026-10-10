@@ -61,9 +61,9 @@ export function MarketingFooter() {
       </Container>
       <div className="border-rule/70 border-t">
         <Container className="flex flex-col items-start justify-between gap-2 py-6 text-[12.5px] sm:flex-row sm:items-center">
-          <p className="text-muted">© {new Date().getFullYear()} Kinetix. All rights reserved.</p>
+          <p className="text-muted">© {new Date().getFullYear()} KinetixZero. All rights reserved.</p>
           <p className="text-muted">
-            Kinetix assists research only on targets you are authorized to analyze.
+            KinetixZero assists research only on targets you are authorized to analyze.
           </p>
         </Container>
       </div>

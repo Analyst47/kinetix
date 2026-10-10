@@ -1,9 +1,18 @@
 import clsx from "clsx";
+import { Tags } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
 import { PageBar } from "@/components/shell-context";
-import { Avatar, Chip, EmptyState, PageHeader, SeverityMark, StatusLabel } from "@/components/ui";
+import {
+  Avatar,
+  ButtonLink,
+  Chip,
+  EmptyState,
+  PageHeader,
+  SeverityMark,
+  StatusLabel,
+} from "@/components/ui";
 import {
   AI_VERDICT_CLASS,
   AI_VERDICT_LABEL,
@@ -118,6 +127,10 @@ export default async function FindingsPage({
           actions={
             <div className="flex flex-wrap gap-2">
               {canTriage ? <TriageButton org={org} project={project} /> : null}
+              <ButtonLink href={`/${org}/${project}/label`} variant="secondary">
+                <Tags aria-hidden />
+                Label queue
+              </ButtonLink>
               <ExportDatasetButton org={org} project={project} />
               <NewFindingButton org={org} project={project} />
             </div>

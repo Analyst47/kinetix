@@ -26,7 +26,7 @@ import { Container, Eyebrow, Section, SectionHeading } from "@/components/market
 import { ButtonLink } from "@/components/ui";
 
 export const metadata: Metadata = {
-  title: "Kinetix — Find the paths attackers would take",
+  title: "KinetixZero — Find the paths attackers would take",
   description:
     "AI-assisted application security: analyze code and dependencies, validate findings with cited evidence, and ship responsible-disclosure packages.",
 };
@@ -60,7 +60,7 @@ function Hero() {
             <span className="text-signal">Fix them first.</span>
           </h1>
           <p className="text-muted max-w-[54ch] text-[clamp(17px,1.35vw,20px)] leading-[1.5]">
-            Kinetix reads your source and dependencies, traces how untrusted input reaches a
+            KinetixZero reads your source and dependencies, traces how untrusted input reaches a
             dangerous sink, and backs every finding with cited evidence — so you spend your time on
             the issues that are actually real.
           </p>
@@ -193,7 +193,7 @@ function Features() {
         <FeatureRow
           eyebrow="Signal over noise"
           title="Separate real bugs from the pile"
-          body="Scanners hand you hundreds of alerts. Kinetix ranks them: Firm for taint-verified paths and matched CVEs, Tentative for pattern matches — and an AI verdict on each."
+          body="Scanners hand you hundreds of alerts. KinetixZero ranks them: Firm for taint-verified paths and matched CVEs, Tentative for pattern matches — and an AI verdict on each."
           points={[
             "Confidence levels put taint-verified paths first.",
             "AI verdicts flag what's likely real vs. a false positive.",
@@ -207,7 +207,7 @@ function Features() {
           flip
           eyebrow="Evidence, not guesswork"
           title="Trace the path from input to sink"
-          body="For each finding, the AI layer answers whether input is attacker-controlled, reaches the sink, and is sanitized — and cites exact lines. Kinetix verifies every citation and derives the verdict itself."
+          body="For each finding, the AI layer answers whether input is attacker-controlled, reaches the sink, and is sanitized — and cites exact lines. KinetixZero verifies every citation and derives the verdict itself."
           points={[
             "A source-to-sink data-flow view you can audit.",
             "Uncited claims are downgraded, never treated as proof.",
@@ -220,7 +220,7 @@ function Features() {
         <FeatureRow
           eyebrow="Human in the loop"
           title="You stay in control"
-          body="Kinetix produces hypotheses with evidence — it never confirms a vulnerability for you, launches attacks, or contacts anyone. You review, reproduce, and record the verdict."
+          body="KinetixZero produces hypotheses with evidence — it never confirms a vulnerability for you, launches attacks, or contacts anyone. You review, reproduce, and record the verdict."
           points={[
             "No autonomous exploitation of live systems.",
             "Every AI run is advisory and recorded in the chain of custody.",
@@ -234,7 +234,7 @@ function Features() {
           flip
           eyebrow="From finding to fix"
           title="Draft the fix, then the disclosure"
-          body="Kinetix drafts CWE-mapped remediation and assembles a responsible-disclosure package — CVE 5.1, OSV and a PDF report — with evidence and chain-of-custody hashes. You apply and file."
+          body="KinetixZero drafts CWE-mapped remediation and assembles a responsible-disclosure package — CVE 5.1, OSV and a PDF report — with evidence and chain-of-custody hashes. You apply and file."
           points={[
             "Suggested patches you review before applying.",
             "Standards-based exports ready to submit.",
@@ -259,7 +259,7 @@ function Plans() {
       price: "Free",
       sub: "Available now",
       highlight: true,
-      body: "Run the full platform with your own Anthropic or Gemini key. AI calls bill to your provider, never to Kinetix.",
+      body: "Run the full platform with your own Anthropic or Gemini key. AI calls bill to your provider, never to KinetixZero.",
       features: [
         "Full assessment workflow",
         "SAST, dependency & secret scanning",
@@ -347,7 +347,7 @@ function Plans() {
         </div>
         <p className="text-muted mt-6 flex items-center justify-center gap-2 text-center text-[13px]">
           <UserCheck className="text-vg size-4" />
-          Every workspace records an authorization attestation. Kinetix is for targets you&apos;re
+          Every workspace records an authorization attestation. KinetixZero is for targets you&apos;re
           allowed to analyze.
         </p>
       </Container>

@@ -133,13 +133,14 @@ def test_status_reflects_server_config_and_workspace_switch(client, monkeypatch)
 
 
 def test_bring_your_own_key_is_session_scoped_and_never_stored(client, monkeypatch):
-    org, url, _ = _setup(client, monkeypatch, GOOD)
+    org, _url, _ = _setup(client, monkeypatch, GOOD)
     # The fake managed provider carries no data notice.
     assert client.get(f"/api/v1/orgs/{org}/ai").json()["data_notice"] is None
 
     # A user supplies their own Gemini key: the free-tier notice is shown and the key is set
     # for this session only.
-    r = client.put(f"/api/v1/orgs/{org}/ai/key", json={"provider": "gemini", "api_key": "AIza-abc123"})
+    key_url = f"/api/v1/orgs/{org}/ai/key"
+    r = client.put(key_url, json={"provider": "gemini", "api_key": "AIza-abc123"})
     assert r.status_code == 200
     body = r.json()
     assert body["key_set"] is True
@@ -155,7 +156,8 @@ def test_bring_your_own_key_is_session_scoped_and_never_stored(client, monkeypat
     assert "AIza-abc123" not in str(event["data"])
 
     # An unknown provider or an obviously-bad key is rejected.
-    assert client.put(f"/api/v1/orgs/{org}/ai/key", json={"provider": "x", "api_key": "abcdefgh"}).status_code == 400
+    bad = client.put(key_url, json={"provider": "x", "api_key": "abcdefgh"})
+    assert bad.status_code == 400
 
     # Clearing it removes the key.
     assert client.delete(f"/api/v1/orgs/{org}/ai/key").json()["key_set"] is False
@@ -217,7 +219,7 @@ def test_citations_are_verified_against_the_lines_sent(client, monkeypatch):
 
 
 def test_uncited_answers_cannot_produce_a_verdict(client, monkeypatch):
-    # The model claims exploitability but cites nothing: Kinetix must not call it vulnerable.
+    # The model claims exploitability but cites nothing: KinetixZero must not call it vulnerable.
     def nocite(ans):
         return {"answer": ans, "explanation": "trust me", "citations": []}
 

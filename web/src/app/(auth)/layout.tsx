@@ -9,7 +9,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
     <div className="mkt grid min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
       <div className="flex flex-col px-6 py-6 sm:px-12">
         <div className="flex items-center justify-between">
-          <Link href="/" aria-label="Kinetix home">
+          <Link href="/" aria-label="KinetixZero home">
             <Wordmark size={16} />
           </Link>
           <Link
@@ -24,7 +24,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           <div className="w-full max-w-[380px]">{children}</div>
         </main>
         <p className="text-muted text-xs">
-          Kinetix assists research on targets you are authorized to analyze.
+          KinetixZero assists research on targets you are authorized to analyze.
         </p>
       </div>
       <BrandPanel />
@@ -47,7 +47,7 @@ function BrandPanel() {
       <div className="halo pointer-events-none absolute inset-x-0 top-0 h-80" />
       <div className="relative px-14">
         <p className="text-signal font-mono text-[11px] tracking-[0.2em] uppercase">
-          Kinetix platform
+          KinetixZero platform
         </p>
         <h2 className="display text-ink mt-5 max-w-[16ch] text-[40px]">
           Find the paths attackers would take.

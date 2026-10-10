@@ -13,7 +13,7 @@ fi
 cd "$DIR"
 
 if [ ! -f .bootstrap-done ]; then
-  bold "The server is still installing Kinetix (this takes about 15-20 minutes)."
+  bold "The server is still installing KinetixZero (this takes about 15-20 minutes)."
   echo "Waiting for it to finish... (Ctrl+C to stop waiting; progress: /var/log/kinetix-bootstrap.log)"
   until [ -f .bootstrap-done ]; do sleep 10; printf '.'; done; echo
 fi
@@ -85,7 +85,7 @@ case "$AICHOICE" in
     if [ -n "$GEMINI" ]; then
       set_env KINETIX_AI_PROVIDER gemini
       set_env KINETIX_AI_API_KEY "$GEMINI"
-      echo "Saved. Turn it on in Kinetix under AI assistance."
+      echo "Saved. Turn it on in KinetixZero under AI assistance."
     fi
     ;;
   *) echo "Skipped. You can add a key to .env later." ;;
@@ -97,7 +97,7 @@ read -r -s -p "Resend API key (Enter to skip; typing is hidden): " RESEND; echo
 if [ -n "$RESEND" ]; then
   set_env KINETIX_EMAIL_BACKEND resend
   set_env KINETIX_RESEND_API_KEY "$RESEND"
-  FROM_DEFAULT="Kinetix <onboarding@resend.dev>"
+  FROM_DEFAULT="KinetixZero <onboarding@resend.dev>"
   read -r -p "Send from [$FROM_DEFAULT]: " FROM
   set_env KINETIX_EMAIL_FROM "${FROM:-$FROM_DEFAULT}"
 elif [ -z "$(get_env KINETIX_RESEND_API_KEY)" ]; then
@@ -110,13 +110,13 @@ read -r -p "Turn on the demo? [y/N] " DEMO
 set_env KINETIX_DEMO "$([ "${DEMO,,}" = y ] && echo 1 || echo 0)"
 
 chmod 600 .env
-bold "Starting Kinetix..."
+bold "Starting KinetixZero..."
 "${COMPOSE[@]}" up -d --build
 
 printf 'Waiting for HTTPS on https://%s ' "$DOMAIN"
 for _ in $(seq 1 60); do
   if curl -fsS --max-time 5 "https://$DOMAIN/api/health" >/dev/null 2>&1; then
-    echo; bold "Kinetix is live: https://$DOMAIN"
+    echo; bold "KinetixZero is live: https://$DOMAIN"
     echo "Create your account at https://$DOMAIN/register, then turn on two-step verification"
     echo "under Security. Useful commands: sudo kinetix status | logs | update | backup"
     exit 0
@@ -124,7 +124,7 @@ for _ in $(seq 1 60); do
   printf '.'; sleep 5
 done
 echo
-echo "Kinetix started, but https://$DOMAIN isn't answering yet."
+echo "KinetixZero started, but https://$DOMAIN isn't answering yet."
 echo "Usually that's DNS or the firewall: check that the domain points to $PUBLIC_IP and"
 echo "that ports 80 and 443 are open. Then: sudo kinetix logs edge"
 exit 1

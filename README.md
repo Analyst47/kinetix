@@ -1,13 +1,13 @@
-# Kinetix
+# KinetixZero
 
 A vulnerability research and responsible-disclosure platform.
 
-Kinetix takes a software target you are authorized to analyze, finds candidate
+KinetixZero takes a software target you are authorized to analyze, finds candidate
 vulnerabilities in its code and dependencies, and walks a human researcher from
 "potential" to a defensible, evidence-backed finding. Every step is recorded in a
 tamper-evident chain of custody.
 
-> **Scope.** Kinetix assists research on authorized targets. It never attacks third-party
+> **Scope.** KinetixZero assists research on authorized targets. It never attacks third-party
 > systems, and it never marks a finding as confirmed on its own: a person confirms, and only
 > after evidence, reproduction steps and a CVSS assessment exist.
 
@@ -24,7 +24,7 @@ tamper-evident chain of custody.
   path traversal, absolute paths, symlinks, hardlinks, device files, zip bombs and
   `.git/hooks` are all rejected or skipped.
 - **Analysis pipeline.** npm and PyPI lockfiles are matched against [OSV](https://osv.dev);
-  a built-in secret detector redacts what it finds; a Kinetix Semgrep rule pack (28 rules
+  a built-in secret detector redacts what it finds; a KinetixZero Semgrep rule pack (28 rules
   for JavaScript/TypeScript and Python) covers SQL injection, SSRF, SSTI, reflected XSS,
   NoSQL injection, command injection, path traversal, prototype pollution, ReDoS, open
   redirect, insecure deserialization, XXE, weak JWT verification, insecure CORS and weak
@@ -150,11 +150,11 @@ Then turn it on for a workspace under **AI assistance** in the sidebar.
 
 On Gemini's free tier, Google may use prompts and responses to improve its products, and
 human reviewers may read them ([Gemini API terms](https://ai.google.dev/gemini-api/terms)).
-Kinetix shows that notice to admins and researchers and requires an admin to accept it
+KinetixZero shows that notice to admins and researchers and requires an admin to accept it
 before AI can be turned on for a workspace. Don't use the free tier on confidential
 engagements or vulnerabilities you aren't free to share; use the paid tier or a local model.
 Free-tier quotas vary by model and project; check them in AI Studio. When a key runs out,
-Kinetix returns a clear "quota used up" error instead of failing silently.
+KinetixZero returns a clear "quota used up" error instead of failing silently.
 
 ## Email
 
@@ -165,7 +165,7 @@ the API log, which is all you need locally. To send real email, use
 ```bash
 KINETIX_EMAIL_BACKEND=resend
 KINETIX_RESEND_API_KEY=re_...
-KINETIX_EMAIL_FROM="Kinetix <security@yourdomain.com>"   # a domain verified in Resend
+KINETIX_EMAIL_FROM="KinetixZero <security@yourdomain.com>"   # a domain verified in Resend
 KINETIX_APP_URL=https://yourdomain.com                    # used to build links in emails
 ```
 
@@ -187,7 +187,7 @@ api/            FastAPI service, SQLAlchemy models, Alembic migrations
   app/routers   HTTP endpoints
   app/services  audit chain, findings lifecycle, storage, archive extraction, CVSS
   app/scanners  lockfiles, OSV client, secrets, Semgrep adapter, scan pipeline
-  rules/        Kinetix Semgrep rule pack
+  rules/        KinetixZero Semgrep rule pack
   tests/
 web/            Next.js app (App Router, TypeScript, Tailwind)
 docs/           Architecture, security model, roadmap

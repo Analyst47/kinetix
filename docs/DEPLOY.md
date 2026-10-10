@@ -1,6 +1,6 @@
-# Deploying Kinetix
+# Deploying KinetixZero
 
-Kinetix runs as one Docker Compose stack on a single Linux machine. Only the edge (Caddy)
+KinetixZero runs as one Docker Compose stack on a single Linux machine. Only the edge (Caddy)
 is reachable from outside; the API, worker, web app, Postgres and Redis stay on the private
 Compose network. Everything here is free except the domain.
 
@@ -104,7 +104,7 @@ domain shows as verified, create an API key with "Sending access" only and set:
 
 ```
 KINETIX_RESEND_API_KEY=re_...
-KINETIX_EMAIL_FROM=Kinetix <security@kinetix.yourdomain.com>
+KINETIX_EMAIL_FROM=KinetixZero <security@kinetix.yourdomain.com>
 ```
 
 The "from" address must be on the verified domain.
@@ -139,7 +139,7 @@ KINETIX_AI_MAX_RETRIES=4                 # backoff retries on 429/500/503/529
 KINETIX_AI_MONTHLY_TOKEN_BUDGET=2000000  # optional hard cap per UTC month; omit for none
 ```
 
-When a budget is set, Kinetix tracks tokens used this month (shown under **Settings → AI
+When a budget is set, KinetixZero tracks tokens used this month (shown under **Settings → AI
 assistance**) and refuses AI calls once the cap is reached until the month rolls over.
 
 Free Gemini tier — get a key at https://aistudio.google.com/apikey and set:
@@ -150,7 +150,7 @@ KINETIX_AI_API_KEY=AIza...
 ```
 
 On Gemini's free tier, Google may use prompts to improve its products and human reviewers
-may read them. Kinetix shows that notice and makes a workspace admin accept it before AI
+may read them. KinetixZero shows that notice and makes a workspace admin accept it before AI
 can be turned on. Set `KINETIX_AI_GEMINI_TIER=paid` only if billing is on for that key.
 
 Either way, each workspace must still turn AI on under **Settings → AI assistance**.

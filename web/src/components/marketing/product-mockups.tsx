@@ -170,7 +170,7 @@ export function ConfirmCard({ className }: { className?: string }) {
           <Tag tone="red">Likely real</Tag>
         </div>
         <p className="text-[12.5px] leading-[1.6] text-[#4c5a52]">
-          Kinetix won&apos;t mark this confirmed for you. Review the evidence, reproduce it, then
+          KinetixZero won&apos;t mark this confirmed for you. Review the evidence, reproduce it, then
           record your verdict.
         </p>
         <div className="flex flex-col gap-2">
@@ -213,7 +213,7 @@ export function RemediationCard({ className }: { className?: string }) {
           </div>
         </div>
         <p className="text-[11.5px] text-[#5b6b63]">
-          Kinetix drafts the patch and the CWE-mapped guidance; applying it stays a human edit.
+          KinetixZero drafts the patch and the CWE-mapped guidance; applying it stays a human edit.
         </p>
       </div>
     </Window>

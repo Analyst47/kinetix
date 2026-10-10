@@ -164,3 +164,42 @@ def test_safe_filename_strips_paths_and_control_characters():
     assert safe_filename("a\x00b\x1f.txt") == "ab.txt"
     assert safe_filename("...") == "evidence.bin"
     assert safe_filename(None) == "evidence.bin"
+
+
+def test_labeling_records_ground_truth_independent_of_status(client):
+    org = register(client)
+    create_project(client, org)
+    f = create_finding(client, org)
+    url = f"{_base(org)}/{f['public_id']}"
+
+    # No label to start with.
+    assert client.get(url).json()["ground_truth"] is None
+
+    # Label it real for the training corpus — status stays as it was (still open).
+    r = client.post(f"{url}/label", json={"label": "vulnerable"})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["ground_truth"] == "vulnerable"
+    assert body["ground_truth_at"] is not None
+    assert body["status"] == "discovered"  # labeling never moves the workflow status
+
+    # The labeled/unlabeled filter reflects it.
+    base = _base(org)
+    assert client.get(f"{base}?labeled=yes&status=all").json()["total"] == 1
+    assert client.get(f"{base}?labeled=no&status=all").json()["total"] == 0
+
+    # It is recorded in the chain of custody.
+    actions = [e["action"] for e in client.get(f"{url}/custody").json()["events"]]
+    assert "finding.labeled" in actions
+
+    # Clearing the label removes it.
+    assert client.post(f"{url}/label", json={"label": None}).json()["ground_truth"] is None
+    assert client.get(f"{base}?labeled=yes&status=all").json()["total"] == 0
+
+
+def test_labeling_rejects_unknown_values(client):
+    org = register(client)
+    create_project(client, org)
+    f = create_finding(client, org)
+    url = f"{_base(org)}/{f['public_id']}/label"
+    assert client.post(url, json={"label": "maybe"}).status_code == 422

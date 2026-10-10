@@ -18,7 +18,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       </div>
       <LoginForm demo={process.env.KINETIX_DEMO === "1" && !next?.startsWith("/invite/")} next={next} />
       <p className="text-muted">
-        New to Kinetix?{" "}
+        New to KinetixZero?{" "}
         <Link
           href={next ? `/register?next=${encodeURIComponent(next)}` : "/register"}
           className="text-vg hover:underline"

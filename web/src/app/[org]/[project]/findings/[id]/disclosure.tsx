@@ -110,7 +110,7 @@ export function StartDisclosure({
         }}
       >
         <p className="text-muted max-w-[68ch] text-[13px]">
-          Record who you will notify and on what timeline. Nothing is sent from Kinetix: you contact the
+          Record who you will notify and on what timeline. Nothing is sent from KinetixZero: you contact the
           vendor yourself, then log each step here so the record stays complete.
         </p>
         <Field label="Vendor" htmlFor="d-vendor">
@@ -642,7 +642,7 @@ function DraftButton({
         onClose={() => setOpen(false)}
         width={720}
         title="Draft notification"
-        description="A starting point to edit before you send it. Kinetix doesn't send anything on your behalf."
+        description="A starting point to edit before you send it. KinetixZero doesn't send anything on your behalf."
         footer={
           <>
             {mailto ? (

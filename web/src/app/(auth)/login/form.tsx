@@ -45,7 +45,7 @@ export function LoginForm({ demo, next }: { demo: boolean; next?: string }) {
       }
       done();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't reach Kinetix. Try again.");
+      setError(err instanceof ApiError ? err.message : "Couldn't reach KinetixZero. Try again.");
       setPending(false);
     }
   }
@@ -65,7 +65,7 @@ export function LoginForm({ demo, next }: { demo: boolean; next?: string }) {
         setChallenge(null);
         setCode("");
       }
-      setError(err instanceof ApiError ? err.message : "Couldn't reach Kinetix. Try again.");
+      setError(err instanceof ApiError ? err.message : "Couldn't reach KinetixZero. Try again.");
       setPending(false);
     }
   }

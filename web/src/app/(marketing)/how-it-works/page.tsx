@@ -8,7 +8,7 @@ import { ButtonLink } from "@/components/ui";
 export const metadata: Metadata = {
   title: "How it works",
   description:
-    "The Kinetix execution model: define authorized scope, analyze code and dependencies, validate with an AI pass, and disclose responsibly.",
+    "The KinetixZero execution model: define authorized scope, analyze code and dependencies, validate with an AI pass, and disclose responsibly.",
 };
 
 const STEPS: { n: string; icon: ReactNode; title: string; body: string; detail: string[] }[] = [
@@ -27,7 +27,7 @@ const STEPS: { n: string; icon: ReactNode; title: string; body: string; detail: 
     n: "02",
     icon: <ScanSearch className="size-5" />,
     title: "Analyze code & dependencies",
-    body: "Point Kinetix at a Git repository or upload a source archive. It runs the analyzers and records a scan.",
+    body: "Point KinetixZero at a Git repository or upload a source archive. It runs the analyzers and records a scan.",
     detail: [
       "SAST with taint tracking across JavaScript, TypeScript and Python.",
       "Dependency resolution matched against OSV advisories.",
@@ -66,7 +66,7 @@ export default function HowItWorksPage() {
           <SectionHeading
             eyebrow="How it works"
             title="Authorized scope in, filed disclosure out"
-            lede="Kinetix mirrors how careful research actually runs — four stages, with a human in the loop at the decisions that matter."
+            lede="KinetixZero mirrors how careful research actually runs — four stages, with a human in the loop at the decisions that matter."
             align="center"
             className="mx-auto"
           />

@@ -190,7 +190,7 @@ class OpenAICompatibleProvider:
 
 
 GEMINI_FREE_NOTICE = (
-    "This server uses the free tier of the Gemini API. Google may use what Kinetix sends "
+    "This server uses the free tier of the Gemini API. Google may use what KinetixZero sends "
     "(finding details and source excerpts) to improve its products, and human reviewers may "
     "read it. Don't use it on findings from confidential engagements or unreleased "
     "vulnerabilities you aren't allowed to share."

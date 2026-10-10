@@ -3,16 +3,16 @@
 # Paste this as the launch script / user data, or run it as root:
 #   curl -fsSL https://raw.githubusercontent.com/Analyst47/kinetix/main/scripts/server-bootstrap.sh | sudo bash
 #
-# It installs Docker, adds swap (small servers need it to build), fetches Kinetix into
+# It installs Docker, adds swap (small servers need it to build), fetches KinetixZero into
 # /opt/kinetix, builds the images, schedules daily backups and installs two commands:
-#   sudo kinetix-setup   asks for your domain and keys, then starts Kinetix
+#   sudo kinetix-setup   asks for your domain and keys, then starts KinetixZero
 #   sudo kinetix         status | logs | update | backup | restart
 # It never asks for or stores secrets; kinetix-setup does that on the server itself.
 set -euo pipefail
 
 LOG=/var/log/kinetix-bootstrap.log
 exec > >(tee -a "$LOG") 2>&1
-echo "== Kinetix bootstrap started $(date -u)"
+echo "== KinetixZero bootstrap started $(date -u)"
 
 REPO="${KINETIX_REPO:-https://github.com/Analyst47/kinetix.git}"
 DIR=/opt/kinetix
@@ -57,4 +57,4 @@ cat > /etc/cron.d/kinetix-backup <<CRON
 CRON
 
 touch "$DIR/.bootstrap-done"
-echo "== Kinetix bootstrap finished $(date -u). Next: sudo kinetix-setup"
+echo "== KinetixZero bootstrap finished $(date -u). Next: sudo kinetix-setup"

@@ -143,7 +143,7 @@ def seed() -> None:
             org_id=org.id,
             slug="juice-shop",
             name="OWASP Juice Shop",
-            description="Intentionally insecure web application used as the Kinetix demo target.",
+            description="Intentionally insecure web application used as the KinetixZero demo target.",
             authorization_type=AuthorizationType.OPEN_SOURCE,
             in_scope="Source code of the juice-shop repository at v17.1.1, analyzed locally.",
             out_of_scope="Any hosted Juice Shop instance not run by the researcher.",

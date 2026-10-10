@@ -22,7 +22,7 @@ rand() { head -c "$1" /dev/urandom | base64 | tr -d '\n/+=' | cut -c1-"$2"; }
 
 umask 077
 cat > .env <<ENV
-# Kinetix production settings. Keep this file private: it holds your secrets.
+# KinetixZero production settings. Keep this file private: it holds your secrets.
 # Created $(date -u +%Y-%m-%dT%H:%M:%SZ) by scripts/setup-env.sh
 
 KINETIX_SITE_ADDRESS=$DOMAIN
@@ -39,7 +39,7 @@ KINETIX_DEMO=0
 # Email (Resend). Until set, emails are dropped in production.
 KINETIX_EMAIL_BACKEND=resend
 KINETIX_RESEND_API_KEY=
-KINETIX_EMAIL_FROM=Kinetix <security@$DOMAIN>
+KINETIX_EMAIL_FROM=KinetixZero <security@$DOMAIN>
 
 # AI assistance (optional): gemini | anthropic | openai_compatible | none
 KINETIX_AI_PROVIDER=none

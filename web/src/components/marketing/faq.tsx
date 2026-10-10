@@ -5,16 +5,16 @@ import { useState } from "react";
 
 const FAQS: { q: string; a: string }[] = [
   {
-    q: "Does Kinetix replace human penetration testers?",
-    a: "No. Kinetix does the heavy, repetitive work — reading code, correlating dependencies with known advisories, and ranking what is worth a human's time. A researcher still decides what is real, reproduces it, and signs off. The AI produces hypotheses with cited evidence; it never claims proof of exploitability.",
+    q: "Does KinetixZero replace human penetration testers?",
+    a: "No. KinetixZero does the heavy, repetitive work — reading code, correlating dependencies with known advisories, and ranking what is worth a human's time. A researcher still decides what is real, reproduces it, and signs off. The AI produces hypotheses with cited evidence; it never claims proof of exploitability.",
   },
   {
     q: "What targets can I analyze?",
-    a: "Source you are authorized to test: your own repositories, open-source projects, assets covered by a bug-bounty scope, or code you have written permission to assess. Every project records an authorization attestation, and Kinetix is built for read-only static analysis — it does not launch attacks against live systems.",
+    a: "Source you are authorized to test: your own repositories, open-source projects, assets covered by a bug-bounty scope, or code you have written permission to assess. Every project records an authorization attestation, and KinetixZero is built for read-only static analysis — it does not launch attacks against live systems.",
   },
   {
-    q: "How does Kinetix tell a real finding from noise?",
-    a: "Each finding carries a confidence level. 'Firm' means a taint-tracked source-to-sink path or a matched known advisory; 'Tentative' means a pattern match that still needs a human look. The optional AI pass then assesses whether input is attacker-controlled, reaches the sink, and is sanitized — and Kinetix derives the verdict server-side from cited answers, downgrading anything uncited.",
+    q: "How does KinetixZero tell a real finding from noise?",
+    a: "Each finding carries a confidence level. 'Firm' means a taint-tracked source-to-sink path or a matched known advisory; 'Tentative' means a pattern match that still needs a human look. The optional AI pass then assesses whether input is attacker-controlled, reaches the sink, and is sanitized — and KinetixZero derives the verdict server-side from cited answers, downgrading anything uncited.",
   },
   {
     q: "What does an assessment actually produce?",
@@ -26,7 +26,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "Is there a free plan?",
-    a: "Kinetix is in early access. There is no paid plan or checkout yet — request access and you can explore the platform. AI assistance uses whichever model provider you configure and bills through that provider, not Kinetix.",
+    a: "KinetixZero is in early access. There is no paid plan or checkout yet — request access and you can explore the platform. AI assistance uses whichever model provider you configure and bills through that provider, not KinetixZero.",
   },
 ];
 

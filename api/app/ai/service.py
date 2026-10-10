@@ -124,7 +124,7 @@ def _validate_analysis(data: dict, lines: dict[tuple[str, int], str]) -> dict:
         )
     if "unclear" in (controlled, reaches, sanitized) and verdict == "needs_more_context":
         notes.append(
-            "Kinetix derives the verdict from cited answers; an unproven step reads as unclear."
+            "KinetixZero derives the verdict from cited answers; an unproven step reads as unclear."
         )
     cwe = data.get("suggested_cwe")
     severity = data.get("suggested_severity")

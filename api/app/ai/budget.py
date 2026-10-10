@@ -1,6 +1,6 @@
 """Optional monthly spend safeguard for AI usage.
 
-When KINETIX_AI_MONTHLY_TOKEN_BUDGET is set, Kinetix refuses AI calls once that many tokens
+When KINETIX_AI_MONTHLY_TOKEN_BUDGET is set, KinetixZero refuses AI calls once that many tokens
 (input + output) have been used in the current UTC month. The counter is shared across
 processes through Redis when available, and falls back to a per-process counter otherwise —
 best-effort, so a Redis hiccup never blocks or crashes an AI request.

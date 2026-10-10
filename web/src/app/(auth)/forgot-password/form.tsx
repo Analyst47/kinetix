@@ -20,7 +20,7 @@ export function ForgotForm() {
       await call("POST", "/auth/password/forgot", { email });
       setSentTo(email);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't reach Kinetix. Try again.");
+      setError(err instanceof ApiError ? err.message : "Couldn't reach KinetixZero. Try again.");
     } finally {
       setPending(false);
     }

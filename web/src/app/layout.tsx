@@ -4,18 +4,18 @@ import type { ReactNode } from "react";
 
 import "./globals.css";
 
-const SITE_URL = process.env.KINETIX_SITE_URL ?? "https://kinetixusa.duckdns.org";
+const SITE_URL = process.env.KINETIX_SITE_URL ?? "https://kinetixzero.com";
 const TAGLINE = "Find the paths attackers would take. Fix them before they do.";
 const DESCRIPTION =
-  "Kinetix is an AI-assisted application security platform. It analyzes source code and " +
+  "KinetixZero is an AI-assisted application security platform. It analyzes source code and " +
   "dependencies, correlates findings with public vulnerability intelligence, and helps " +
   "researchers validate and responsibly disclose real vulnerabilities.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: `Kinetix — ${TAGLINE}`, template: "%s · Kinetix" },
+  title: { default: `KinetixZero — ${TAGLINE}`, template: "%s · KinetixZero" },
   description: DESCRIPTION,
-  applicationName: "Kinetix",
+  applicationName: "KinetixZero",
   keywords: [
     "application security",
     "vulnerability research",
@@ -25,17 +25,17 @@ export const metadata: Metadata = {
     "AI security",
     "penetration testing",
   ],
-  authors: [{ name: "Kinetix" }],
+  authors: [{ name: "KinetixZero" }],
   openGraph: {
     type: "website",
-    siteName: "Kinetix",
-    title: `Kinetix — ${TAGLINE}`,
+    siteName: "KinetixZero",
+    title: `KinetixZero — ${TAGLINE}`,
     description: DESCRIPTION,
     url: SITE_URL,
   },
   twitter: {
     card: "summary_large_image",
-    title: `Kinetix — ${TAGLINE}`,
+    title: `KinetixZero — ${TAGLINE}`,
     description: DESCRIPTION,
   },
   robots: { index: true, follow: true },

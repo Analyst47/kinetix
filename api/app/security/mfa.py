@@ -10,7 +10,7 @@ from cryptography.fernet import Fernet, InvalidToken
 
 from app.config import get_settings
 
-ISSUER = "Kinetix"
+ISSUER = "KinetixZero"
 STEP_SECONDS = 30
 RECOVERY_CODE_COUNT = 10
 

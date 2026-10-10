@@ -72,7 +72,7 @@ export function MfaControls({ enabled }: { enabled: boolean }) {
         </Button>
         <a
           className="border-rule-strong bg-raised hover:bg-paper inline-flex h-8 items-center gap-1.5 rounded-md border px-3 text-sm font-medium [&_svg]:size-4"
-          href={`data:text/plain;charset=utf-8,${encodeURIComponent(`Kinetix recovery codes\n\n${codes.join("\n")}\n`)}`}
+          href={`data:text/plain;charset=utf-8,${encodeURIComponent(`KinetixZero recovery codes\n\n${codes.join("\n")}\n`)}`}
           download="kinetix-recovery-codes.txt"
         >
           <Download aria-hidden />

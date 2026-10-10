@@ -49,7 +49,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(
         lifespan=lifespan,
-        title="Kinetix API",
+        title="KinetixZero API",
         version="0.1.0",
         description="Vulnerability research and responsible-disclosure platform.",
         # The interactive docs and schema are for development; production doesn't publish them.

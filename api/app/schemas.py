@@ -298,7 +298,10 @@ class FindingOut(Model):
     remediation: str
     ai_verdict: str | None = None
     ai_confidence: str | None = None
+    ai_assessment: dict | None = None
     ai_reviewed_at: datetime | None = None
+    ground_truth: str | None = None
+    ground_truth_at: datetime | None = None
     assignee: UserOut | None
     created_at: datetime
     updated_at: datetime
@@ -317,6 +320,11 @@ class FindingPage(BaseModel):
     total: int
     status_counts: dict[str, int]
     severity_counts: dict[str, int]
+
+
+class FindingLabelIn(BaseModel):
+    # Human ground-truth label for the training corpus; null clears it.
+    label: Literal["vulnerable", "not_vulnerable"] | None
 
 
 class SourceLine(BaseModel):

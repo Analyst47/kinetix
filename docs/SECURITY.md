@@ -1,6 +1,6 @@
 # Security model
 
-Kinetix stores unreleased vulnerability details and processes code from outside its trust
+KinetixZero stores unreleased vulnerability details and processes code from outside its trust
 boundary. It is designed on the assumption that both its users and its inputs can be hostile.
 
 ## Assets
@@ -34,7 +34,7 @@ boundary. It is designed on the assumption that both its users and its inputs ca
 | Stored XSS via evidence | Downloads only, `application/octet-stream`, `nosniff`, `CSP: sandbox`, sanitized filenames | `routers/findings.py` |
 | Zip slip, link and device files | Names validated and links rejected before anything is written; writes use `O_EXCL` | `services/archives.py` |
 | Zip bombs | Member count, total size and compression-ratio limits; real bytes counted, not headers | `services/archives.py` |
-| Repository-controlled analyzer config | Semgrep runs on a copy without the repo's ignore files, with Kinetix rules only, no shell | `scanners/semgrep.py` |
+| Repository-controlled analyzer config | Semgrep runs on a copy without the repo's ignore files, with KinetixZero rules only, no shell | `scanners/semgrep.py` |
 | Secret leakage through findings | Secret values are never stored; redacted previews only | `scanners/secrets.py` |
 | Analyzer escape | Worker container: read-only root, no capabilities, no new privileges, memory and PID limits | `docker-compose.yml` |
 | SSRF through vendor lookup | Domain-only input, every resolved address must be public, connection pinned to the checked address (no DNS rebinding) with TLS verified for the domain, no redirects, 32 KB cap, timeouts | `services/securitytxt.py` |
@@ -46,7 +46,7 @@ boundary. It is designed on the assumption that both its users and its inputs ca
 ## Database roles
 
 Postgres superusers and roles with `BYPASSRLS` skip row-level security even when it is
-forced. Kinetix therefore uses two roles:
+forced. KinetixZero therefore uses two roles:
 
 - **Owner** (`KINETIX_MIGRATION_DATABASE_URL`): owns the schema and runs migrations.
 - **App** (`KINETIX_DATABASE_URL`, default `kinetix_app`): created by the operator with
@@ -90,7 +90,7 @@ issues. The low and informational findings (cookie `Secure` not forced in produc
 docs published in production, Windows device names in download filenames) are fixed; the
 remaining one is listed under accepted risks.
 
-## Reporting a vulnerability in Kinetix
+## Reporting a vulnerability in KinetixZero
 
 Email the maintainer rather than opening a public issue. Include the affected version,
 steps to reproduce and impact. Expect an acknowledgement within 3 business days.

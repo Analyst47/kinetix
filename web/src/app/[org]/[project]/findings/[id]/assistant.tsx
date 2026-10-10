@@ -197,7 +197,7 @@ export function AssistantPanel({
                   </p>
                 ) : null}
                 <p className="text-muted mt-0.5 text-[11.5px]">
-                  Kinetix derived the verdict from these cited answers.
+                  KinetixZero derived the verdict from these cited answers.
                 </p>
               </div>
             ) : null}

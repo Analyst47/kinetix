@@ -148,6 +148,10 @@ class Finding(Timestamped, Base):
     # The cited yes/no/unclear answers the verdict was derived from (see ai/service.py).
     ai_assessment: Mapped[dict | None] = mapped_column(JSONB)
     ai_reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Human ground-truth label for building training datasets (feeds the Aegis corpus):
+    # "vulnerable" | "not_vulnerable". Set from the labeling queue, independent of workflow status.
+    ground_truth: Mapped[str | None] = mapped_column(String(16))
+    ground_truth_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )

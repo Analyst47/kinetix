@@ -7,14 +7,14 @@ import { ButtonLink } from "@/components/ui";
 export const metadata: Metadata = {
   title: "Security & responsible use",
   description:
-    "The safeguards that are actually enforced in Kinetix: read-only analysis, authorization attestations, tenant isolation, and an auditable trail.",
+    "The safeguards that are actually enforced in KinetixZero: read-only analysis, authorization attestations, tenant isolation, and an auditable trail.",
 };
 
 const CONTROLS = [
   {
     icon: <ShieldCheck className="size-5" />,
     title: "Read-only static analysis",
-    body: "Kinetix analyzes source code and dependencies. It does not launch exploits or attacks against live systems. A human researcher validates and reproduces findings before anything is treated as real.",
+    body: "KinetixZero analyzes source code and dependencies. It does not launch exploits or attacks against live systems. A human researcher validates and reproduces findings before anything is treated as real.",
   },
   {
     icon: <Target className="size-5" />,
@@ -79,7 +79,7 @@ export default function SecurityPage() {
           <SectionHeading eyebrow="Responsible use" title="The rules of the road" />
           <div className="text-muted mt-6 flex flex-col gap-4 text-[15px] leading-[25px]">
             <p>
-              Kinetix is a tool for authorized vulnerability research. Use it only on code you own,
+              KinetixZero is a tool for authorized vulnerability research. Use it only on code you own,
               open-source projects, assets within a bug-bounty scope, or targets you have written
               permission to assess.
             </p>

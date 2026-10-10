@@ -34,7 +34,7 @@ def test_forgot_answers_the_same_whether_or_not_the_account_exists(client, outbo
     assert known.json() == unknown.json()
     assert [m.to for m in outbox.outbox] == [EMAIL]
     msg = outbox.outbox[0]
-    assert msg.subject == "Reset your Kinetix password" and msg.idempotency_key
+    assert msg.subject == "Reset your KinetixZero password" and msg.idempotency_key
     # The token travels in the fragment, never the path or query string.
     assert "#token=" in msg.text and "?token" not in msg.text
 
@@ -51,7 +51,7 @@ def test_reset_flow_changes_password_and_signs_out_every_session(client, outbox)
     assert client.get("/api/v1/auth/me").status_code == 401  # the old session is gone
     assert _login(make_client()).status_code == 401
     assert _login(make_client(), NEW).status_code == 200
-    assert outbox.outbox[-1].subject == "Your Kinetix password was changed"
+    assert outbox.outbox[-1].subject == "Your KinetixZero password was changed"
     # Single use.
     r = anon.post(RESET, json={"token": token, "password": "yet another passphrase"})
     assert r.status_code == 400 and r.json()["error"]["code"] == "reset_invalid"
@@ -157,7 +157,7 @@ def test_change_password_requires_the_current_one_and_keeps_this_session(client,
     assert r.status_code == 204
     assert client.get("/api/v1/auth/me").status_code == 200
     assert other.get("/api/v1/auth/me").status_code == 401
-    assert outbox.outbox[-1].subject == "Your Kinetix password was changed"
+    assert outbox.outbox[-1].subject == "Your KinetixZero password was changed"
 
 
 def test_turning_off_mfa_sends_a_notice(client, outbox):
@@ -196,7 +196,7 @@ def test_resend_backend_posts_with_bearer_key_and_idempotency_key():
 
     mailer = ResendMailer(
         api_key="re_test",
-        sender="Kinetix <security@kinetix.example>",
+        sender="KinetixZero <security@kinetix.example>",
         client=httpx.Client(transport=httpx.MockTransport(handler)),
     )
     mailer.send(
@@ -208,7 +208,7 @@ def test_resend_backend_posts_with_bearer_key_and_idempotency_key():
     import json
 
     body = json.loads(seen["body"])
-    assert body["to"] == ["a@example.com"] and body["from"].startswith("Kinetix")
+    assert body["to"] == ["a@example.com"] and body["from"].startswith("KinetixZero")
     assert "&lt;b&gt;" in body["html"]  # text is escaped in the HTML twin
 
 

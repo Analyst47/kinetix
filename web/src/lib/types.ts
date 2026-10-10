@@ -67,7 +67,15 @@ export interface Finding {
   remediation: string;
   ai_verdict: AiVerdict | null;
   ai_confidence: "low" | "medium" | "high" | null;
+  ai_assessment: {
+    input_controlled: "yes" | "no" | "unclear";
+    reaches_sink: "yes" | "no" | "unclear";
+    sanitized: "yes" | "no" | "unclear";
+    impact: string;
+  } | null;
   ai_reviewed_at: string | null;
+  ground_truth: "vulnerable" | "not_vulnerable" | null;
+  ground_truth_at: string | null;
   assignee: User | null;
   created_at: string;
   updated_at: string;

@@ -8,7 +8,7 @@ import { ButtonLink } from "@/components/ui";
 export const metadata: Metadata = {
   title: "Product",
   description:
-    "How Kinetix analyzes code and dependencies, validates findings with cited evidence, and produces responsible-disclosure packages.",
+    "How KinetixZero analyzes code and dependencies, validates findings with cited evidence, and produces responsible-disclosure packages.",
 };
 
 const GROUPS = [
@@ -29,7 +29,7 @@ const GROUPS = [
     title: "An AI pass that shows its work",
     points: [
       "The model assesses whether input is controlled, reaches the sink, and is sanitized.",
-      "Each answer must cite exact lines; Kinetix verifies citations against the code shown.",
+      "Each answer must cite exact lines; KinetixZero verifies citations against the code shown.",
       "The verdict is derived server-side — uncited definitive claims are downgraded to unclear.",
       "Batch triage ranks open findings so you work the most promising ones first.",
     ],
@@ -55,7 +55,7 @@ export default function ProductPage() {
           <SectionHeading
             eyebrow="Product"
             title="The work that happens after discovery"
-            lede="Kinetix is organized around three stages — analysis, validation, and disclosure — so a scan becomes a defensible result."
+            lede="KinetixZero is organized around three stages — analysis, validation, and disclosure — so a scan becomes a defensible result."
             align="center"
             className="mx-auto"
           />

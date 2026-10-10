@@ -67,7 +67,7 @@ export function Wordmark({
         className="font-display font-semibold tracking-[-0.02em]"
         style={{ fontSize: size, lineHeight: 1 }}
       >
-        Kinetix
+        Kinetix<span className="text-vg">Zero</span>
       </span>
     </span>
   );

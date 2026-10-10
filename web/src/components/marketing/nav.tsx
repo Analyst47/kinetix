@@ -20,7 +20,7 @@ export function MarketingNav({ signedIn }: { signedIn: boolean }) {
     <div className="sticky top-0 z-50 px-4 pt-4 sm:pt-5">
       <header className="mx-auto w-full max-w-5xl">
         <nav className="border-rule/80 bg-raised/70 flex h-14 items-center gap-2 rounded-full border px-2.5 pr-2.5 pl-4 shadow-lg shadow-black/20 backdrop-blur-xl">
-          <Link href="/" aria-label="Kinetix home" className="shrink-0">
+          <Link href="/" aria-label="KinetixZero home" className="shrink-0">
             <Wordmark size={16} />
           </Link>
 

@@ -114,7 +114,7 @@ export default async function FindingPage({
                 </Chip>
               ) : null}
             </div>
-            <h1 className="text-[22px] leading-7 font-semibold tracking-[-0.015em]">{finding.title}</h1>
+            <h1 className="display text-ink text-[26px] leading-[1.15]">{finding.title}</h1>
             <p className="text-muted">
               {finding.source === "manual" ? "Recorded by hand" : `Found by ${SOURCE_LABEL[finding.source]}`}
               {scanLabel && finding.source !== "manual"

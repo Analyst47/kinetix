@@ -179,7 +179,7 @@ export function AddRepository({ org, project }: { org: string; project: string }
         open={open}
         onClose={close}
         title="Add a Git repository"
-        description="A public HTTPS repository you are authorized to analyze. Kinetix fetches one commit and pins it, so findings always point at exact code."
+        description="A public HTTPS repository you are authorized to analyze. KinetixZero fetches one commit and pins it, so findings always point at exact code."
         footer={
           <>
             <Button variant="ghost" onClick={close}>

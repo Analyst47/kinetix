@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Day-to-day commands for a Kinetix server.
+# Day-to-day commands for a KinetixZero server.
 set -euo pipefail
 cd /opt/kinetix
 COMPOSE=(docker compose -f docker-compose.yml -f docker-compose.prod.yml)

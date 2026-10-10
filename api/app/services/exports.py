@@ -83,7 +83,7 @@ def to_cve_record(data: dict[str, Any]) -> dict[str, Any]:
         "affected": [affected],
         "problemTypes": [{"descriptions": [problem]}],
         "references": references,
-        "x_generator": {"engine": "Kinetix", "findingId": data["id"]},
+        "x_generator": {"engine": "KinetixZero", "findingId": data["id"]},
     }
     if data.get("cvss") and (m := _metric(data["cvss"]["vector"])):
         cna["metrics"] = [{m[0]: m[1], "format": "CVSS"}]
@@ -385,9 +385,16 @@ def dataset_record(finding: Any, excerpt: list[str] | None) -> dict[str, Any]:
                 "public_disclosure",
             ),
             "is_false_positive": status == "false_positive",
+            # The researcher's explicit ground-truth label from the labeling queue, if set.
+            "human_label": finding.ground_truth,
             # True/False once a human has judged it; None while still open. The clean target.
+            # An explicit label from the labeling queue wins; otherwise it's derived from status.
             "ground_truth_vulnerable": (
                 True
+                if finding.ground_truth == "vulnerable"
+                else False
+                if finding.ground_truth == "not_vulnerable"
+                else True
                 if status
                 in (
                     "confirmed",

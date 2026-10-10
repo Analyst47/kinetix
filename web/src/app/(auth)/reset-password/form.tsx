@@ -97,7 +97,7 @@ export function ResetForm() {
         setState({ kind: "invalid" });
         return;
       }
-      setError(err instanceof ApiError ? err.message : "Couldn't reach Kinetix. Try again.");
+      setError(err instanceof ApiError ? err.message : "Couldn't reach KinetixZero. Try again.");
       setCode("");
     } finally {
       setPending(false);

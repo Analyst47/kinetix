@@ -79,7 +79,7 @@ class Settings(BaseSettings):
     # Outgoing email: "console" prints messages (development), "resend" sends through Resend
     # (free tier: 3,000 a month), "none" drops them.
     email_backend: str = "console"
-    email_from: str = "Kinetix <no-reply@localhost>"
+    email_from: str = "KinetixZero <no-reply@localhost>"
     resend_api_key: str | None = None
     password_reset_minutes: int = 30
     # On a public demo, this shared account can't change its password, request resets or turn

@@ -1,7 +1,7 @@
-"""Semgrep adapter. Runs the Kinetix rule pack and normalizes results.
+"""Semgrep adapter. Runs the KinetixZero rule pack and normalizes results.
 
 Semgrep runs as a subprocess with no shell, a fixed argument list, a timeout and
-``--metrics=off``. Only Kinetix's own rule files are used: configuration found inside
+``--metrics=off``. Only KinetixZero's own rule files are used: configuration found inside
 the analyzed repository is never loaded, so a hostile repo can't change the rules.
 """
 
@@ -64,7 +64,7 @@ def parse(output: dict, root: Path) -> list[SastMatch]:
             message = f"{message}\n\nData-flow: attacker-controlled input enters at {source}."
         matches.append(
             SastMatch(
-                # Semgrep prefixes local rule ids with the config path; Kinetix ids contain no dots.
+                # Semgrep prefixes local rule ids with the config path; our ids contain no dots.
                 rule_id=str(r.get("check_id", "unknown")).rsplit(".", 1)[-1],
                 title=meta.get("title") or extra.get("message", "")[:120],
                 message=message,
@@ -115,7 +115,7 @@ def run(root: Path) -> list[SastMatch]:
     exe = shutil.which("semgrep")
     if exe is None:
         raise FileNotFoundError("semgrep is not installed")
-    # Scan a private copy that has every ignore file from the target removed and Kinetix's own
+    # Scan a private copy that has every ignore file from the target removed and KinetixZero's own
     # .semgrepignore at its root. A hostile repository must not be able to hide files from
     # analysis or change which rules run.
     with tempfile.TemporaryDirectory(prefix="kx-sast-") as tmp:

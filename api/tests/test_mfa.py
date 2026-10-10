@@ -10,7 +10,7 @@ def _enable(client) -> tuple[str, list[str]]:
     setup = client.post("/api/v1/auth/mfa/setup", json={"password": PASSWORD})
     assert setup.status_code == 200, setup.text
     secret = setup.json()["secret"]
-    assert setup.json()["otpauth_uri"].startswith("otpauth://totp/Kinetix:")
+    assert setup.json()["otpauth_uri"].startswith("otpauth://totp/KinetixZero:")
     r = client.post("/api/v1/auth/mfa/enable", json={"code": pyotp.TOTP(secret).now()})
     assert r.status_code == 200, r.text
     return secret, r.json()["recovery_codes"]

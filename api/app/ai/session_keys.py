@@ -1,6 +1,6 @@
 """Per-session, bring-your-own-key storage for AI providers.
 
-A user pastes their own provider API key; Kinetix holds it only for the life of their login
+A user pastes their own provider API key; KinetixZero holds it only for the life of their login
 session and never writes it to the database. The key is encrypted at rest with the server
 secret and stored in Redis under the session id with the session's TTL, so it disappears when
 the session ends (and logout clears it explicitly). If Redis isn't configured, a best-effort

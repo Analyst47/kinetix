@@ -2,16 +2,16 @@
 
 from app.email import Message
 
-FOOTER = "Kinetix: vulnerability research and coordinated disclosure."
+FOOTER = "KinetixZero: vulnerability research and coordinated disclosure."
 
 
 def password_reset(to: str, name: str, link: str, minutes: int, key: str) -> Message:
     return Message(
         to=to,
-        subject="Reset your Kinetix password",
+        subject="Reset your KinetixZero password",
         text=f"""Hi {name},
 
-Someone asked to reset the password for your Kinetix account. If it was you, open this link within {minutes} minutes:
+Someone asked to reset the password for your KinetixZero account. If it was you, open this link within {minutes} minutes:
 
 {link}
 
@@ -27,10 +27,10 @@ If you didn't ask for this, ignore this email. Your password stays the same.
 def password_changed(to: str, name: str, when: str, how: str) -> Message:
     return Message(
         to=to,
-        subject="Your Kinetix password was changed",
+        subject="Your KinetixZero password was changed",
         text=f"""Hi {name},
 
-The password for your Kinetix account was {how} on {when}. Other signed-in sessions were signed out.
+The password for your KinetixZero account was {how} on {when}. Other signed-in sessions were signed out.
 
 If this wasn't you, reset your password right away from the sign-in page, and tell your workspace owner.
 
@@ -44,7 +44,7 @@ def mfa_disabled(to: str, name: str, when: str) -> Message:
         subject="Two-step verification was turned off",
         text=f"""Hi {name},
 
-Two-step verification was turned off for your Kinetix account on {when}.
+Two-step verification was turned off for your KinetixZero account on {when}.
 
 If this wasn't you, reset your password from the sign-in page and turn two-step verification back on.
 
@@ -55,8 +55,8 @@ If this wasn't you, reset your password from the sign-in page and turn two-step 
 def invitation(to: str, inviter: str, org: str, role: str, link: str, key: str) -> Message:
     return Message(
         to=to,
-        subject=f"{inviter} invited you to {org} on Kinetix",
-        text=f"""{inviter} invited you to join the {org} workspace on Kinetix as {role}.
+        subject=f"{inviter} invited you to {org} on KinetixZero",
+        text=f"""{inviter} invited you to join the {org} workspace on KinetixZero as {role}.
 
 Accept the invitation within 7 days:
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""End-to-end smoke test of a running Kinetix stack, through the public edge only.
+"""End-to-end smoke test of a running KinetixZero stack, through the public edge only.
 
     python3 scripts/smoke.py http://localhost:3000            # full, needs internet
     python3 scripts/smoke.py http://localhost:3000 --offline  # skip live OSV/security.txt
