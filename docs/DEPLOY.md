@@ -109,35 +109,31 @@ KINETIX_EMAIL_FROM=KinetixZero <security@kinetix.yourdomain.com>
 
 The "from" address must be on the verified domain.
 
-**AI (bring-your-own-key by default).** You do not need to set any AI key on the server. By
-default each user pastes their own Anthropic or Gemini key in the app under **Settings → AI
-assistance**; that key is encrypted, held only for their login session, never written to the
-database, and billed to their own provider account. This keeps a public deployment from ever
-spending the operator's credits on other people.
-
-The server-side keys below are only for the optional **built-in (managed)** provider, which
-serves every workspace from the operator's own key. It is off until you set
-`KINETIX_AI_MANAGED_ENABLED=true`, so leave it off until billing is in place. When you do run
-it, your own **paid Claude API** account (recommended) or Google's free Gemini tier work the
-same way. The key is read server-side only — never sent to the browser, logged, or committed —
-and there is no silent fallback.
-
-Paid Claude API — create a key at https://console.anthropic.com and set:
+**AI (managed Claude, metered per user).** AI runs on your server's own Claude key; users
+never supply one. Create a key at https://console.anthropic.com and set it in `.env`:
 
 ```
-KINETIX_AI_PROVIDER=anthropic
-KINETIX_AI_API_KEY=sk-ant-...        # or export ANTHROPIC_API_KEY instead
-KINETIX_AI_MODEL=claude-sonnet-5-5   # or ANTHROPIC_MODEL; omit for the default
+ANTHROPIC_API_KEY=sk-ant-...           # or KINETIX_AI_API_KEY
+KINETIX_AI_MODEL=claude-sonnet-5-5     # optional; omit for the default
 ```
 
-Requests bill to your Anthropic Console account at usage-based rates. Model, output cap,
-retries, and a monthly spend ceiling are all configurable:
+The key is read server-side only — never sent to the browser, logged, or committed — and there
+is no silent fallback: without a key, AI features report "not configured". Requests bill to your
+Anthropic account, so every user is metered: each AI search (one model call) counts against
+their plan, with a one-time free allowance of `KINETIX_AI_FREE_SEARCHES` (default 10). When it
+runs out the app shows an Upgrade prompt; billing itself stays off until Stripe is wired in
+(see `docs/BILLING.md`). Model, cost and reliability controls:
 
 ```
-KINETIX_AI_MAX_OUTPUT_TOKENS=2048        # tokens generated per request
-KINETIX_AI_MAX_RETRIES=4                 # backoff retries on 429/500/503/529
-KINETIX_AI_MONTHLY_TOKEN_BUDGET=2000000  # optional hard cap per UTC month; omit for none
+KINETIX_AI_EFFORT=medium                  # low | medium | high reasoning effort per search
+KINETIX_AI_MAX_OUTPUT_TOKENS=4096         # tokens generated per request (reasoning included)
+KINETIX_AI_MAX_RETRIES=4                  # backoff retries on 429/500/503/529
+KINETIX_AI_MONTHLY_TOKEN_BUDGET=20000000  # server-wide hard cap per UTC month; omit for none
+KINETIX_AI_ALLOWED_ORGS=["my-lab"]        # optional: restrict AI to these workspaces
 ```
+
+To run without AI, set `KINETIX_AI_PROVIDER=none`. Gemini (`KINETIX_AI_PROVIDER=gemini`) and
+OpenAI-compatible servers such as Ollama still work as the managed provider.
 
 When a budget is set, KinetixZero tracks tokens used this month (shown under **Settings → AI
 assistance**) and refuses AI calls once the cap is reached until the month rolls over.

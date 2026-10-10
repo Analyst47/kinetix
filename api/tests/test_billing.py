@@ -186,3 +186,18 @@ def test_plan_rows_are_isolated_per_user_by_the_database(client, monkeypatch):
         set_user(db, them)
         assert db.execute(text("UPDATE user_plans SET plan = 'pro'")).rowcount == 0
         db.rollback()
+
+
+def test_claude_key_comes_from_anthropic_env_and_empty_vars_count_as_unset(monkeypatch):
+    from app.config import Settings
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    monkeypatch.setenv("ANTHROPIC_MODEL", "claude-sonnet-5-5")
+    # Compose passes optional variables through as empty strings.
+    monkeypatch.setenv("KINETIX_AI_MONTHLY_TOKEN_BUDGET", "")
+    monkeypatch.setenv("KINETIX_AI_API_KEY", "")
+    s = Settings(_env_file=None)
+    assert s.ai_provider == "anthropic" and s.ai_managed_enabled is True
+    assert s.ai_api_key == "sk-ant-test" and s.ai_model == "claude-sonnet-5-5"
+    assert s.ai_monthly_token_budget is None
+    assert s.ai_free_searches == 10 and s.billing_enabled is False

@@ -1,4 +1,3 @@
-import os
 from functools import lru_cache
 from pathlib import Path
 
@@ -9,7 +8,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Runtime configuration, read from environment variables prefixed KINETIX_."""
 
-    model_config = SettingsConfigDict(env_prefix="KINETIX_", env_file=".env", extra="ignore")
+    # Empty values count as unset, so Compose can pass optional variables through as "".
+    model_config = SettingsConfigDict(
+        env_prefix="KINETIX_", env_file=".env", extra="ignore", env_ignore_empty=True
+    )
 
     env: str = "development"
     # Encrypts MFA secrets at rest. Must be set to a long random value outside development.
@@ -54,6 +56,10 @@ class Settings(BaseSettings):
     # returns canned output for local development and tests; "none" turns AI off entirely.
     ai_provider: str = "anthropic"
     ai_api_key: str | None = None
+    # The conventional Anthropic variables, read from the environment or .env, are accepted as
+    # fallbacks for the Claude key and model so existing setups work unchanged.
+    anthropic_api_key: str | None = Field(default=None, validation_alias="ANTHROPIC_API_KEY")
+    anthropic_model: str | None = Field(default=None, validation_alias="ANTHROPIC_MODEL")
     # Master switch for serving AI from the server's key. On by default: usage is metered per
     # user (see the plan quotas below) and capped by ai_monthly_token_budget as a backstop.
     ai_managed_enabled: bool = True
@@ -118,12 +124,11 @@ class Settings(BaseSettings):
         if self.env == "production":
             # Never send session cookies over plain HTTP in production, whatever was configured.
             self.cookie_secure = True
-        # Accept the conventional ANTHROPIC_API_KEY as a fallback when using the Claude API,
-        # so operators can reuse their existing Anthropic environment variable unchanged.
+        # Accept the conventional ANTHROPIC_API_KEY / ANTHROPIC_MODEL when using the Claude API.
         if self.ai_provider == "anthropic" and not self.ai_api_key:
-            self.ai_api_key = os.environ.get("ANTHROPIC_API_KEY") or None
+            self.ai_api_key = self.anthropic_api_key or None
         if self.ai_provider == "anthropic" and not self.ai_model:
-            self.ai_model = os.environ.get("ANTHROPIC_MODEL") or None
+            self.ai_model = self.anthropic_model or None
         return self
 
 
