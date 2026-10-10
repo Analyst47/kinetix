@@ -84,3 +84,19 @@ def test_only_owners_and_admins_can_delete_and_never_across_workspaces(client):
     register(outsider, email="m@example.com", org="Mallory")
     assert outsider.delete(base, params={"confirm": "juice-shop"}).status_code == 404
     assert client.get(base).status_code == 200
+
+
+def test_billing_is_a_reserved_project_url_name(client):
+    # /{org}/billing is the Plan & usage page, so a project can't take that URL name.
+    org = register(client)
+    r = client.post(
+        f"/api/v1/orgs/{org}/projects",
+        json={
+            "slug": "billing",
+            "name": "Billing",
+            "authorization_type": "open_source",
+            "in_scope": "Source code, analyzed locally.",
+            "attest": True,
+        },
+    )
+    assert r.status_code == 422 and "reserved" in r.text

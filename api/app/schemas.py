@@ -142,7 +142,7 @@ ATTESTATION_TEXT = (
 )
 
 
-RESERVED_SLUGS = frozenset({"new", "audit", "settings", "members", "api"})
+RESERVED_SLUGS = frozenset({"new", "audit", "settings", "members", "api", "billing"})
 
 
 class ProjectIn(BaseModel):
